@@ -4,16 +4,21 @@
 #' 
 #' @param rnb.set An object of type \code{\link{RnBSet}} containing methylation, sample and optional coverage information.
 #' @param MARKER_SELECTION A vector of strings representing marker selection methods. Available method are \itemize{
-#'                                  \item 
+#'                                  \item pheno Selected are the top \code{N_MARKERS} site that differ between the phenotypic
+#'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
+#'                                         selected by employing limma on the methylation matrix.
+#'                                  \item houseman2012 The 50k sites reported as cell-type specific in the Houseman's reference-
+#'                                         based deconvolution.
 #'                         }
 prepare_CG_subsets<-function(
 		rnb.set,
 		MARKER_SELECTION,
-		N_PHENO_MARKERS=5000,
+		N_MARKERS=5000,
 		WRITE_FILES=FALSE,
 		WD=NA
 		)
 {
+  require("RnBeads")
 	cg_groups<-list()
 	
 	groups<-1:length(MARKER_SELECTION)
@@ -26,183 +31,124 @@ prepare_CG_subsets<-function(
 		
 		if(MARKER_SELECTION[group]=="pheno"){
 			
-			#pheno.data<-readRDS(sprintf("%s/pheno.data.RDS",DD))
-			load(sprintf("%s/pheno.RData",DD))
+		  if(file.exists(sprintf("%s/pheno.RData",WD))){
+			  load(sprintf("%s/pheno.RData",WD))
+		    sel.columns <- gsub(" ","_",colnames(pheno.data))
+		  }else{
+		    pheno.data <- pheno(rnb.set)
+		    sel.columns <- gsub(" ","_",names(rnb.sample.groups(rnb.set)))
+		  }
 			
-			X<-meth.data[ind,]
+			X <- meth.data
 			ncgs<-nrow(X)
-			ignore.na<-TRUE
-			if(ignore.na){
-				nnas<-apply(is.na(X), 1, sum)
-				notna.rows<-which(nnas==0)
-				X<-X[notna.rows,]
-			}else{
-				nnas<-rep(0,ncgs)
+			X <- na.omit(X)
+
+			colnames(pheno.data) <- gsub(" ","_",colnames(pheno.data))
+			na.pheno <- lapply(sel.columns,function(x)is.na(pheno.data[,x]))
+			rem.samples <- rep(FALSE,ncol(X))
+			for(entry in na.pheno){
+			  rem.samples <- rem.samples | entry
 			}
-			#design<-matrix(1L, ncol(X), 2)
-			#design[inds.g2,2]<-0L
-			#colnames(design)<-c("(Icept)", "group.f")
-			
-			#if(!is.null(adjustment.table)){
-			formula.text <- paste0("~0+", paste(gsub(" ","_",colnames(pheno.data)),collapse="+"))
+			X <- X[,!rem.samples]
+			formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
 			design <- model.matrix(as.formula(formula.text), data=pheno.data)
-			#design<-cbind(design[,-1,drop=FALSE], design.adj)
-			#}
-			
-			#fit <- limma::lmFit(X.m,design.m)
 			fit <- limma::lmFit(X,design)
 			fit <- limma::eBayes(fit)
 			tstatDeltaAll<-abs(fit$t)
 			
 			ranks<-apply(tstatDeltaAll, 2, rank)
 			maxRank<-apply(ranks, 1, max)
-			#test 1k
-			#		ind1k<-ind[order(maxRank)[1:min(1000, length(ind))]]
-			#		pdf("pheno.probes.1k.pdf")
-			#				heatmap.2(meth.data[ind1k,], scale="none", trace="none", col=rev(grey.colors(15)), Colv=NA)
-			#		dev.off()
-			## end test
-			
-			ind<-ind[order(maxRank)[1:min(N_PHENO_MARKERS, length(ind))]]
 		
+			ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
 		}
 		
-		if(MARKER_SELECTION[group]=="houseman" || MARKER_SELECTION[group]=="houseman2012" ){
-			houseman.50k.markers<-readRDS(sprintf("%s/houseman.50k.markers.RDS", DD))
-			ind<-intersect(ind, houseman.50k.markers)
-		}
-		
-		
-		if(!"N_HM2014_MARKERS" %in% ls()){
-			N_HM2014_MARKERS<-5000
+		if(MARKER_SELECTION[group]=="houseman2012" ){
+		  if(file.exists(sprintf("%s/houseman.50k.markers.RDS", WD))){
+			  houseman.50k.markers<-readRDS(sprintf("%s/houseman.50k.markers.RDS", WD))
+			  ind<-intersect(ind, houseman.50k.markers)
+		  }
 		}
 		
 		if(MARKER_SELECTION[group]=="houseman2014"){
-			#houseman.50k.markers<-readRDS(sprintf("%s/houseman.50k.markers.RDS", DD))
-			
 			require(RefFreeEWAS)
 			
-			if(file.exists(sprintf("%s/pheno.RData",DD))){
+		  if(file.exists(sprintf("%s/pheno.RData",WD))){
+		    load(sprintf("%s/pheno.RData",WD))
+		    sel.columns <- gsub(" ","_",colnames(pheno.data))
+		  }else{
+		    pheno.data <- pheno(rnb.set)
+		    sel.columns <- gsub(" ","_",names(rnb.sample.groups(rnb.set)))
+		  }
+		  
+			X <- meth.data
+			ncgs<-nrow(X)
+			X <- na.omit(X)
+
+			colnames(pheno.data) <- gsub(" ","_",colnames(pheno.data))
+			na.pheno <- lapply(sel.columns,function(x)is.na(pheno.data[,x]))
+			rem.samples <- rep(FALSE,ncol(X))
+			for(entry in na.pheno){
+			  rem.samples <- rem.samples | entry
+			}
+			X <- X[,!rem.samples]
+			formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
+			design <- model.matrix(as.formula(formula.text), data=pheno.data)
+			tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
 				
-				#pheno.data<-readRDS(sprintf("%s/pheno.data.RDS",DD))
-				load(sprintf("%s/pheno.RData",DD))
+			## rescaling the residuals, and addition by Andres
+			R <- X-tmpBstar %*% t(design)
+			rescale.residual<-TRUE
+			if(rescale.residual){
+				R <- t(scale(t(R)))
+			}
+			d<-EstDimRMT(R)$dim
 				
-				X<-meth.data[ind,]
-				ncgs<-nrow(X)
-				ignore.na<-TRUE
-				if(ignore.na){
-					nnas<-apply(is.na(X), 1, sum)
-					notna.rows<-which(nnas==0)
-					X<-X[notna.rows,]
+			logger.info(c("Estimated number of latent components is", d))
+			rf <- RefFreeEwasModel(X, design, d)
+				
+			logger.status("Fitted the RefFreeEWAS model")
+				
+			Delta <- rf$Bstar-rf$Beta
+				
+			nboot<-100
+			#### compute se delta from a bootstrap
+			rfBoot <- BootRefFreeEwasModel(rf,nboot)
+			logger.status("Pefrormed the bootstrap")
+				
+			seDelta <- apply(rfBoot[,,"B*",]-rfBoot[,,"B",], 1:2, sd)
+			tstatDelta <- -abs(Delta)/seDelta
+			if(FALSE){
+				for(id in 1:10){
+					system(sprintf("qsub -cwd -j y -o %s/rf_boot_%d.log -b y -V -N rfb_%d_%s -l h='%s' -l mem_free=%s %s/Rscript %s/rfEwasBoot.R %s %d", WD, id, id, ANALYSIS, HOSTLIST, MEMLIMIT, ANALYSIS, RDIR, SRCDIR, WD, id))
+				}
+				# load all bootstraps
+				load("rfBoot-1.RData")
+				rfBootGrandSum <- rfBoot.sum
+				rfBootGrandSum2 <- rfBoot.sum2 
+				for(i in 2:10){ # Now combine
+					load(file.path(WD, "rfBoot-",i,".RData",sep=""))
+					rfBootGrandSum <- rfBootGrandSum + rfBoot.sum
+					rfBootGrandSum2 <- rfBootGrandSum2 + rfBoot.sum2 
+				}
+				# Calculate SE's from summary data
+				rfBootGrandMean <- rfBootGrandSum/100
+				rfBootGrandMean2 <- rfBootGrandSum2/100
+				rfBootSE <- sqrt((100/99)*(rfBootGrandMean2-rfBootGrandMean*rfBootGrandMean))
+		  }
+				
+			if(is.null(dim(tstatDelta))){
+					tstatDeltaAll<-rep(NA, ncgs)
+					tstatDeltaAll[notna.rows]<-tstatDelta
 				}else{
-					nnas<-rep(0,ncgs)
+					tstatDeltaAll<-matrix(NA_real_, ncol=ncol(tstatDelta), nrow=ncgs)
+					tstatDeltaAll[notna.rows,]<-tstatDelta
 				}
-				#design<-matrix(1L, ncol(X), 2)
-				#design[inds.g2,2]<-0L
-				#colnames(design)<-c("(Icept)", "group.f")
-				
-				#if(!is.null(adjustment.table)){
-				formula.text <- paste0("~0+", paste(colnames(pheno.data),collapse="+"))
-				design <- model.matrix(as.formula(formula.text), data=pheno.data)
-				#design<-cbind(design[,-1,drop=FALSE], design.adj)
-				#}
-				
-				tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
-				
-				## rescaling the residuals, and addition by Andres
-				R <- X-tmpBstar %*% t(design)
-				rescale.residual<-TRUE
-				if(rescale.residual){
-					R <- t(scale(t(R)))
-				}
-				d<-EstDimRMT(R)$dim
-				
-				#rnb.info(c("Estimated number of latent components is", d))
-				rf <- RefFreeEwasModel(X, design, d)
-				
-				#rnb.status("Fitted the RefFreeEWAS model")
-				
-				#if(paired){
-				#	pair.id <- rep(1:n.g1, 2)[order(c(inds.g1,inds.g2))]
-				#	testBoot <- PairsBootRefFreeEwasModel(rf, nboot, pair.id)
-				#}else{
-				
-				#rnb.status("Summarized the results")
-				
-				#if(!is.null(adjustment.table)){
-				#tstatBeta<-smry[,1,1,1]/smry[,1,1,2]
-				#}else{
-				#tstatBeta<-smry[,2,1,1]/smry[,2,1,2]
-				#tstatDelta<-(smry[,2,2,1]-smry[,2,1,1])/(sqrt(smry[,2,1,2]+smry[,2,2,2]/smry[,2,1,2]/smry[,2,2,2]))
-				
-				Delta <- rf$Bstar-rf$Beta
-				
-				nboot<-100
-				#### compute se delta from a bootstrap
-				rfBoot <- BootRefFreeEwasModel(rf,nboot)
-				#}
-				#rnb.status("Pefrormed the bootstrap")
-				
-				#smry<-summary(rfBoot)
-				
-				seDelta <- apply(rfBoot[,,"B*",]-rfBoot[,,"B",], 1:2, sd)
-				tstatDelta <- -abs(Delta)/seDelta
-				#}
-				
-				# proper df calculation, added by Andres
-				#pvals <- pt(-abs(tstatBeta), df=nrow(design)-ncol(design)-nnas)
-				#rnb.logger.completed()
-				
-				# or alternatively parallelize the whole process
-				if(FALSE){
-					for(id in 1:10){
-						system(sprintf("qsub -cwd -j y -o %s/rf_boot_%d.log -b y -V -N rfb_%d_%s -l h='%s' -l mem_free=%s %s/Rscript %s/rfEwasBoot.R %s %d", WD, id, id, ANALYSIS, HOSTLIST, MEMLIMIT, ANALYSIS, RDIR, SRCDIR, WD, id))
-					}
-					# load all bootstraps
-					load("rfBoot-1.RData")
-					rfBootGrandSum <- rfBoot.sum
-					rfBootGrandSum2 <- rfBoot.sum2 
-					for(i in 2:10){ # Now combine
-						load(file.path(WD, "rfBoot-",i,".RData",sep=""))
-						rfBootGrandSum <- rfBootGrandSum + rfBoot.sum
-						rfBootGrandSum2 <- rfBootGrandSum2 + rfBoot.sum2 
-					}
-					# Calculate SE's from summary data
-					rfBootGrandMean <- rfBootGrandSum/100
-					rfBootGrandMean2 <- rfBootGrandSum2/100
-					rfBootSE <- sqrt((100/99)*(rfBootGrandMean2-rfBootGrandMean*rfBootGrandMean))
-				}
-				
-				if(ignore.na){
-					#notna.pvals<-pvals
-					#pvals<-rep(NA,ncgs)
-					#pvals[notna.rows]<-notna.pvals
-					if(is.null(dim(tstatDelta))){
-						tstatDeltaAll<-rep(NA, ncgs)
-						tstatDeltaAll[notna.rows]<-tstatDelta
-					}else{
-						tstatDeltaAll<-matrix(NA_real_, ncol=ncol(tstatDelta), nrow=ncgs)
-						tstatDeltaAll[notna.rows,]<-tstatDelta
-					}
-				}
-				
-				#return(pvals)
-				#ct.markers<-which[pvals<0.05]
-				
-				#ind<-intersect(ind, ind[])
-				if(is.null(dim(tstatDelta))){
-					ind<-ind[order(-tstatDeltaAll)[1:min(10000, length(ind))]]
-				}else{
-					ranks<-apply(-tstatDeltaAll, 2, rank)
-					maxRank<-apply(ranks, 1, max)
-					###test
-					#				ind1k<-ind[order(maxRank)[1:min(1000, length(ind))]]
-					#				pdf("pheno.plobes.1k.pdf")
-					#				heatmap.2(meth.data[ind[1:1000],], scale="none", trace="none", col=rev(grey.colors(15)), Colv=NA)
-					#				dev.off()
-					#### end test
-					ind<-ind[order(maxRank)[1:min(N_HM2014_MARKERS, length(ind))]]
-				}
+			if(is.null(dim(tstatDelta))){
+				ind<-ind[order(-tstatDeltaAll)[1:min(10000, length(ind))]]
+			}else{
+				ranks<-apply(-tstatDeltaAll, 2, rank)
+				maxRank<-apply(ranks, 1, max)
+				ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
 			}
 		}
 		

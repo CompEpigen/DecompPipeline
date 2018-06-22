@@ -23,7 +23,7 @@ res<-prepare_data(
 		DATA_SUBSET="foo",
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
-		PHENO_COLUMNS=NA,
+		PHENO_COLUMNS="bcr",
 		ID_COLUMN=NA,
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
@@ -45,7 +45,8 @@ res<-prepare_data(
 
 cg_subsets<-prepare_CG_subsets(
 		res$rnb.set.filtered,
-		MARKER_SELECTION=c("var5k", "var10k")
+		MARKER_SELECTION=c("houseman2014"),
+		WD=file.path(PROJECT.DIR,"data","foo_foo_none")
 )
 
 md.res<-start_medecom_analysis(
