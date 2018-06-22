@@ -1,10 +1,11 @@
 #
 #          Neuronal data from Gasparoni et al., 2017         
 #
-.libPaths("/DEEP_fhgfs/projects/plutsik/Rlib_clean_RnBeads/")
-PROJECT.DIR="/DEEP_fhgfs/projects/plutsik/projects/neuron/"
-data<-read.table(file.path(PROJECT.DIR, "20170419_GasSort_GuiSort_manuscriptData.txt"))
-pd<-read.table(file.path(PROJECT.DIR, "20170419_GasSort_GuiSort_manuscriptSampleSheet.txt"), sep='\t', header=TRUE)
+#.libPaths("/DEEP_fhgfs/projects/plutsik/Rlib_clean_RnBeads/")
+DATA.DIR="/DEEP_fhgfs/projects/plutsik/projects/neuron/"
+PROJECT.DIR = "/TL/deep/projects/work/mscherer/projects/MeDeCom/test/"
+data<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptData.txt"))
+pd<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptSampleSheet.txt"), sep='\t', header=TRUE)
 
 
 probe.list<-rownames(data)
@@ -13,13 +14,13 @@ library(RnBeads)
 rnb.options(disk.dump.big.matrices=FALSE)
 rnb.set<-RnBeadSet(pd, probe.list, as.matrix(data))
 
-
+rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/processed/TCGA_OV___AH/rnbeads_report/rnbSet_preprocessed/")
 
 res<-prepare_data(
 		RNB_SET=rnb.set, 
 		WORK_DIR=file.path(PROJECT.DIR),
-		DATASET="adgbbSorted",
-		DATA_SUBSET="frontal",
+		DATASET="foo",
+		DATA_SUBSET="foo",
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS=NA,
@@ -34,11 +35,11 @@ res<-prepare_data(
 		ESTIMATE_HOUSEMAN_PROP=FALSE,
 		FILTER_BEADS=!is.null(rnb.set@covg.sites),
 		FILTER_INTENSITY=inherits(rnb.set, "RnBeadRawSet"),
-		FILTER_NA=TRUE,
+		FILTER_NA=T,
 		FILTER_CONTEXT=TRUE,
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
-		MATLAB_EXPORT=TRUE
+		snp.list="/DEEP_fhgfs/projects/mscherer/data/EPIC/Radar_Genetik/commonSNPs137.txt"
 )
 
 

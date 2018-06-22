@@ -1,3 +1,11 @@
+#' prepare_CG_subsets
+#' 
+#' This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
+#' 
+#' @param rnb.set An object of type \code{\link{RnBSet}} containing methylation, sample and optional coverage information.
+#' @param MARKER_SELECTION A vector of strings representing marker selection methods. Available method are \itemize{
+#'                                  \item 
+#'                         }
 prepare_CG_subsets<-function(
 		rnb.set,
 		MARKER_SELECTION,
@@ -36,7 +44,7 @@ prepare_CG_subsets<-function(
 			#colnames(design)<-c("(Icept)", "group.f")
 			
 			#if(!is.null(adjustment.table)){
-			formula.text <- paste0("~0+", paste(colnames(pheno.data),collapse="+"))
+			formula.text <- paste0("~0+", paste(gsub(" ","_",colnames(pheno.data)),collapse="+"))
 			design <- model.matrix(as.formula(formula.text), data=pheno.data)
 			#design<-cbind(design[,-1,drop=FALSE], design.adj)
 			#}

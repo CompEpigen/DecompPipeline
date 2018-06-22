@@ -2,6 +2,55 @@
 # Data preparation script for the parameter tuning run
 #
 
+#################################################################################################################################
+#' GLOBALS
+#################################################################################################################################
+
+#################################################################################################################################
+#' FUNCTIONS
+#################################################################################################################################
+
+#' prepare_data
+#' 
+#' This functions presumably prepares data for a MeDeCom run.
+#' 
+#' @param RNB_SET An object of type \code{\link{RnBSet}} for which analysis is to be performed
+#' @param WORK_DIR A path to a existing directory, in which the results are to be stored
+#' @param DATASET A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
+#'                 descriptive name of the analysis.
+#' @param DATA_SUBSET A string represeting the subset of samples in \code{RNB_SET} that has been used in the analysis. Only used
+#'                 to create a folder with a descriptive name of the analysis.
+#' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
+#'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
+#' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
+#' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
+#'                 exploration.
+#' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
+#' @param NORMALIZATION Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob"}.
+#' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
+#' @param REF_RNB_SET An object of type \code{\link{RnBSet}} containing methylation information on reference cell types.
+#' @param REF_RNB_CT_COLUMN Column name in \code{REF_RNB_SET} used to extract methylation information on the reference cell types.
+#' @param PREPARE_TRUE_PROPORTIONS Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+#'                          with Houseman's reference-based deconvolution approach.
+#' @param TRUE_A_TOKEN String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+#'                      cell types.
+#' @param HOUSEMAN_A_TOKEN Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+#'                      by Houseman's method.
+#' @param ESTIMATE_HOUSEMAN_PROP If neither \code{TRUE_A_TOKEN} nor \code{HOUSEMAN_A_TOKEN} are given, the proportions of the reference
+#'                      cell type are estimated with Houseman's approach.
+#' @param FILTER_BEADS Flag indicating, if site-filtering based on the number of beads available is to be conducted.
+#' @param MIN_N_BEADS Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.
+#' @param FILTER_INTENSITY  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
+#'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}).
+#' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
+#' @param FILTER_CONTEXT Flag indicating if only CG probes are to be kept.
+#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
+#'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
+#' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
+#' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
+#' @return A list with four elements: \itemize{
+#'           \item quality.filter The indices of the sites that survived quality filtering
+#' }
 prepare_data<-function(
 		RNB_SET, 
 		WORK_DIR,
@@ -10,7 +59,7 @@ prepare_data<-function(
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS=NA,
-		ID_COLUMN=NA,
+		ID_COLUMN=rnb.getOption("identifiers.column"),
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
 		REF_RNB_SET=NA,
@@ -22,24 +71,18 @@ prepare_data<-function(
 		FILTER_BEADS=!is.null(RNB_SET@covg.sites),
 		MIN_N_BEADS=3,
 		FILTER_INTENSITY=inherits(RNB_SET, "RnBeadRawSet"),
-		MIN_INT_QUANT=0.1,
-		MAX_INT_QUANT=0.95,
+		MIN_INT_QUANT = 0.1,
+		MAX_INT_QUANT = 0.95, 
 		FILTER_NA=TRUE,
 		FILTER_CONTEXT=TRUE,
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
-		MATLAB_EXPORT=TRUE
+		snp.list=NULL
 ){
-	#suppressPackageStartupMessages(library(MeDeCom))
 	suppressPackageStartupMessages(require(RnBeads))
 	suppressPackageStartupMessages(require(R.matlab))
 	
 	DATADIR<-file.path(WORK_DIR, "data")
-	#DATADIR<-"/home/lutsik/Documents/science/projects/heterogeneity/data/parameter_tuning/test_output"
-	#DATADIR<-"/mnt/deepfhfs/projects/parameter_tuning/data/"
-	#ANALYSIS<-paste(DATASET, DATA_SUBSET, NORMALIZATION, sep="_")
-	#
-	
 	OUTPUTDIR<-sprintf("%s/%s_%s_%s", DATADIR, DATASET, DATA_SUBSET, NORMALIZATION)
 	system(sprintf("mkdir %s", OUTPUTDIR))
 	
@@ -68,7 +111,7 @@ prepare_data<-function(
 	}
 	
 	############################### NORMALIZATION
-	if(!(NORMALIZATION %in% c("none","custom"))){
+	if(!(NORMALIZATION %in% c("none"))){
 		if(NORMALIZATION=="illumina"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="illumina", bgcorr.method="none")
 		}else if(NORMALIZATION=="dasen"){
@@ -127,9 +170,6 @@ prepare_data<-function(
 	
 	############################### TRUE PROPORTIONS 
 	if(PREPARE_TRUE_PROPORTIONS){
-		#meth.rheuma<-meth(rnb.set.comb,row.names=TRUE)[,!is.na(rnb.set.comb@pheno$diseaseState)]
-		#pd.rheuma<-pheno(rnb.set.comb)[!is.na(rnb.set.comb@pheno$diseaseState),]
-		
 		if(!is.na(TRUE_A_TOKEN)){
 			
 			trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
@@ -148,7 +188,7 @@ prepare_data<-function(
 			
 		}else if(ESTIMATE_HOUSEMAN_PROP){
 			
-			if("REF_RNB_SET" %in% ls() && !is.na(REF_RNB_CT_COLUMN)){
+			if(!is.na(REF_RNB_CT_COLUMN)){
 				rnb.set.ref<-remove.samples(rnb.set.ref, which(is.na(pheno(rnb.set.ref)[,REF_RNB_CT_COLUMN])))
 				rnb.set<-combine(rnb.set, rnb.set.ref)
 				REF_CT_COLUMN<-REF_RNB_CT_COLUMN
@@ -176,170 +216,200 @@ prepare_data<-function(
 	
 	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
 	
-	
 	####################### FILTERING
-	
-	get.probe.ind<-function(rnb.set){
-		
-		ann<-annotation(rnb.set)
-		full.ann<-rnb.annotation2data.frame(rnb.get.annotation(rnb.set@target))
-		ind<-match(ann$ID, full.ann$ID)
-		return(ind)
-		
-	}
-	
-	filter.annotation<-function(
-			rnb.set,
-			snp=TRUE,
-			somatic=TRUE,
-			context=TRUE)
-	{
-		#probe.ind<-get.probe.ind(rnb.set)
-		
-		annot<-annotation(rnb.set)
-		
-		probe.ind.filtered<-1:nrow(annot)
-		
-		if(snp){
-			snp.filter<-which(!annot$`SNPs 3` & !annot$`SNPs 5` & !annot$`SNPs Full`)
-			probe.ind.filtered<-intersect(probe.ind.filtered, snp.filter)
-		}
-		
-		if(somatic){
-			somatic.filter<-which(!annot$Chromosome %in% c("chrX", "chrY"))
-			probe.ind.filtered<-intersect(probe.ind.filtered, somatic.filter)
-		}
-		
-		if(context && inherits(rnb.set, "RnBeadSet")){
-			context.filter<-grep("cg", rownames(annot))
-			probe.ind.filtered<-intersect(probe.ind.filtered, context.filter)
-		}
-		return(probe.ind.filtered)
-	}
-	
-	
-	filter.quality<-function(
-			rnb.set,
-			probe.ind,
-			beads=TRUE,
-			min.beads=3,
-			intensity=TRUE,
-			na=TRUE
-			){
-		
-		annot<-rnb.annnotation2data.frame(annotation(rnb.set))
-		
-		qf<-1:nrow(annot)
-		
-		if(beads){
-			b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
-			qf.b<-which(rowSums(b.raw>=min.beads)==ncol(b.raw))
-			qf<-intersect(qf, qf.b)
-		}
-		
-		if(intensity){
-			
-			MplusU<-M.raw+U.raw
-			
-			hm450_ann<-readRDS(file.path(GLOBAL_DD, "hm450_cg_annot.RDS"))
-			
-			MplusU.I<-MplusU[hm450_ann$Design=="I",]
-			MplusU.II<-MplusU[hm450_ann$Design=="II",]
-			
-			MU.q001.I<-sort(as.numeric(MplusU.I))[ceiling(MIN_INT_QUANT*nrow(MplusU.I)*ncol(MplusU.I))]
-			MU.q099.I<-sort(as.numeric(MplusU.I))[ceiling(MAX_INT_QUANT*nrow(MplusU.I)*ncol(MplusU.I))]
-			
-			MU.q001.II<-sort(as.numeric(MplusU.II))[ceiling(MIN_INT_QUANT*nrow(MplusU.II)*ncol(MplusU.II))]
-			MU.q099.II<-sort(as.numeric(MplusU.II))[ceiling(MAX_INT_QUANT*nrow(MplusU.II)*ncol(MplusU.II))]
-			
-			MplusU.f<-matrix(FALSE, nrow=nrow(MplusU), ncol=ncol(MplusU))
-			
-			MplusU.f[hm450_ann$Design=="I",]<-MplusU.I>MU.q001.I & MplusU.I<MU.q099.I
-			MplusU.f[hm450_ann$Design=="II",]<-MplusU.II>MU.q001.II & MplusU.II<MU.q099.II
-			
-			qf.MU<-which(rowSums(MplusU.f)==ncol(MplusU.f))
-			
-			
-			
-			qf<-intersect(qf, qf.MU)
-			
-		}
-		
-		if(na){
-			
-			##### filter for missing and non-CG probes
-			
-			na.filter<-which(rowSums(is.na(meth.data))<1)
-			qf<-intersect(qf, na.filter)
-		}
-		
-		return(qf)
-	}
-	
 	################################# QUALITY FILTERING ######################################
-	FILTER_QUALITY<- FILTER_BEADS && FILTER_INTENSITY && FILTER_NA
+	FILTER_QUALITY<- FILTER_BEADS || FILTER_INTENSITY
 	
 	if(FILTER_QUALITY){
 		M.raw<-RnBeads:::M(rnb.set, row.names=TRUE)
 		U.raw<-RnBeads:::U(rnb.set, row.names=TRUE)
+		b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
 		
-		if("REF_CT_COLUMN" %in% ls()){
+		if(!is.na(REF_CT_COLUMN)){
 			
 			M.raw<-M.raw[,subs,drop=FALSE]
 			U.raw<-U.raw[,subs,drop=FALSE]
+			b.raw<-b.raw[,subs, drop=FALSE]
 			
 		}
 		
 		saveRDS(M.raw, file.path(OUTPUTDIR, "Mint.RDS"))
 		saveRDS(U.raw, file.path(OUTPUTDIR, "Uint.RDS"))
-		
-		b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
-		
-		if("REF_CT_COLUMN" %in% ls()){
-			b.raw<-b.raw[,subs, drop=FALSE]
-		}
-		
 		saveRDS(b.raw, file.path(OUTPUTDIR, "Nbeads.RDS"))
 		
-		
-		#M<-M[rownames(meth.data),]
-		#U<-U[rownames(meth.data),]
-		
-		if(MATLAB_EXPORT){
-			#writeMat(con=sprintf("%s/M.mat", OUTPUTDIR), M=M.raw)
-			#writeMat(con=sprintf("%s/U.mat", OUTPUTDIR), U=U.raw)
-			writeMat(con=sprintf("%s/MandU.mat", OUTPUTDIR), M=M.raw, U=U.raw)
-		}
-		
-		qual.filter<-filter.quality(rnb.set,beads=FILTER_BEADS, min.beads=MIN_N_BEADS, intensity = FILTER_INTENSITY, na=FILTER_NA )
+		qual.filter<-filter.quality(rnb.set,beads=FILTER_BEADS, min.beads=MIN_N_BEADS, intensity = FILTER_INTENSITY, 
+		                            min.int.quant=MIN_INT_QUANT, max.int.quant=MAX_INT_QUANT,subs = subs)
 		
 		save(qual.filter, file=sprintf("%s/quality.filter.RData", OUTPUTDIR))
-		
-		if(MATLAB_EXPORT){
-			writeMat(con=sprintf("%s/quality.filter.mat", OUTPUTDIR), qualityFilterMUbeads=qf.MU.beads)
-		}
 		
 	}else{
 		qual.filter<-1:nrow(rnb.set@meth.sites)
 	}
+	if(FILTER_NA){
+	  qual.filter <- filter.nas(rnb.set,subs=subs,qual.filter)
+	}
 	########################################## ANNOTATION FILTERING ###################################################
-	FILTER_ANNOTATION<-FILTER_CONTEXT && FILTER_SNP && FILTER_SOMATIC
+	FILTER_ANNOTATION<-FILTER_CONTEXT || FILTER_SNP || FILTER_SOMATIC
 	
 	if(FILTER_ANNOTATION){
 		
-		annot.filter<-filter.annotation(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, somatic = FILTER_SOMATIC)
+		annot.filter<-filter.annotation(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, snp.list = snp.list,
+		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
-		if(MATLAB_EXPORT){
-			writeMat(con=sprintf("%s/annotation.filter.mat", OUTPUTDIR), annotFilter=annot.filter)
-		}
-	}else{
+		}else{
 		annot.filter<-1:nrow(rnb.set@meth.sites)
 	}
 	
 	total.filter<-intersect(qual.filter, annot.filter)
-	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), intersect(qual.filter, annot.filter)))
+	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
+	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
 	
 	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f))
+}
+
+#' filter.quality
+#' 
+#' This functions filters the CpG sites in the given rnb.set for quality criteria specified in the arguments.
+#' 
+#' @param rnb.set An object of type \code{\link{RnBSet}} containing the CpG sites used for filtering, all well as intensity and
+#'                 coverage informatio, if provided.
+#' @param beads Flag indicating if sites not having more than \code{min.beads} number of beads in all samples are to be removed.
+#' @param min.beads Integer specifying the minimum number of beads required for including the site in the analysis.
+#' @param intensity Flag indicating if sites are to be filtered according to their intensity information.
+#' @param min.int.quant Lower quantile of intensities which is to be removed.
+#' @param max.int.quant Upper quantile of intensities which is to be removed.
+#' @param subs Argument specifying the subset of samples to be used
+#' @return The indices of the sites that are to be kept.
+#' @details If \code{intensity} is set, those probes with lower/higher intensity in one of the channels than \code{min.int.quant}/
+#'            \code{max.int.quant} are removed.
+filter.quality<-function(
+  rnb.set,
+  beads=TRUE,
+  min.beads,
+  intensity=TRUE,
+  min.int.quant=0.1,
+  max.int.quant=0.95,
+  subs
+){
+  
+  annot <- annotation(rnb.set)
+  
+  qf<-1:nrow(annot)
+  
+  M.raw <- M(rnb.set, row.names=TRUE)
+  U.raw <- U(rnb.set, row.names=TRUE)
+  b.raw <- covg(rnb.set, row.names=TRUE)
+  
+  if(!is.null(subs)){
+    M.raw<-M.raw[,subs,drop=FALSE]
+    U.raw<-U.raw[,subs,drop=FALSE]
+    b.raw<-b.raw[,subs, drop=FALSE]
+  }
+  
+  if(beads){
+    b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
+    qf.b<-which(rowSums(b.raw>=min.beads)==ncol(b.raw))
+    logger.info(paste(length(setdiff(qf,qf.b)),"sites removed in bead count filtering."))
+    qf<-intersect(qf, qf.b)
+  }
+  
+  if(intensity){
+    
+    MplusU<-M.raw+U.raw
+    
+    hm450_ann <- annotation(rnb.set)
+    
+    MplusU.I<-MplusU[hm450_ann$Design=="I",]
+    MplusU.II<-MplusU[hm450_ann$Design=="II",]
+    
+    MU.q001.I<-sort(as.numeric(MplusU.I))[ceiling(min.int.quant*nrow(MplusU.I)*ncol(MplusU.I))]
+    MU.q099.I<-sort(as.numeric(MplusU.I))[ceiling(max.int.quant*nrow(MplusU.I)*ncol(MplusU.I))]
+    
+    MU.q001.II<-sort(as.numeric(MplusU.II))[ceiling(min.int.quant*nrow(MplusU.II)*ncol(MplusU.II))]
+    MU.q099.II<-sort(as.numeric(MplusU.II))[ceiling(max.int.quant*nrow(MplusU.II)*ncol(MplusU.II))]
+    
+    MplusU.f<-matrix(FALSE, nrow=nrow(MplusU), ncol=ncol(MplusU))
+    
+    MplusU.f[hm450_ann$Design=="I",]<-MplusU.I>MU.q001.I & MplusU.I<MU.q099.I
+    MplusU.f[hm450_ann$Design=="II",]<-MplusU.II>MU.q001.II & MplusU.II<MU.q099.II
+    
+    qf.MU<-which(rowSums(MplusU.f)==ncol(MplusU.f))
+    logger.info(paste(length(setdiff(qf,qf.MU)),"sites removed in intensity filtering."))
+    
+    qf<-intersect(qf, qf.MU)
+  }
+  return(qf)
+}
+
+#' filter.nas
+#' 
+#' This function removes any site that contains a missing methylation value in a sample.
+#' 
+#' @param rnb.set An object of type \code{\link{RnBSet}} containing methylation information.
+#' @param qf.qual Vector of indices that survided quality filtering
+#' @param subs Optional argument specifying the subset of samples to be used
+#' @return Vector of indices that survived NA filtering.
+filter.nas <- function(rnb.set,
+                       subs,
+                       qf.qual){
+  meth.data <- meth(rnb.set)[,subs,drop=FALSE]
+  na.filter<-which(rowSums(is.na(meth.data))<1)
+  logger.info(paste(length(setdiff(qf.qual,na.filter)),"sites removed in NA filtering"))
+  qf.qual<-intersect(qf.qual, na.filter)
+  return(qf.qual)
+}
+
+#' filter.annotation
+#' 
+#' This function removes sites in SNP, sex-chromosomal, or non-CG context.
+#' 
+#' @param rnb.set An object of type \code{\link{RnBSet}} containg annotation information.
+#' @param snp Flag indicating if snps are to be removed. Either SNPs annotated in the RnBeads annotation object of specified as an
+#'            additional file with one SNP identifier per row in \code{snp.list}.
+#' @param snp.list Path to a file containing known SNPs. One SNP identifier should be present per row.
+#' @param somatic Flag indicating if only somatic probes are to be kept.
+#' @param context Flag indicating if probes in non-CpG context are to be removed.
+#' @param qual.filter Vector of indices removed during quality filtering.
+#' @return A vector of indices of sites surviving the annotation filter criteria.
+filter.annotation<-function(
+  rnb.set,
+  snp=TRUE,
+  snp.list,
+  somatic=TRUE,
+  context=TRUE,
+  qual.filter=NULL)
+{
+  annot<-annotation(rnb.set)
+  
+  if(!is.null(qual.filter)){
+    probe.ind.filtered <- qual.filter
+  }else{
+    probe.ind.filtered <- 1:nrow(annot)
+  }
+  
+  if(snp){
+    if(is.null(snp.list)){
+      snp.filter<-which(!annot$`SNPs 3` & !annot$`SNPs 5` & !annot$`SNPs Full`)
+    }else{
+      snps <- readLines(snp.list)
+      snp.filter <- which(!(row.names(annot) %in% snps))
+    }
+    logger.info(paste(length(setdiff(probe.ind.filtered,snp.filter)),"sites removed in SNP filtering"))
+    probe.ind.filtered<-intersect(probe.ind.filtered, snp.filter)
+  }
+  
+  if(somatic){
+    somatic.filter<-which(!annot$Chromosome %in% c("chrX", "chrY"))
+    logger.info(paste(length(setdiff(probe.ind.filtered,somatic.filter)),"sites removed in somatic sites filtering"))
+    probe.ind.filtered<-intersect(probe.ind.filtered, somatic.filter)
+  }
+  
+  if(context && inherits(rnb.set, "RnBeadSet")){
+    context.filter<-grep("cg", rownames(annot))
+    logger.info(paste(length(setdiff(probe.ind.filtered,context.filter)),"sites removed in CG context filtering"))
+    probe.ind.filtered<-intersect(probe.ind.filtered, context.filter)
+  }
+  return(probe.ind.filtered)
 }
