@@ -1,0 +1,16 @@
+Package: DecompPipeline
+Title: Preparation pipeline for MeDeCom
+Description: Preparation pipeline for MeDeCom
+Maintainer: Michael Scherer <mscherer@mpi-inf.mpg.de>
+Authors@R: c(
+   person ( "Pavlo", "Lutsik", email="p.lutsik@mx.uni-saarland.de", role = c("aut")),
+   person ( "Michael", "Scherer", email="mscherer@mpi-inf.mpg.de", role = c("cre","aut"))
+ )
+Date: 2018-06-25
+Version: 0.1.1
+Depends:
+    R (>= 3.2.0),
+    MeDeCom,
+    RnBeads
+License: GPL-3
+RoxygenNote: 6.0.1

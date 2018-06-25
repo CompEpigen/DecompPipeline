@@ -2,20 +2,61 @@
 #' 
 #' This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
 #' 
-#' @param rnb.set An object of type \code{\link{RnBSet}} containing methylation, sample and optional coverage information.
+#' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.
 #' @param MARKER_SELECTION A vector of strings representing marker selection methods. Available method are \itemize{
-#'                                  \item pheno Selected are the top \code{N_MARKERS} site that differ between the phenotypic
+#'                                  \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
 #'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
 #'                                         selected by employing limma on the methylation matrix.
-#'                                  \item houseman2012 The 50k sites reported as cell-type specific in the Houseman's reference-
-#'                                         based deconvolution.
+#'                                  \item{"\code{houseman2012}"} The 50k sites reported as cell-type specific in the Houseman's reference-
+#'                                         based deconvolution. See Houseman et.al. 2012.
+#'                                  \item{"\code{houseman2014}"} Selects the sites said to be linked to cell type composition by \code{RefFreeEWAS},
+#'                                         which is similar to surrogate variable analysis. See Houseman et.al. 2014.
+#'                                  \item{"\code{jaffe2014}"} The sites stated as related to cell-type composition Jaffe et.al. 2014.
+#'                                  \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
+#'                                         types with F-statistics. If this option is selected, \code{REF_DATA_SET} and \code{REF_PHENO_COLUMN}
+#'                                         need to be specified.
+#'                                  \item{"\code{random}"} Sites are randomly selected.
+#'                                  \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
+#'                                  \item{"\code{var}"} Selects the most variable sites.
+#'                                  \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
+#'                                  \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
+#'                                       across samples.
+#'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
+#' @param N_MARKERS The number of sites to be selected. Defaults to 5000.
+#' @param WRITE_FILES Flag indicating if the selected sites are to be stored on disk.
+#' @param WD Path to the working directory used for analyis, or data preparation.
+#' @param REF_DATA_SET Name of the reference data set in \code{WD}, if \code{rowFstat} is selected.
+#' @param REF_PHENO_COLUMN Optional argument stating the column name of the phenotypic table of \code{REF_DATA_SET} with
+#'                      the reference cell type.
+#' @param N_PRIN_COMP Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
+#' @param RANGE_DIFF Optional argument specifying the difference between maximum and minimum required.
+#' @param CUSTOM_MARKER_FILE Optional argument containing a file that specifies the indices used for employing MeDeCom.
+#' @return List of indices, one entry for each marker selection method specified by \code{MARKER_SELECTION}. The indices correspond
+#'          to the sites that should be used in \code{rnb.set}.
+#' @details For methods "\code{houseman2012}" and "\code{jaffe2014}", a predefined set of markers is used. Since those correspond to
+#'          absolute indices on the chip, the provided \code{rnb.set} must not be preprocessed and therefore still contain all sites.
+#'          For the other metods, you may used \code{\link{prepare_data}} to filter sites for quality and context.
+#' @references \itemize{
+#'             \item{1.} Houseman, E. A., Accomando, W. P., Koestler, D. C., Christensen, B. C., Marsit, C. J., Nelson, H. H., ..., Kelsey, K.
+#'                 T. (2012). DNA methylation arrays as surrogate measures of cell mixture distribution. BMC Bioinformatics, 13. 
+#'             \item{2.} Houseman, E. A., Molitor, J., & Marsit, C. J. (2014). Reference-free cell mixture adjustments in analysis of 
+#'                 DNA methylation data. Bioinformatics, 30(10), 1431-1439. https://doi.org/10.1093/bioinformatics/btu029
+#'             \item{3.} Jaffe, A. E., & Irizarry, R. A. (2014). Accounting for cellular heterogeneity is critical in epigenome-wide 
+#'                 association studies. Genome Biology, 15(2), R31. https://doi.org/10.1186/gb-2014-15-2-r31
+#' }
+#' @export
 prepare_CG_subsets<-function(
 		rnb.set,
 		MARKER_SELECTION,
 		N_MARKERS=5000,
 		WRITE_FILES=FALSE,
-		WD=NA
+		WD=NA,
+		REF_DATA_SET=NULL,
+		REF_PHENO_COLUMN=NULL,
+		N_PRIN_COMP=10,
+		RANGE_DIFF=0.05,
+		CUSTOM_MARKER_FILE=""
 		)
 {
   require("RnBeads")
@@ -63,8 +104,9 @@ prepare_CG_subsets<-function(
 		}
 		
 		if(MARKER_SELECTION[group]=="houseman2012" ){
-		  if(file.exists(sprintf("%s/houseman.50k.markers.RDS", WD))){
-			  houseman.50k.markers<-readRDS(sprintf("%s/houseman.50k.markers.RDS", WD))
+		  loc <- system.file(file.path("extdata","houseman.50k.markers.RDS"),package="DecompPipeline")
+		  if(file.exists(loc)){
+			  houseman.50k.markers<-readRDS(loc)
 			  ind<-intersect(ind, houseman.50k.markers)
 		  }
 		}
@@ -135,7 +177,10 @@ prepare_CG_subsets<-function(
 				rfBootGrandMean2 <- rfBootGrandSum2/100
 				rfBootSE <- sqrt((100/99)*(rfBootGrandMean2-rfBootGrandMean*rfBootGrandMean))
 		  }
-				
+			
+			ncgs <- nrow(meth.data)
+			nnas <- apply(is.na(meth.data),1,sum)
+			notna.rows <- which(nnas==0)
 			if(is.null(dim(tstatDelta))){
 					tstatDeltaAll<-rep(NA, ncgs)
 					tstatDeltaAll[notna.rows]<-tstatDelta
@@ -153,180 +198,80 @@ prepare_CG_subsets<-function(
 		}
 		
 		if(MARKER_SELECTION[group]=="jaffe2014"){
-			houseman.50k.markers<-readRDS(sprintf("%s/jaffe.irrizzary.markers.600.RDS", DD))
-			ind<-intersect(ind, houseman.50k.markers)
+			jaffe.markers <- readRDS(system.file(file.path("extdata","jaffe.irrizzary.markers.600.RDS"),package="DecompPipeline"))
+			ind<-intersect(ind, jaffe.markers)
 		}
 		
-		if(all(grepl("rowFstat", MARKER_SELECTION[group])) && "REF_DATA_SET" %in% ls() && "REF_PHENO_COLUMN" %in% ls()){
-			
-			require(genefilter)
-			
-			load.env<-new.env(parent=emptyenv())
-			
-			load(file.path(DATA_DIR, REF_DATA_SET, "data.set.RData"), envir = load.env)
-			load(file.path(DATA_DIR, REF_DATA_SET, "pheno.RData"), envir = load.env)
-			
-			meth.data.ref<-get("meth.data", envir = load.env)
-			pheno.data.ref<-get("pheno.data", envir = load.env)
-			
-			marker.fstat<-rowFtests(meth.data.ref[ind,], as.factor(pheno.data.ref[[REF_PHENO_COLUMN]]))
-			
-			if(MARKER_SELECTION[group]=="rowFstat1k"){
-				NTOP<-1000
-			}else if(MARKER_SELECTION[group]=="rowFstat5k"){
-				NTOP<-5000
-			}else if(MARKER_SELECTION[group]=="rowFstat10k"){
-				NTOP<-10000
-			}else if(MARKER_SELECTION[group]=="rowFstat15k"){
-				NTOP<-15000
-			}else if(MARKER_SELECTION[group]=="rowFstat20k"){
-				NTOP<-20000
-			}
-			
-			subset<-which(rank(-marker.fstat$statistic)<=NTOP)
-			ind<-ind[subset]						
+		if(MARKER_SELECTION[group]==("rowFstat")){
+		  ####### This needs to be checked: it doesn't seem to do what it should
+  		if(!(is.null(REF_DATA_SET) || is.null(REF_PHENO_COLUMN))){
+  			
+  			require(genefilter)
+  			
+  			load.env<-new.env(parent=emptyenv())
+  			
+  			load(file.path(WD, REF_DATA_SET, "data.set.RData"), envir = load.env)
+  			load(file.path(WD, REF_DATA_SET, "pheno.RData"), envir = load.env)
+  			
+  			meth.data.ref<-get("trueT", envir = load.env)
+  			pheno.data.ref<-get("pd.ref", envir = load.env)
+  			
+  			marker.fstat<-rowFtests(meth.data.ref[ind,], unique(as.factor(pheno.data.ref[[REF_PHENO_COLUMN]])))
+  			
+  			subset<-which(rank(-marker.fstat$statistic)<=N_MARKERS)
+  			ind<-ind[subset]
+  		}else{
+  		  logger.error("REF_DATA_SET and REF_PHENO_COLUMN need to be specified, if rowFstat is selected.")
+  		}
 		}
 		
-		if(MARKER_SELECTION[group]=="random1k"){
-			subset<-sample.int(length(ind), min(1000, length(ind)))
+		if(MARKER_SELECTION[group]=="random"){
+			subset<-sample.int(length(ind), min(N_MARKERS, length(ind)))
 			ind<-ind[subset]
 		}
 		
-		if(MARKER_SELECTION[group]=="random5k"){
-			subset<-sample.int(length(ind), min(5000, length(ind)))
-			ind<-ind[subset]
-		}
-		
-		if(MARKER_SELECTION[group]=="random10k"){
-			subset<-sample.int(length(ind), min(10000, length(ind)))
-			ind<-ind[subset]
-		}
-		
-		if(MARKER_SELECTION[group]=="random25k"){
-			subset<-sample.int(length(ind), min(25000, length(ind)))
-			ind<-ind[subset]
-		}
-		
-		if(MARKER_SELECTION[group]=="random50k"){
-			subset<-sample.int(length(ind), min(50000, length(ind)))
-			ind<-ind[subset]
-		}
-		
-		if(!"N_PRIN_COMP" %in% ls()){
-			N_PRIN_COMP<-10
-		}
-		
-		if(MARKER_SELECTION[group]=="pca500"){
+		if(MARKER_SELECTION[group]=="pca"){
 			
 			meth.data.subs<-meth.data[ind,]
 			pca<-prcomp(t(meth.data.subs))
 			rot<-pca$rotation[,1:min(N_PRIN_COMP,ncol(pca$rotation))]
 			
 			pca.ind<-integer()
+			add.sites <- ceiling(N_MARKERS/N_PRIN_COMP)
 			for(cix in 1:min(N_PRIN_COMP,ncol(pca$rotation))){
-				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:500])
+				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:add.sites])
 			}
 			ind<-ind[sort(pca.ind)]	
 		}
 		
-		
-		if(MARKER_SELECTION[group]=="pca1k"){
-			meth.data.subs<-meth.data[ind,]
-			pca<-prcomp(t(meth.data.subs))
-			rot<-pca$rotation[,1:min(N_PRIN_COMP,ncol(pca$rotation))]
+		if(MARKER_SELECTION[group] == "var"){
 			
-			pca.ind<-integer()
-			for(cix in 1:min(N_PRIN_COMP,ncol(pca$rotation))){
-				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:1000])
-			}
-			ind<-ind[sort(pca.ind)]	
+			sds<-apply(meth.data[ind,], 1, sd)
+			ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),N_MARKERS)]]
 		}
 		
-		if(MARKER_SELECTION[group]=="pca5k"){
-			meth.data.subs<-meth.data[ind,]
-			pca<-prcomp(t(meth.data.subs))
-			rot<-pca$rotation[,1:min(N_PRIN_COMP,ncol(pca$rotation))]
-			
-			pca.ind<-integer()
-			for(cix in 1:min(N_PRIN_COMP,ncol(pca$rotation))){
-				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:5000])
-			}
-			ind<-ind[sort(pca.ind)]	
-		}
-		
-		if(MARKER_SELECTION[group]=="pca10k"){
-			meth.data.subs<-meth.data[ind,]
-			pca<-prcomp(t(meth.data.subs))
-			rot<-pca$rotation[,1:min(N_PRIN_COMP,ncol(pca$rotation))]
-			
-			pca.ind<-integer()
-			for(cix in 1:min(N_PRIN_COMP,ncol(pca$rotation))){
-				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:10000])
-			}
-			ind<-ind[sort(pca.ind)]	
-		}
-		
-		if(grepl("var", MARKER_SELECTION[group])){
+		if(MARKER_SELECTION[group] == "hybrid"){
 			
 			sds<-apply(meth.data[ind,], 1, sd)
 			
-			if(MARKER_SELECTION[group] == "var1k"){
-				ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),1000)]]
-			}else if(MARKER_SELECTION[group] == "var5k"){
-				ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),5000)]]
-			}else if(MARKER_SELECTION[group] == "var10k"){
-				ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),10000)]]
-			}else if(MARKER_SELECTION[group] == "var50k"){
-				ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),50000)]]
-			}else if(MARKER_SELECTION[group] == "var100k"){
-				ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),100000)]]
-			}
-		}
-		
-		if(grepl("hybrid", MARKER_SELECTION[group])){
-			
-			sds<-apply(meth.data[ind,], 1, sd)
-			
-			if(MARKER_SELECTION[group] == "hybrid1k"){
-				var.set<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),500)]]
-				random.set<-sample(setdiff(ind,var.set), 500)
-			}else if(MARKER_SELECTION[group] == "hybrid5k"){
-				var.set<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),2500)]]
-				random.set<-sample(setdiff(ind,var.set), 2500)
-			}else if(MARKER_SELECTION[group] == "hybrid10k"){
-				var.set<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),5000)]]
-				random.set<-sample(setdiff(ind,var.set), 5000)
-			}else if(MARKER_SELECTION[group] == "hybrid50k"){
-				var.set<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),25000)]]
-				random.set<-sample(setdiff(ind,var.set), 25000)
-			}
+			var.set<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),ceiling(N_MARKERS/2))]]
+			random.set<-sample(setdiff(ind,var.set), floor(N_MARKERS/2))
 			
 			ind<-sort(c(var.set, random.set))
 			rm(var.set)
 			rm(random.set)
 		}
 		
-		if(grepl("var", MARKER_SELECTION[group])){
-			
+		if(MARKER_SELECTION[group] == "range"){
 			ranges<-apply(meth.data[ind,], 1, range)
-			
 			ranges<-ranges[2,]-ranges[1,]
-			
-			if(MARKER_SELECTION[group] == "range005"){
-				ind<-ind[ranges>0.05]
-			}else if(MARKER_SELECTION[group] == "range01"){
-				ind<-ind[ranges>0.1]
-			}else if(MARKER_SELECTION[group] == "range015"){
-				ind<-ind[ranges>0.15]
-			}else if(MARKER_SELECTION[group] == "range02"){
-				ind<-ind[ranges>0.2]
-			}
+			ind<-ind[ranges>RANGE_DIFF]
 			rm(ranges)
 		}
 		
 		if(MARKER_SELECTION[group]=="custom"){
-			if(file.exists(sprintf("%s/%s",DD, CUSTOM_MARKER_FILE))){
-				custom_filter<-readRDS(sprintf("%s/%s",DD,CUSTOM_MARKER_FILE))
+			if(file.exists(sprintf("%s/%s",WD, CUSTOM_MARKER_FILE))){
+				custom_filter<-readRDS(sprintf("%s/%s",WD,CUSTOM_MARKER_FILE))
 				ind<-intersect(ind, custom_filter)
 			}
 		}
@@ -336,7 +281,6 @@ prepare_CG_subsets<-function(
 		}
 		
 		cg_groups[[group]]<-ind
-		
 		
 	}
 	return(cg_groups)

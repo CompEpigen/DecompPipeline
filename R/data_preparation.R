@@ -14,7 +14,7 @@
 #' 
 #' This functions presumably prepares data for a MeDeCom run.
 #' 
-#' @param RNB_SET An object of type \code{\link{RnBSet}} for which analysis is to be performed
+#' @param RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
 #' @param WORK_DIR A path to a existing directory, in which the results are to be stored
 #' @param DATASET A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
 #'                 descriptive name of the analysis.
@@ -28,7 +28,7 @@
 #' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
 #' @param NORMALIZATION Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob"}.
 #' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
-#' @param REF_RNB_SET An object of type \code{\link{RnBSet}} containing methylation information on reference cell types.
+#' @param REF_RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information on reference cell types.
 #' @param REF_RNB_CT_COLUMN Column name in \code{REF_RNB_SET} used to extract methylation information on the reference cell types.
 #' @param PREPARE_TRUE_PROPORTIONS Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
 #'                          with Houseman's reference-based deconvolution approach.
@@ -42,6 +42,8 @@
 #' @param MIN_N_BEADS Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.
 #' @param FILTER_INTENSITY  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
 #'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}).
+#' @param MIN_INT_QUANT Lower quantile of intensities which is to be removed.
+#' @param MAX_INT_QUANT Upper quantile of intensities which is to be removed.
 #' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
 #' @param FILTER_CONTEXT Flag indicating if only CG probes are to be kept.
 #' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
@@ -51,6 +53,7 @@
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
+#' @export
 prepare_data<-function(
 		RNB_SET, 
 		WORK_DIR,
@@ -153,7 +156,10 @@ prepare_data<-function(
 		trueT<-do.call("cbind", meth.ref.ct)
 		colnames(trueT)<-unique(ct)
 		
-		save(trueT, file=sprintf("%s/trueT.RData", OUTPUTDIR))
+		ref.set.save <- file.path(OUTPUTDIR,"RefSet")
+		if(!file.exists(ref.set.save)) dir.create(ref.set.save)
+		save(trueT, file=sprintf("%s/data.set.RData", ref.set.save))
+		save(pd.ref, file=sprintf("%s/pheno.RData", ref.set.save))
 		
 	}else if(!is.na(REF_CT_COLUMN)){
 		
@@ -273,7 +279,7 @@ prepare_data<-function(
 #' 
 #' This functions filters the CpG sites in the given rnb.set for quality criteria specified in the arguments.
 #' 
-#' @param rnb.set An object of type \code{\link{RnBSet}} containing the CpG sites used for filtering, all well as intensity and
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing the CpG sites used for filtering, all well as intensity and
 #'                 coverage informatio, if provided.
 #' @param beads Flag indicating if sites not having more than \code{min.beads} number of beads in all samples are to be removed.
 #' @param min.beads Integer specifying the minimum number of beads required for including the site in the analysis.
@@ -347,7 +353,7 @@ filter.quality<-function(
 #' 
 #' This function removes any site that contains a missing methylation value in a sample.
 #' 
-#' @param rnb.set An object of type \code{\link{RnBSet}} containing methylation information.
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information.
 #' @param qf.qual Vector of indices that survided quality filtering
 #' @param subs Optional argument specifying the subset of samples to be used
 #' @return Vector of indices that survived NA filtering.
@@ -365,7 +371,7 @@ filter.nas <- function(rnb.set,
 #' 
 #' This function removes sites in SNP, sex-chromosomal, or non-CG context.
 #' 
-#' @param rnb.set An object of type \code{\link{RnBSet}} containg annotation information.
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.
 #' @param snp Flag indicating if snps are to be removed. Either SNPs annotated in the RnBeads annotation object of specified as an
 #'            additional file with one SNP identifier per row in \code{snp.list}.
 #' @param snp.list Path to a file containing known SNPs. One SNP identifier should be present per row.

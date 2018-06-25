@@ -4,15 +4,16 @@
 #.libPaths("/DEEP_fhgfs/projects/plutsik/Rlib_clean_RnBeads/")
 DATA.DIR="/DEEP_fhgfs/projects/plutsik/projects/neuron/"
 PROJECT.DIR = "/TL/deep/projects/work/mscherer/projects/MeDeCom/test/"
-data<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptData.txt"))
-pd<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptSampleSheet.txt"), sep='\t', header=TRUE)
+#data<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptData.txt"))
+#pd<-read.table(file.path(DATA.DIR, "20170419_GasSort_GuiSort_manuscriptSampleSheet.txt"), sep='\t', header=TRUE)
 
 
-probe.list<-rownames(data)
+#probe.list<-rownames(data)
 
+library(DecompPipeline)
 library(RnBeads)
-rnb.options(disk.dump.big.matrices=FALSE)
-rnb.set<-RnBeadSet(pd, probe.list, as.matrix(data))
+#rnb.options(disk.dump.big.matrices=FALSE)
+#rnb.set<-RnBeadSet(pd, probe.list, as.matrix(data))
 
 rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/processed/TCGA_OV___AH/rnbeads_report/rnbSet_preprocessed/")
 
@@ -27,8 +28,8 @@ res<-prepare_data(
 		ID_COLUMN=NA,
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
-		REF_RNB_SET=NA,
-		REF_RNB_CT_COLUMN=NA,
+		REF_RNB_SET="/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference.zip",
+		REF_RNB_CT_COLUMN="Cell/Tissue",
 		PREPARE_TRUE_PROPORTIONS=FALSE,
 		TRUE_A_TOKEN=NA,
 		HOUSEMAN_A_TOKEN=NA,
@@ -45,8 +46,13 @@ res<-prepare_data(
 
 cg_subsets<-prepare_CG_subsets(
 		res$rnb.set.filtered,
-		MARKER_SELECTION=c("houseman2014"),
-		WD=file.path(PROJECT.DIR,"data","foo_foo_none")
+		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range"),
+		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
+		N_MARKERS = 4242,
+		REF_DATA_SET = "RefSet",
+		REF_PHENO_COLUMN = "Cell/Tissue",
+		N_PRIN_COMP = 2,
+		RANGE_DIFF = 0.1
 )
 
 md.res<-start_medecom_analysis(
