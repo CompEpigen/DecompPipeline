@@ -26,7 +26,8 @@
 #' @param N_MARKERS The number of sites to be selected. Defaults to 5000.
 #' @param WRITE_FILES Flag indicating if the selected sites are to be stored on disk.
 #' @param WD Path to the working directory used for analyis, or data preparation.
-#' @param REF_DATA_SET Name of the reference data set in \code{WD}, if \code{rowFstat} is selected.
+#' @param REF_DATA_SET An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
+#'                      if \code{rowFstat} is selected.
 #' @param REF_PHENO_COLUMN Optional argument stating the column name of the phenotypic table of \code{REF_DATA_SET} with
 #'                      the reference cell type.
 #' @param N_PRIN_COMP Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
@@ -210,13 +211,15 @@ prepare_CG_subsets<-function(
   			
   			load.env<-new.env(parent=emptyenv())
   			
-  			load(file.path(WD, REF_DATA_SET, "data.set.RData"), envir = load.env)
-  			load(file.path(WD, REF_DATA_SET, "pheno.RData"), envir = load.env)
+  			if(inherits(REF_DATA_SET,"RnBSet")){
+  			  rnb.ref.set <- REF_DATA_SET
+  			}else{
+  			  rnb.ref.set <- load.rnb.set(REF_DATA_SET)
+  			}
+  			meth.data.ref <- meth(rnb.ref.set)
+  			pheno.data.ref <- pheno(rnb.ref.set)
   			
-  			meth.data.ref<-get("trueT", envir = load.env)
-  			pheno.data.ref<-get("pd.ref", envir = load.env)
-  			
-  			marker.fstat<-rowFtests(meth.data.ref[ind,], unique(as.factor(pheno.data.ref[[REF_PHENO_COLUMN]])))
+  			marker.fstat<-rowFtests(meth.data.ref[ind,], as.factor(pheno.data.ref[[REF_PHENO_COLUMN]]))
   			
   			subset<-which(rank(-marker.fstat$statistic)<=N_MARKERS)
   			ind<-ind[subset]

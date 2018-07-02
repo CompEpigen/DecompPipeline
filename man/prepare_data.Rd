@@ -6,28 +6,24 @@
 FUNCTIONS
 prepare_data}
 \usage{
-prepare_data(RNB_SET, WORK_DIR, DATASET, DATA_SUBSET,
-  SAMPLE_SELECTION_COL = NA, SAMPLE_SELECTION_GREP = NA,
-  PHENO_COLUMNS = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
-  NORMALIZATION = "none", REF_CT_COLUMN = NA, REF_RNB_SET = NA,
-  REF_RNB_CT_COLUMN = NA, PREPARE_TRUE_PROPORTIONS = FALSE,
-  TRUE_A_TOKEN = NA, HOUSEMAN_A_TOKEN = NA,
-  ESTIMATE_HOUSEMAN_PROP = FALSE,
+prepare_data(RNB_SET, WORK_DIR, analysis.name, SAMPLE_SELECTION_COL = NA,
+  SAMPLE_SELECTION_GREP = NA, PHENO_COLUMNS = NA,
+  ID_COLUMN = rnb.getOption("identifiers.column"), NORMALIZATION = "none",
+  REF_CT_COLUMN = NA, REF_RNB_SET = NA, REF_RNB_CT_COLUMN = NA,
+  PREPARE_TRUE_PROPORTIONS = FALSE, TRUE_A_TOKEN = NA,
+  HOUSEMAN_A_TOKEN = NA, ESTIMATE_HOUSEMAN_PROP = FALSE,
   FILTER_BEADS = !is.null(RNB_SET@covg.sites), MIN_N_BEADS = 3,
   FILTER_INTENSITY = inherits(RNB_SET, "RnBeadRawSet"), MIN_INT_QUANT = 0.1,
   MAX_INT_QUANT = 0.95, FILTER_NA = TRUE, FILTER_CONTEXT = TRUE,
   FILTER_SNP = TRUE, FILTER_SOMATIC = TRUE, snp.list = NULL)
 }
 \arguments{
-\item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed}
+\item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
 
 \item{WORK_DIR}{A path to a existing directory, in which the results are to be stored}
 
-\item{DATASET}{A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
+\item{analysis.name}{A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
 descriptive name of the analysis.}
-
-\item{DATA_SUBSET}{A string represeting the subset of samples in \code{RNB_SET} that has been used in the analysis. Only used
-to create a folder with a descriptive name of the analysis.}
 
 \item{SAMPLE_SELECTION_COL}{A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.}

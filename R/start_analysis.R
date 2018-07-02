@@ -1,3 +1,32 @@
+#' start_medecom_analysis
+#' 
+#' Wrapper for runMeDeCom, for data preprocessed through the DecombPipeline
+#' 
+#' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.
+#' @param WORK_DIR Working directory for the analysis.
+#' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
+#' @param Ks Vector of integers used as components in MeDeCom.
+#' @param LAMBDA_GRID Vector of doubles representing the regularization parameter in MeDeCom.
+#' @param SAMPLE_SUBSET Vector of indices of samples to be included in the analysis. If \code{NULL}, all samples are included.
+#' @param K_FIXED Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.
+#' @param WRITE_FILES Flag indicating if intermediate results are to be stored.
+#' @param opt.method Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).
+#' @param startT Inital matrix for T.
+#' @param startA Initial matrix for A.
+#' @param trueT True value for the T matrix.
+#' @param trueA True value for the A matrix.
+#' @param analysis.name Name of the analysis.
+#' @param folds Integer representing the number of folds used in the analysis.
+#' @param cores Integer representing the number of cores to be used in the analysis.
+#' @param itermax Maximum number of iterations
+#' @param ninit Number if initialtions.
+#' @param CLUSTER_SUBMIT Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE supported).
+#' @param CLUSTER_RDIR Path to an executable version of R.
+#' @param CLUSTER_HOSTLIST Regular expression, on which basis hosts are selected in the cluster environment.
+#' @param CLUSTER_MEMLIMIT the \code{memlimit} resource value of the cluster submission.
+#' @param CLEANUP Flag indicating if temprary files are to be deleted.
+#' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
+#' @export
 start_medecom_analysis<-function(
 		rnb.set=NULL,
 		WORK_DIR,
@@ -7,8 +36,16 @@ start_medecom_analysis<-function(
 		SAMPLE_SUBSET=NULL,
 		K_FIXED=NULL,
 		WRITE_FILES=TRUE,
+		opt.method = "MeDeCom.cppTAfact",
 		startT=NULL,
 		startA=NULL,
+		trueT = NULL,
+		trueA = NULL,
+		analysis.name="MeDeComRun",
+		folds=10,
+		cores=1,
+		itermax=1000,
+		ninit=100,
 		CLUSTER_SUBMIT=FALSE,
 		CLUSTER_RDIR=NA,
 		CLUSTER_HOSTLIST="*",
@@ -23,7 +60,9 @@ start_medecom_analysis<-function(
 	library(R.utils)
 	
 	#RDIR="/TL/deep-share/archive00/software/bin"
-	.libPaths(sprintf("%s/Rlib_test", WORK_DIR))
+	#.libPaths(sprintf("%s/Rlib_test", WORK_DIR))
+  
+  WORK_DIR <- file.path(WORK_DIR,analysis.name)
 	
 	if(is.na(CLUSTER_RDIR)){
 		if(any(grepl("deep", R.utils:::System$getHostname()))){
@@ -40,18 +79,16 @@ start_medecom_analysis<-function(
 #	DATA_DIR=sprintf("%s/projects/parameter_tuning/data", WORK_DIR)
 #	GLOBAL_DD<-sprintf("%s/projects/parameter_tuning/data/common", WORK_DIR)
 	
-	DD<-file.path(WORK_DIR, "data")
-	
 	if(TRUE){
 		print("Did not write the variable dump: should only be executed from an environment with all the variables set")	
 	}else{
 		var_list<-c(ANALYSIS)
-		system(sprintf("mkdir %s", WD))
-		dump(ls()[var_list], file=file.path(WD, "analysis_settings.RDump"))
+		system(sprintf("mkdir %s", WORK_DIR))
+		dump(ls()[var_list], file=file.path(WORK_DIR, "analysis_settings.RDump"))
 	}
 	
 	if(is.null(rnb.set)){
-		load(sprintf("%s/data.set.RData", DD))
+		load(sprintf("%s/data.set.RData", WORK_DIR))
 	}else{
 		meth.data<-meth(rnb.set)
 	}
@@ -85,9 +122,9 @@ start_medecom_analysis<-function(
 #	}
 	
 	if(WRITE_FILES){
-		saveRDS(LAMBDA_GRID, file=sprintf("%s/lambda_grid.RDS", WD))
+		saveRDS(LAMBDA_GRID, file=sprintf("%s/lambda_grid.RDS", WORK_DIR))
 		if(!is.null(SAMPLE_SUBSET)){
-			saveRDS(SAMPLE_SUBSET, file=sprintf("%s/sample_subset.RDS", WD))
+			saveRDS(SAMPLE_SUBSET, file=sprintf("%s/sample_subset.RDS", WORK_DIR))
 		}else{
 			SAMPLE_SUBSET<-1:ncol(meth.data)
 		}
@@ -161,20 +198,20 @@ start_medecom_analysis<-function(
 #		}
 #		
 #	}
-	if(!is.null(A_LOWER) && is.null(A_UPPER)){
-		saveRDS(A_LOWER, file=sprintf("%s/A_lower.RDS", WD))
-		saveRDS(A_UPPER, file=sprintf("%s/A_upper.RDS", WD))
-	}
+	# if(!is.null(A_LOWER) && is.null(A_UPPER)){
+	# 	saveRDS(A_LOWER, file=sprintf("%s/A_lower.RDS", WORK_DIR))
+	# 	saveRDS(A_UPPER, file=sprintf("%s/A_upper.RDS", WORK_DIR))
+	# }
 	
-	if(!is.na(K_FIXED)){
-		saveRDS(K_FIXED, file=sprintf("%s/fixed_T_cols.RDS", WD))
+	if(!is.null(K_FIXED)){
+		saveRDS(K_FIXED, file=sprintf("%s/fixed_T_cols.RDS", WORK_DIR))
 	}else{
 		K_FIXED<-NULL
 	}
 	
 #	if("START" %in% ls() && file.exists(START)){
-#		system(sprintf("cp %s %s/start.RData", START, WD))
-#		load(file.path(WD, START))
+#		system(sprintf("cp %s %s/start.RData", START, WORK_DIR))
+#		load(file.path(WORK_DIR, START))
 #		startT=result$T
 #		startA=result$A
 #	}else{
@@ -182,13 +219,29 @@ start_medecom_analysis<-function(
 #		startA=NULL
 #	}
 	
-	load(sprintf("%s/trueT.RData", DD))
-	if(file.exists(sprintf("%s/trueA.RData", DD))){
-		load(sprintf("%s/trueA.RData", DD))
-	}else{
-		trueA=NULL
+	if(!is.null(trueT)){
+	  if(is.character(trueT)){
+	    if(!file.exists(trueT)){
+	      logger.error(paste("File for trueT",trueT,"does not exist."))
+	    }else{
+		    load(trueT)
+	    }
+	  }else if(!is.matrix(trueT)){
+	    logger.error("Invalid value for trueT")
+	  }
 	}
 	
+	if(!is.null(trueA)){
+	  if(is.character(trueA)){
+	    if(!file.exists(trueA)){
+	      logger.error(paste("File for trueA",trueA,"does not exist."))
+	    }else{
+	      load(trueA)
+	    }
+	  }else if(!is.matrix(trueA)){
+	    logger.error("Invalid value for trueA")
+	  }
+	}
 #	if(PORTIONS && is.na(JOB_FILE)){
 #		JOB_FILE<-"/tmp/job_file"
 #	}
@@ -212,7 +265,7 @@ start_medecom_analysis<-function(
 	result<-runMeDeCom(data=meth.data, 
 			Ks=Ks,
 			lambdas=LAMBDA_GRID,
-			opt.method=sprintf("MeDeCom.%s",OPT_METHOD),
+			opt.method=opt.method,
 			cg_subsets=cg_groups,
 			sample_subset=SAMPLE_SUBSET,
 			startT=startT,
@@ -220,15 +273,15 @@ start_medecom_analysis<-function(
 			trueT=trueT,
 			trueA=trueA,
 			fixed_T_cols=K_FIXED,
-			NINIT=NINIT, 
-			ITERMAX=ITERMAX, 
-			NFOLDS=NFOLDS,
+			NINIT=ninit, 
+			ITERMAX=itermax, 
+			NFOLDS=folds,
 			N_COMP_LAMBDA=4,
-			NCORES=NCORES,
-			analysis.name=ANALYSIS,
+			NCORES=cores,
+			analysis.name=analysis.name,
 			use.ff=FALSE,
 			cluster.settings=cluster.settings,
-			temp.dir=WD,
+			temp.dir=WORK_DIR,
 			cleanup=CLEANUP,
 			verbosity=1L,
 			time.stamps=TRUE
@@ -237,25 +290,20 @@ start_medecom_analysis<-function(
 	
 	### TODO: Fix this once
 	
-	result@parameters$ANALYSIS <- ANALYSIS
-	result@parameters$GROUP_LISTS<-cg_groups
-	result@parameters$cg_subsets <- c(1:length(GROUP_LISTS))
-	result@parameters$NORMALIZATION <- NORMALIZATION    
-	result@parameters$ITERMAX<-ITERMAX
-	result@parameters$MARKER_SELECTION<- MARKER_SELECTION
-	result@parameters$NFOLDS<- NFOLDS
-	result@parameters$ANALYSIS_TOKEN<-ANALYSIS_TOKEN 
-	result@parameters$NINIT<-NINIT
-	result@parameters$DATASET<-DATASET 
-	result@parameters$DATA_SUBSET<-DATA_SUBSET 
+	result@parameters$ANALYSIS <- analysis.name
+	result@parameters$GROUP_LISTS <- cg_groups
+	result@parameters$cg_subsets <- c(1:length(cg_groups))
+	result@parameters$ITERMAX<-itermax
+	result@parameters$NFOLDS<- folds
+	result@parameters$NINIT<-ninit
 	help<- NULL
-	for ( i in 1:length(GROUP_LISTS)){
-		help <- append(help, GROUP_LISTS[[i]])
+	for ( i in 1:length(cg_groups)){
+		help <- append(help, cg_groups[[i]])
 	}
 	result@parameters$ORIGINAL_GROUP_LISTS<- help
 	
 	if(WRITE_FILES){
-		saveRDS(result, file=file.path(WD, "collected.result.RDS"))
+		saveRDS(result, file=file.path(WORK_DIR, "collected.result.RDS"))
 	}
 	
 	return(result)

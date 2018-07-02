@@ -2,3 +2,4 @@
 
 export(prepare_CG_subsets)
 export(prepare_data)
+export(start_medecom_analysis)

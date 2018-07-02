@@ -39,7 +39,8 @@ prepare_CG_subsets(rnb.set, MARKER_SELECTION, N_MARKERS = 5000,
 
 \item{WD}{Path to the working directory used for analyis, or data preparation.}
 
-\item{REF_DATA_SET}{Name of the reference data set in \code{WD}, if \code{rowFstat} is selected.}
+\item{REF_DATA_SET}{An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
+if \code{rowFstat} is selected.}
 
 \item{REF_PHENO_COLUMN}{Optional argument stating the column name of the phenotypic table of \code{REF_DATA_SET} with
 the reference cell type.}
@@ -56,6 +57,11 @@ List of indices, one entry for each marker selection method specified by \code{M
 }
 \description{
 This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
+}
+\details{
+For methods "\code{houseman2012}" and "\code{jaffe2014}", a predefined set of markers is used. Since those correspond to
+         absolute indices on the chip, the provided \code{rnb.set} must not be preprocessed and therefore still contain all sites.
+         For the other metods, you may used \code{\link{prepare_data}} to filter sites for quality and context.
 }
 \references{
 \itemize{

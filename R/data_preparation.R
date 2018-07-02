@@ -16,10 +16,8 @@
 #' 
 #' @param RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
 #' @param WORK_DIR A path to a existing directory, in which the results are to be stored
-#' @param DATASET A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
+#' @param analysis.name A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
 #'                 descriptive name of the analysis.
-#' @param DATA_SUBSET A string represeting the subset of samples in \code{RNB_SET} that has been used in the analysis. Only used
-#'                 to create a folder with a descriptive name of the analysis.
 #' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
 #'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
 #' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
@@ -57,8 +55,7 @@
 prepare_data<-function(
 		RNB_SET, 
 		WORK_DIR,
-		DATASET,
-		DATA_SUBSET,
+		analysis.name,
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS=NA,
@@ -85,9 +82,10 @@ prepare_data<-function(
 	suppressPackageStartupMessages(require(RnBeads))
 	suppressPackageStartupMessages(require(R.matlab))
 	
-	DATADIR<-file.path(WORK_DIR, "data")
-	OUTPUTDIR<-sprintf("%s/%s_%s_%s", DATADIR, DATASET, DATA_SUBSET, NORMALIZATION)
-	system(sprintf("mkdir %s", OUTPUTDIR))
+	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
+	if(!file.exists(OUTPUTDIR)){
+	  dir.create(OUTPUTDIR)
+	}
 	
 	################################# PREPARE THE PARAMETER TUNING RUN ############################################
 	
@@ -137,7 +135,7 @@ prepare_data<-function(
 		save(pheno.data, file=sprintf("%s/pheno.RData", OUTPUTDIR))
 	}
 	
-	if(!is.na(ID_COLUMN)){
+	if(!is.null(ID_COLUMN)){
 		sample_ids<-pd[subs,ID_COLUMN]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}

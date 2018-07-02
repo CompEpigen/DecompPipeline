@@ -15,7 +15,7 @@ library(RnBeads)
 #rnb.options(disk.dump.big.matrices=FALSE)
 #rnb.set<-RnBeadSet(pd, probe.list, as.matrix(data))
 
-rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/processed/TCGA_OV___AH/rnbeads_report/rnbSet_preprocessed/")
+rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/processed/TCGA_OV___AH/rnbeads_report/rnbSet_unnormalized/")
 
 res<-prepare_data(
 		RNB_SET=rnb.set, 
@@ -28,8 +28,8 @@ res<-prepare_data(
 		ID_COLUMN=NA,
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
-		REF_RNB_SET="/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference.zip",
-		REF_RNB_CT_COLUMN="Cell/Tissue",
+		REF_RNB_SET="/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference_unnormalized.zip",
+		REF_RNB_CT_COLUMN="tissue/cell type",
 		PREPARE_TRUE_PROPORTIONS=FALSE,
 		TRUE_A_TOKEN=NA,
 		HOUSEMAN_A_TOKEN=NA,
@@ -49,8 +49,8 @@ cg_subsets<-prepare_CG_subsets(
 		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range"),
 		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
 		N_MARKERS = 4242,
-		REF_DATA_SET = "RefSet",
-		REF_PHENO_COLUMN = "Cell/Tissue",
+		REF_DATA_SET = "/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference_unnormalized.zip",
+		REF_PHENO_COLUMN = "tissue/cell type",
 		N_PRIN_COMP = 2,
 		RANGE_DIFF = 0.1
 )
