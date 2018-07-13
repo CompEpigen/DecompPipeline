@@ -83,5 +83,5 @@ A list with four elements: \itemize{
 }
 }
 \description{
-This functions presumably prepares data for a MeDeCom run.
+This functions prepares Illumina BeadChip data for a MeDeCom run.
 }

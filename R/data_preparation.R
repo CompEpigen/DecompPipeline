@@ -12,7 +12,7 @@
 
 #' prepare_data
 #' 
-#' This functions presumably prepares data for a MeDeCom run.
+#' This functions prepares Illumina BeadChip data for a MeDeCom run.
 #' 
 #' @param RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
 #' @param WORK_DIR A path to a existing directory, in which the results are to be stored
@@ -80,8 +80,7 @@ prepare_data<-function(
 		snp.list=NULL
 ){
 	suppressPackageStartupMessages(require(RnBeads))
-	suppressPackageStartupMessages(require(R.matlab))
-	
+
 	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
 	  dir.create(OUTPUTDIR)
@@ -347,6 +346,42 @@ filter.quality<-function(
   return(qf)
 }
 
+#' filter.quality.covg
+#' 
+#' This functions filters the CpG sites in the given rnb.set for quality criteria specified in the arguments.
+#' 
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing the CpG sites used for filtering, all well as intensity and
+#'                 coverage informatio, if provided.
+#' @param min.covg Integer specifying the minimum number of beads required for including the site in the analysis.
+#' @param min.covg.quant Lower quantile of coverage which is to be removed.
+#' @param max.covg.quant Upper quantile of coverage which is to be removed.
+#' @return The indices of the sites that are to be kept.
+#' @details The probes with lower/higher coverage than \code{min.int.quant}/
+#'            \code{max.int.quant} are removed.
+filter.quality.covg <- function(
+  rnb.set,
+  min.covg,
+  intensity=TRUE,
+  min.covg.quant=0.05,
+  max.covg.quant=0.95
+){
+  
+  qf <- 1:nsites(rnb.set) 
+  covg.data <- covg(rnb.set)  
+
+  qf.b <- which(rowSums(covg.data >= min.covg)==ncol(covg.data))
+  logger.info(paste(length(setdiff(qf,qf.b)),"sites removed in absolute coverage filtering."))
+  qf <- intersect(qf, qf.b) 
+  lower.covg <- sort(as.numeric(covg.data))[ceiling(min.covg.quant*nrow(covg.data)*ncol(covg.data))]
+  upper.covg <- sort(as.numeric(covg.data))[ceiling(max.covg.quant*nrow(covg.data)*ncol(covg.data))]
+           
+  qf.covg <- which(rowSums(covg.data>lower.covg & covg.data<upper.covg)==ncol(covg.data))
+  logger.info(paste(length(setdiff(qf,qf.covg)),"sites removed in quantile coverage filtering."))
+    
+  qf<-intersect(qf, qf.covg)
+  return(qf)
+}
+
 #' filter.nas
 #' 
 #' This function removes any site that contains a missing methylation value in a sample.
@@ -417,3 +452,164 @@ filter.annotation<-function(
   }
   return(probe.ind.filtered)
 }
+
+#' filter.annotation.biseq
+#' 
+#' This function removes sites in SNP, sex-chromosomal, or non-CG context.
+#' 
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.
+#' @param snp Flag indicating if snps are to be removed. Either SNPs annotated in the RnBeads annotation object of specified as an
+#'            additional file with one SNP identifier per row in \code{snp.list}.
+#' @param snp.list Path to a file containing known SNPs. One SNP identifier should be present per row.
+#' @param somatic Flag indicating if only somatic probes are to be kept.
+#' @param qual.filter Vector of indices removed during quality filtering.
+#' @return A vector of indices of sites surviving the annotation filter criteria.
+#' @details This functions uses information on the sites on the chip and transfers this knowledge to BS data sets.
+filter.annotation.biseq<-function(
+  rnb.set,
+  snp=TRUE,
+  snp.list,
+  somatic=TRUE,
+  context=TRUE,
+  qual.filter=NULL)
+{
+  annot <- annotation(rnb.set)
+  anno.chip <- rnb.get.annotation()
+  
+  if(!is.null(qual.filter)){
+    probe.ind.filtered <- qual.filter
+  }else{
+    probe.ind.filtered <- 1:nrow(annot)
+  }
+  
+  if(snp){
+    if(is.null(snp.list)){
+      snp.filter<-which(is.na(annot$SNPs))
+    }else{
+      snps <- read.table(snp.list,sep="\t")
+	  snps <- GRanges(Rle(snps[,1]),IRanges(start=as.numeric(snps[,2]),start=as.numeric(snps[,2])+1))
+      anno.granges <- GRanges(Rle(annot$Chromosome),IRanges(start=annot$Start,end=annot$End))
+	  op <- findOverlaps(anno.granges,snps)
+      snp.filter <- queryHits(op)
+    }
+    logger.info(paste(length(setdiff(probe.ind.filtered,snp.filter)),"sites removed in SNP filtering"))
+    probe.ind.filtered<-intersect(probe.ind.filtered, snp.filter)
+  }
+  
+  if(somatic){
+    somatic.filter<-which(!annot$Chromosome %in% c("chrX", "chrY"))
+    logger.info(paste(length(setdiff(probe.ind.filtered,somatic.filter)),"sites removed in somatic sites filtering"))
+    probe.ind.filtered<-intersect(probe.ind.filtered, somatic.filter)
+  }  
+  return(probe.ind.filtered)
+}
+
+#' prepare_data_BS
+#' 
+#' This functions prepares sequencing data sets for a MeDeCom run.
+#' 
+#' @param RNB_SET An object of type \code{\link[RnBeads]{RnBiseqSet-class}} for which analysis is to be performed.
+#' @param WORK_DIR A path to a existing directory, in which the results are to be stored
+#' @param analysis.name A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
+#'                 descriptive name of the analysis.
+#' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
+#'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
+#' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
+#' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
+#'                 exploration.
+#' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
+#' @param FILTER_COVERAGE Flag indicating, if site-filtering based on coverage is to be conducted.
+#' @param MIN_COVERAGE Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom.
+#' @param MIN_COVG_QUANT Lower quantile of coverages. Values lower than this value will be ignored for analysis.
+#' @param MAX_COVG_QUANT Upper quantile of coverages. Values higher than this value will be ignored for analysis.
+#' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
+#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list.
+#' @param snp.list Path to a file containing positions of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}. The coordinates must be the 
+#'             provided in the same genome assembly as RNB_SET. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
+#'             the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome
+#' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
+#' @return A list with four elements: \itemize{
+#'           \item quality.filter The indices of the sites that survived quality filtering
+#' }
+#' @export
+prepare_data_BS <- function(
+		RNB_SET, 
+		WORK_DIR,
+		analysis.name,
+		SAMPLE_SELECTION_COL=NA,
+		SAMPLE_SELECTION_GREP=NA,
+		PHENO_COLUMNS=NA,
+		ID_COLUMN=rnb.getOption("identifiers.column"),
+		FILTER_COVERAGE = hasCovg(RNB_SET),
+		MIN_COVERAGE=5,
+		MIN_COVG_QUANT=0.05,
+		MAX_COVG_QUANT=0.95,
+		FILTER_NA=TRUE,
+		FILTER_SNP=TRUE,
+		snp.list=NULL,
+		FILTER_SOMATIC=TRUE
+){
+	suppressPackageStartupMessages(require(RnBeads))
+
+	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
+	if(!file.exists(OUTPUTDIR)){
+	  dir.create(OUTPUTDIR)
+	}	
+	if(is.character(RNB_SET)){
+		rnb.set<-load.rnb.set(RNB_SET)
+	}else if(inherits(RNB_SET,"RnBSet")){
+		rnb.set<-RNB_SET
+	}	
+	if(!is.na(SAMPLE_SELECTION_COL)){
+		
+		SAMP_SUBS<-grep(SAMPLE_SELECTION_GREP, pheno(rnb.set)[[SAMPLE_SELECTION_COL]])
+		
+		rms<-setdiff(1:length(samples(rnb.set)), SAMP_SUBS)
+		
+		rnb.set<-remove.samples(rnb.set, rms)
+	}
+		
+	meth.rnb<-meth(rnb.set)
+	pd<-pheno(rnb.set)
+	if(!is.na(PHENO_COLUMNS)){
+		pheno.data<-pd[,PHENO_COLUMNS,drop=FALSE]
+		save(pheno.data, file=sprintf("%s/pheno.RData", OUTPUTDIR))
+	}
+	
+	if(!is.null(ID_COLUMN)){
+		sample_ids<-pd[,ID_COLUMN]
+		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
+	}
+	meth.data <- meth.rnb
+	colnames(meth.data) <- NULL	
+	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
+	if(FILTER_COVERAGE){
+		qual.filter <- filter.quality.covg(rnb.set, min.covg = MIN_COVERAGE,  
+		                            min.covg.quant = MIN_COVG_QUANT, max.covg.quant=MAX_COVG_QUANT)		
+		save(qual.filter, file=sprintf("%s/quality.filter.RData", OUTPUTDIR))		
+	}else{
+		qual.filter<-1:nrow(rnb.set@meth.sites)
+	}
+	if(FILTER_NA){
+	  qual.filter <- filter.nas(rnb.set,subs=1:length(samples(rnb.set)),qual.filter)
+	}
+	FILTER_ANNOTATION <- FILTER_SNP || FILTER_SOMATIC
+	
+	if(FILTER_ANNOTATION){
+		
+		annot.filter <- filter.annotation.biseq(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, snp.list = snp.list,
+		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter)
+	
+		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
+	
+		}else{
+		annot.filter<-1:nrow(rnb.set@meth.sites)
+	}
+	
+	total.filter<-intersect(qual.filter, annot.filter)
+	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
+	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
+	
+	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f))
+}
+
