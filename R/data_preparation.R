@@ -361,21 +361,20 @@ filter.quality<-function(
 filter.quality.covg <- function(
   rnb.set,
   min.covg,
-  intensity=TRUE,
   min.covg.quant=0.05,
   max.covg.quant=0.95
 ){
   
-  qf <- 1:nsites(rnb.set) 
+  qf <- 1:nsites(rnb.set)
   covg.data <- covg(rnb.set)  
 
-  qf.b <- which(rowSums(covg.data >= min.covg)==ncol(covg.data))
+  qf.b <- which(rowMins(covg.data) >= min.covg)
   logger.info(paste(length(setdiff(qf,qf.b)),"sites removed in absolute coverage filtering."))
   qf <- intersect(qf, qf.b) 
-  lower.covg <- sort(as.numeric(covg.data))[ceiling(min.covg.quant*nrow(covg.data)*ncol(covg.data))]
-  upper.covg <- sort(as.numeric(covg.data))[ceiling(max.covg.quant*nrow(covg.data)*ncol(covg.data))]
+  lower.covg <- quantile(covg.data,min.covg.quant,na.rm=T)
+  upper.covg <- quantile(covg.data,max.covg.quant,na.rm=T)
            
-  qf.covg <- which(rowSums(covg.data>lower.covg & covg.data<upper.covg)==ncol(covg.data))
+  qf.covg <- which((rowMins(covg.data)>lower.covg & rowMaxs(covg.data)<upper.covg))
   logger.info(paste(length(setdiff(qf,qf.covg)),"sites removed in quantile coverage filtering."))
     
   qf<-intersect(qf, qf.covg)
@@ -474,8 +473,7 @@ filter.annotation.biseq<-function(
   qual.filter=NULL)
 {
   annot <- annotation(rnb.set)
-  anno.chip <- rnb.get.annotation()
-  
+
   if(!is.null(qual.filter)){
     probe.ind.filtered <- qual.filter
   }else{
@@ -569,7 +567,7 @@ prepare_data_BS <- function(
 		rnb.set<-remove.samples(rnb.set, rms)
 	}
 		
-	meth.rnb<-meth(rnb.set)
+	meth.rnb <- rnb.set@meth.sites
 	pd<-pheno(rnb.set)
 	if(!is.na(PHENO_COLUMNS)){
 		pheno.data<-pd[,PHENO_COLUMNS,drop=FALSE]
