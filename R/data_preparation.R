@@ -432,6 +432,27 @@ filter.nas <- function(rnb.set,
   return(qf.qual)
 }
 
+#' filter.nas.biseq
+#' 
+#' This function removes any site that contains a missing methylation value in a sample.
+#' 
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information.
+#' @param qf.qual Vector of indices that survided quality filtering
+#' @param subs Optional argument specifying the subset of samples to be used
+#' @return Vector of indices that survived NA filtering.
+filter.nas.biseq <- function(rnb.set,
+                       subs,
+                       qf.qual){
+  meth.data <- rnb.set@meth.sites
+  na.filter <- which(bigFF.row.apply(meth.data,function(x,s.subset){
+    rowSums(is.na(x[,s.subset]))<1
+  },iter.count=100,s.subset=subs))
+  logger.info(paste(length(setdiff(qf.qual,na.filter)),"sites removed in NA filtering"))
+  qf.qual<-intersect(qf.qual, na.filter)
+  return(qf.qual)
+}
+
+
 #' filter.annotation
 #' 
 #' This function removes sites in SNP, sex-chromosomal, or non-CG context.
@@ -487,7 +508,7 @@ filter.annotation<-function(
 
 #' filter.annotation.biseq
 #' 
-#' This function removes sites in SNP, sex-chromosomal, or non-CG context.
+#' This function removes sites in SNP or sex-chromosomal context.
 #' 
 #' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.
 #' @param snp Flag indicating if snps are to be removed. Either SNPs annotated in the RnBeads annotation object of specified as an
@@ -502,7 +523,6 @@ filter.annotation.biseq<-function(
   snp=TRUE,
   snp.list,
   somatic=TRUE,
-  context=TRUE,
   qual.filter=NULL)
 {
   annot <- annotation(rnb.set)
@@ -518,7 +538,7 @@ filter.annotation.biseq<-function(
       snp.filter<-which(is.na(annot$SNPs))
     }else{
       snps <- read.table(snp.list,sep="\t")
-	  snps <- GRanges(Rle(snps[,1]),IRanges(start=as.numeric(snps[,2]),start=as.numeric(snps[,2])+1))
+	  snps <- GRanges(Rle(snps[,1]),IRanges(start=as.numeric(snps[,2]),end=as.numeric(snps[,2])+1))
       anno.granges <- GRanges(Rle(annot$Chromosome),IRanges(start=annot$Start,end=annot$End))
 	  op <- findOverlaps(anno.granges,snps)
       snp.filter <- queryHits(op)
@@ -622,13 +642,13 @@ prepare_data_BS <- function(
 		qual.filter<-1:nrow(rnb.set@meth.sites)
 	}
 	if(FILTER_NA){
-	  qual.filter <- filter.nas(rnb.set,subs=1:length(samples(rnb.set)),qual.filter)
+	  qual.filter <- filter.nas.biseq(rnb.set,subs=1:length(samples(rnb.set)),qual.filter)
 	}
 	FILTER_ANNOTATION <- FILTER_SNP || FILTER_SOMATIC
 	
 	if(FILTER_ANNOTATION){
 		
-		annot.filter <- filter.annotation.biseq(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, snp.list = snp.list,
+		annot.filter <- filter.annotation.biseq(rnb.set, snp = FILTER_SNP, snp.list = snp.list,
 		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))

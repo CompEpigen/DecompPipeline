@@ -5,7 +5,7 @@
 \title{filter.annotation.biseq}
 \usage{
 filter.annotation.biseq(rnb.set, snp = TRUE, snp.list, somatic = TRUE,
-  context = TRUE, qual.filter = NULL)
+  qual.filter = NULL)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.}
@@ -23,7 +23,7 @@ additional file with one SNP identifier per row in \code{snp.list}.}
 A vector of indices of sites surviving the annotation filter criteria.
 }
 \description{
-This function removes sites in SNP, sex-chromosomal, or non-CG context.
+This function removes sites in SNP or sex-chromosomal context.
 }
 \details{
 This functions uses information on the sites on the chip and transfers this knowledge to BS data sets.

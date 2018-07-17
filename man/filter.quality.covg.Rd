@@ -4,16 +4,14 @@
 \alias{filter.quality.covg}
 \title{filter.quality.covg}
 \usage{
-filter.quality.covg(rnb.set, min.covg, intensity = TRUE,
-  min.int.quant = 0.1, max.int.quant = 0.95, subs)
+filter.quality.covg(rnb.set, min.covg, min.covg.quant = 0.05,
+  max.covg.quant = 0.95)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containing the CpG sites used for filtering, all well as intensity and
 coverage informatio, if provided.}
 
 \item{min.covg}{Integer specifying the minimum number of beads required for including the site in the analysis.}
-
-\item{subs}{Argument specifying the subset of samples to be used}
 
 \item{min.covg.quant}{Lower quantile of coverage which is to be removed.}
 
