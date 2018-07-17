@@ -346,6 +346,36 @@ filter.quality<-function(
   return(qf)
 }
 
+#' bigFF.row.apply
+#' 
+#' This routine applies a function to chunks of the dataset that is stored in disk
+#' either with `ff` or `BigFfMat`.
+#' 
+#' @param mat A disk-based matrix of type \code{\link{ff}} or \code{\link{BigFfMat}}.
+#' @param FUN The function to be applied to each chunk of the matrix. Should be a function
+#'             that computes matrix statistics, such as \code{rowMeans}.
+#' @param iter.count Number of chunks to be created. The larger this number, the slower
+#'             the computation, but the lower the disk usage.
+#' @param ... Further arguments passed to FUN.
+#' @return A vector summarizing the results of the function. Final structure is determined
+#'          by FUN.
+#' @author Michael Scherer
+#' @noRd
+bigFF.row.apply <- function(mat,FUN,iter.count=1000,...){
+  chunk.size <- floor(nrow(mat)/iter.count)
+  iter <- 1
+  res <- c()
+  while(iter+chunk.size < nrow(mat)){
+    chunk <- mat[iter:(iter+chunk.size-1),]
+    res <- c(res,FUN(chunk,...))
+    iter <- iter+chunk.size
+#    print(paste(round((iter/nrow(mat))*100,2)," percent completed"))
+  }
+  chunk <- mat[iter:nrow(mat),]
+  res <- c(res,FUN(chunk,...))
+  return(res)
+}
+
 #' filter.quality.covg
 #' 
 #' This functions filters the CpG sites in the given rnb.set for quality criteria specified in the arguments.
@@ -366,15 +396,18 @@ filter.quality.covg <- function(
 ){
   
   qf <- 1:nsites(rnb.set)
-  covg.data <- covg(rnb.set)  
+  covg.data <- rnb.set@covg.sites  
 
-  qf.b <- which(rowMins(covg.data) >= min.covg)
+  mins <- bigFF.row.apply(covg.data,rowMins,iter.count = 100,na.rm=T)
+  qf.b <- which(mins >= min.covg)
   logger.info(paste(length(setdiff(qf,qf.b)),"sites removed in absolute coverage filtering."))
-  qf <- intersect(qf, qf.b) 
-  lower.covg <- quantile(covg.data,min.covg.quant,na.rm=T)
-  upper.covg <- quantile(covg.data,max.covg.quant,na.rm=T)
-           
-  qf.covg <- which((rowMins(covg.data)>lower.covg & rowMaxs(covg.data)<upper.covg))
+  qf <- intersect(qf, qf.b)
+  quants <- bigFF.row.apply(covg.data,quantile,iter.count=100,probs=c(min.covg.quant,max.covg.quant),na.rm=T)
+  lower.covg <- mean(quants[seq(1,length(quants)-1,by=2)])
+  upper.covg <- mean(quants[seq(2,length(quants),by=2)])
+  
+  maxs <- bigFF.row.apply(covg.data,rowMaxs,iter.count = 100,na.rm=T)         
+  qf.covg <- which((mins>lower.covg & maxs<upper.covg))
   logger.info(paste(length(setdiff(qf,qf.covg)),"sites removed in quantile coverage filtering."))
     
   qf<-intersect(qf, qf.covg)
