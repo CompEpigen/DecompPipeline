@@ -7,7 +7,7 @@
 prepare_CG_subsets(rnb.set, MARKER_SELECTION, N_MARKERS = 5000,
   WRITE_FILES = FALSE, WD = NA, REF_DATA_SET = NULL,
   REF_PHENO_COLUMN = NULL, N_PRIN_COMP = 10, RANGE_DIFF = 0.05,
-  CUSTOM_MARKER_FILE = "")
+  CUSTOM_MARKER_FILE = "", store.heatmaps = F, heatmap.sample.col = NULL)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.}
@@ -50,6 +50,11 @@ the reference cell type.}
 \item{RANGE_DIFF}{Optional argument specifying the difference between maximum and minimum required.}
 
 \item{CUSTOM_MARKER_FILE}{Optional argument containing a file that specifies the indices used for employing MeDeCom.}
+
+\item{store.heatmaps}{Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
+The files are then stored in the 'heatmaps' folder in WD.}
+
+\item{heatmap.sample.col}{Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.}
 }
 \value{
 List of indices, one entry for each marker selection method specified by \code{MARKER_SELECTION}. The indices correspond

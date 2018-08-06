@@ -33,6 +33,9 @@
 #' @param N_PRIN_COMP Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
 #' @param RANGE_DIFF Optional argument specifying the difference between maximum and minimum required.
 #' @param CUSTOM_MARKER_FILE Optional argument containing a file that specifies the indices used for employing MeDeCom.
+#' @param store.heatmaps Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
+#'                       The files are then stored in the 'heatmaps' folder in WD.
+#' @param heatmap.sample.col Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.
 #' @return List of indices, one entry for each marker selection method specified by \code{MARKER_SELECTION}. The indices correspond
 #'          to the sites that should be used in \code{rnb.set}.
 #' @details For methods "\code{houseman2012}" and "\code{jaffe2014}", a predefined set of markers is used. Since those correspond to
@@ -57,7 +60,9 @@ prepare_CG_subsets<-function(
 		REF_PHENO_COLUMN=NULL,
 		N_PRIN_COMP=10,
 		RANGE_DIFF=0.05,
-		CUSTOM_MARKER_FILE=""
+		CUSTOM_MARKER_FILE="",
+		store.heatmaps=F,
+		heatmap.sample.col=NULL
 		)
 {
   require("RnBeads")
@@ -66,6 +71,22 @@ prepare_CG_subsets<-function(
 	groups<-1:length(MARKER_SELECTION)
 	
 	meth.data<-meth(rnb.set)
+	
+	if(store.heatmaps){
+	  if(!is.null(heatmap.sample.col)){
+	     if(!heatmap.sample.col %in% colnames(pheno(rnb.set))){
+	       logger.error("heatmap.sample.col not a column name of the phenotypic table")
+	    }
+	    trait <- pheno(rnb.set)[,heatmap.sample.col]
+	    palette <- rainbow(length(levels(trait)))
+	    sample.cols <- palette[as.integer(trait)]
+	  }else{
+	    sample.cols <- NULL
+	  }
+	  if(!dir.exists(file.path(WD,"heatmaps"))){
+	    dir.create(file.path(WD,"heatmaps"))
+	  }
+	}
 	
 	for(group in groups){
 		
@@ -102,6 +123,9 @@ prepare_CG_subsets<-function(
 			maxRank<-apply(ranks, 1, max)
 		
 			ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"pheno")
+			}
 		}
 		
 		if(MARKER_SELECTION[group]=="houseman2012" ){
@@ -109,6 +133,9 @@ prepare_CG_subsets<-function(
 		  if(file.exists(loc)){
 			  houseman.50k.markers<-readRDS(loc)
 			  ind<-intersect(ind, houseman.50k.markers)
+		  }
+		  if(store.heatmaps){
+		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"houseman2012")
 		  }
 		}
 		
@@ -196,11 +223,17 @@ prepare_CG_subsets<-function(
 				maxRank<-apply(ranks, 1, max)
 				ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
 			}
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"houseman2014")
+			}
 		}
 		
 		if(MARKER_SELECTION[group]=="jaffe2014"){
 			jaffe.markers <- readRDS(system.file(file.path("extdata","jaffe.irrizzary.markers.600.RDS"),package="DecompPipeline"))
 			ind<-intersect(ind, jaffe.markers)
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"jaffe2014")
+			}
 		}
 		
 		if(MARKER_SELECTION[group]==("rowFstat")){
@@ -226,11 +259,17 @@ prepare_CG_subsets<-function(
   		}else{
   		  logger.error("REF_DATA_SET and REF_PHENO_COLUMN need to be specified, if rowFstat is selected.")
   		}
+		  if(store.heatmaps){
+		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"rowFstat")
+		  }
 		}
 		
 		if(MARKER_SELECTION[group]=="random"){
 			subset<-sample.int(length(ind), min(N_MARKERS, length(ind)))
 			ind<-ind[subset]
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"random")
+			}
 		}
 		
 		if(MARKER_SELECTION[group]=="pca"){
@@ -244,13 +283,19 @@ prepare_CG_subsets<-function(
 			for(cix in 1:min(N_PRIN_COMP,ncol(pca$rotation))){
 				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:add.sites])
 			}
-			ind<-ind[sort(pca.ind)]	
+			ind<-ind[sort(pca.ind)]
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"pca")
+			}
 		}
 		
 		if(MARKER_SELECTION[group] == "var"){
 			
 			sds<-apply(meth.data[ind,], 1, sd)
 			ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),N_MARKERS)]]
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"var")
+			}
 		}
 		
 		if(MARKER_SELECTION[group] == "hybrid"){
@@ -263,6 +308,9 @@ prepare_CG_subsets<-function(
 			ind<-sort(c(var.set, random.set))
 			rm(var.set)
 			rm(random.set)
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"hybrid")
+			}
 		}
 		
 		if(MARKER_SELECTION[group] == "range"){
@@ -270,6 +318,9 @@ prepare_CG_subsets<-function(
 			ranges<-ranges[2,]-ranges[1,]
 			ind<-ind[ranges>RANGE_DIFF]
 			rm(ranges)
+			if(store.heatmaps){
+			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"range")
+			}
 		}
 		
 		if(MARKER_SELECTION[group]=="custom"){
@@ -277,6 +328,9 @@ prepare_CG_subsets<-function(
 				custom_filter<-readRDS(sprintf("%s/%s",WD,CUSTOM_MARKER_FILE))
 				ind<-intersect(ind, custom_filter)
 			}
+		  if(store.heatmaps){
+		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"custom")
+		  }
 		}
 		
 		if(WRITE_FILES){
@@ -286,6 +340,42 @@ prepare_CG_subsets<-function(
 		cg_groups[[group]]<-ind
 		
 	}
+	names(cg_groups) <- MARKER_SELECTION
 	return(cg_groups)
 	
+}
+
+#' create.heatmap
+#' 
+#' This function create a heatmap of methylation values with the colors specified according to the trait.
+#' 
+#' @param meth.data The methylation data to be plotted
+#' @param trait A column in the phenotypic table specifying a grouping.
+#' @param sample.cols A vector of colors specifying the grouping in \code{trait}.
+#' @param WD The working directory, in which the plots are to be added in a subfolder "heatmaps".
+#' @param palette The color palette from which \code{sample.cols} was obtained.
+#' @param sel.type The method used for selecting subsets of sites.
+#' @author Michael Scherer
+#' @noRd
+create.heatmap <- function(meth.data,
+                           trait,
+                           sample.cols,
+                           palette,
+                           WD,
+                           sel.type){
+  if(!is.null(sample.cols)){
+    png(file.path(WD,"heatmaps",paste0(sel.type,".png")))
+    heatmap.2(meth.data,
+      trace="none",
+      ColSideColors=sample.cols
+    )
+    legend(x=0,y=1,levels(trait),col=palette,pch=15)
+    dev.off()
+  }else{
+    png(file.path(WD,"heatmaps",paste0(sel.type,".png")))
+    heatmap.2(meth.data,
+              trace="none"
+    )
+    dev.off()
+  }
 }
