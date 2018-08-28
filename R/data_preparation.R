@@ -163,8 +163,6 @@ prepare_data<-function(
 			
 			save(Ahouseman2012, file=sprintf("%s/Ahouseman2012.RData", OUTPUTDIR))
 		}
-		
-		
 	}
 	
 	if(!is.na(REF_CT_COLUMN)){
@@ -341,5 +339,22 @@ prepare_data<-function(
 	total.filter<-intersect(qual.filter, annot.filter)
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), intersect(qual.filter, annot.filter)))
 	
-	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f))
+	analysis_info<-list()
+	
+	analysis_info$DATASET<-DATASET 
+	analysis_info$DATA_SUBSET<-DATA_SUBSET
+	analysis_info$QUALITY_FILTERING <- sprintf("%s%s%s%s%s%s",
+			ifelse(FILTER_BEADS, "Beads", ""),
+			ifelse(FILTER_INTENSITY, "Intensity", ""),
+			ifelse(FILTER_NA, "Missing", ""),
+			ifelse(FILTER_NA, "Context", ""),
+			ifelse(FILTER_NA, "SNP", ""),
+			ifelse(FILTER_NA, "Somatic", "")
+		)
+	
+	analysis_info$NORMALIZATION <- NORMALIZATION
+	
+	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f, info=analysis_info))
 }
+
+

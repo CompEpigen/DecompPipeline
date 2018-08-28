@@ -1,17 +1,25 @@
 prepare_CG_subsets<-function(
-		rnb.set,
+        meth.data,
+		rnb.set=NULL,
 		MARKER_SELECTION,
 		N_PHENO_MARKERS=5000,
 		WRITE_FILES=FALSE,
-		WD=NA
+		WD=NA,
+		analysis_info=NULL
 		)
 {
 	cg_groups<-list()
 	
 	groups<-1:length(MARKER_SELECTION)
 	
-	meth.data<-meth(rnb.set)
+    if(is.null(meth.data)){
+	    meth.data<-meth(rnb.set)
+    }
 	
+	if(any(grepl("var", MARKER_SELECTION))){
+		
+		sds<-apply(meth.data, 1, sd)
+	}
 	for(group in groups){
 		
 		ind<-1:nrow(meth.data)	
@@ -385,6 +393,21 @@ prepare_CG_subsets<-function(
 		
 		
 	}
-	return(cg_groups)
+	
+	if(is.null(analysis_info)){
+		analysis_info<-list()
+	}	
+	
+	analysis_info$MARKER_SELECTION=paste(MARKER_SELECTION, collapse="")
+	
+#	help<- NULL
+#	
+#	for ( i in 1:length(GROUP_LISTS)){
+#		help <- append(help, GROUP_LISTS[[i]])
+#	}
+	analysis_info$ORIGINAL_GROUP_LISTS<- c(1:16)
+	
+	
+	return(list(cg_groups=cg_groups, info=analysis_info))
 	
 }
