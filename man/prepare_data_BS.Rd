@@ -5,7 +5,7 @@
 \title{prepare_data_BS}
 \usage{
 prepare_data_BS(RNB_SET, WORK_DIR, analysis.name, SAMPLE_SELECTION_COL = NA,
-  SAMPLE_SELECTION_GREP = NA, PHENO_COLUMNS = NA,
+  SAMPLE_SELECTION_GREP = NA, REF_CT_COLUMN = NA, PHENO_COLUMNS = NA,
   ID_COLUMN = rnb.getOption("identifiers.column"),
   FILTER_COVERAGE = hasCovg(RNB_SET), MIN_COVERAGE = 5,
   MIN_COVG_QUANT = 0.05, MAX_COVG_QUANT = 0.95, FILTER_NA = TRUE,
@@ -23,6 +23,8 @@ descriptive name of the analysis.}
 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.}
 
 \item{SAMPLE_SELECTION_GREP}{A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.}
+
+\item{REF_CT_COLUMN}{Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.}
 
 \item{PHENO_COLUMNS}{Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 exploration.}

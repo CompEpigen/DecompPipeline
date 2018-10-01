@@ -566,6 +566,7 @@ filter.annotation.biseq<-function(
 #' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
 #'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
 #' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
+#' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
 #' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 #'                 exploration.
 #' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
@@ -589,6 +590,7 @@ prepare_data_BS <- function(
 		analysis.name,
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
+		REF_CT_COLUMN=NA,
 		PHENO_COLUMNS=NA,
 		ID_COLUMN=rnb.getOption("identifiers.column"),
 		FILTER_COVERAGE = hasCovg(RNB_SET),
@@ -622,6 +624,11 @@ prepare_data_BS <- function(
 		
 	meth.rnb <- rnb.set@meth.sites
 	pd<-pheno(rnb.set)
+	if(!is.na(REF_CT_COLUMN)){
+	  subs<-is.na(pd[[REF_CT_COLUMN]])
+	}else{
+	  subs<-1:nrow(pd)
+	}
 	if(!is.na(PHENO_COLUMNS)){
 		pheno.data<-pd[,PHENO_COLUMNS,drop=FALSE]
 		save(pheno.data, file=sprintf("%s/pheno.RData", OUTPUTDIR))
@@ -631,7 +638,22 @@ prepare_data_BS <- function(
 		sample_ids<-pd[,ID_COLUMN]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
-	meth.data <- meth.rnb
+	if(!is.na(REF_CT_COLUMN)){
+	  ct<-pd[[REF_CT_COLUMN]]
+	  nnas<-!is.na(ct)
+	  ct<-ct[nnas]
+	  
+	  meth.ref.ct<-lapply(unique(ct), function(cn) rowMeans(meth.rnb[,nnas][,ct==cn]))
+	  trueT<-do.call("cbind", meth.ref.ct)
+	  colnames(trueT)<-unique(ct)
+	  
+	  save(trueT, file=sprintf("%s/trueT.RData", OUTPUTDIR))
+	}
+	if(!is.na(REF_CT_COLUMN)){
+	  meth.data<-meth.rnb[,subs]
+	}else{
+	  meth.data<-meth.rnb
+	}
 	colnames(meth.data) <- NULL	
 	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
 	if(FILTER_COVERAGE){
