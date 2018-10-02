@@ -2,7 +2,7 @@
 % Please edit documentation in R/start_analysis.R
 \name{start_decomp_pipeline}
 \alias{start_decomp_pipeline}
-\title{CPG FILTERING (BeadChip)}
+\title{start_decomp_pipeline}
 \usage{
 start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   factorviz.outputs = F, analysis.name = "Analysis",
@@ -164,6 +164,12 @@ The files are then stored in the 'heatmaps' folder in WD.}
 
 \item{cleanup}{Flag indicating if temprary files are to be deleted.}
 }
+\value{
+An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
+}
 \description{
 CPG FILTERING (BeadChip)
+}
+\author{
+Michael Scherer
 }

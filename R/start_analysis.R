@@ -330,6 +330,8 @@ start_medecom_analysis<-function(
 	return(result)
 }
 
+#' start_decomp_pipeline
+#' 
 #' CPG FILTERING (BeadChip)
 #' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
 #' @param Ks Vector of integers used as components in MeDeCom.
@@ -416,6 +418,9 @@ start_medecom_analysis<-function(
 #' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
 #' @param cleanup Flag indicating if temprary files are to be deleted.
+#' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
+#' @export
+#' @author Michael Scherer
 
 start_decomp_pipeline <- function(rnb.set,
                                   Ks,

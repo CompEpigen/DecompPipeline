@@ -3,4 +3,5 @@
 export(prepare_CG_subsets)
 export(prepare_data)
 export(prepare_data_BS)
+export(start_decomp_pipeline)
 export(start_medecom_analysis)
