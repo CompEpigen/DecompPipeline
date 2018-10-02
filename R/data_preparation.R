@@ -269,7 +269,14 @@ prepare_data<-function(
 	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
 	
-	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f))
+	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f)
+	if(exists("trueT")){
+	  res$RefMeth <- trueT
+	}
+	if(exists("trueA")){
+	  res$RefProps <- trueA
+	}
+	return(res)
 }
 
 #' filter.quality
@@ -569,6 +576,8 @@ filter.annotation.biseq<-function(
 #' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
 #' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 #'                 exploration.
+#' @param TRUE_A_TOKEN String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+#'                      cell types.
 #' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
 #' @param FILTER_COVERAGE Flag indicating, if site-filtering based on coverage is to be conducted.
 #' @param MIN_COVERAGE Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom.
@@ -592,6 +601,7 @@ prepare_data_BS <- function(
 		SAMPLE_SELECTION_GREP=NA,
 		REF_CT_COLUMN=NA,
 		PHENO_COLUMNS=NA,
+		TRUE_A_TOKEN=NA,
 		ID_COLUMN=rnb.getOption("identifiers.column"),
 		FILTER_COVERAGE = hasCovg(RNB_SET),
 		MIN_COVERAGE=5,
@@ -638,6 +648,14 @@ prepare_data_BS <- function(
 		sample_ids<-pd[,ID_COLUMN]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
+	if(!is.na(TRUE_A_TOKEN)){
+	  
+	  trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
+	  rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
+	  
+	  save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
+	  
+	}
 	if(!is.na(REF_CT_COLUMN)){
 	  ct<-pd[[REF_CT_COLUMN]]
 	  nnas<-!is.na(ct)
@@ -683,6 +701,13 @@ prepare_data_BS <- function(
 	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
 	
-	return(list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f))
+	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f)
+	if(exists("trueT")){
+	  res$RefMeth <- trueT
+	}
+	if(exists("trueA")){
+	  res$RefProps <- trueA
+	}
+	return(res)
 }
 

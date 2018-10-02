@@ -10,6 +10,7 @@
 #' @param SAMPLE_SUBSET Vector of indices of samples to be included in the analysis. If \code{NULL}, all samples are included.
 #' @param K_FIXED Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.
 #' @param WRITE_FILES Flag indicating if intermediate results are to be stored.
+#' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
 #' @param opt.method Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).
 #' @param startT Inital matrix for T.
 #' @param startA Initial matrix for A.
@@ -36,6 +37,7 @@ start_medecom_analysis<-function(
 		SAMPLE_SUBSET=NULL,
 		K_FIXED=NULL,
 		WRITE_FILES=TRUE,
+		factorviz.outputs=F,
 		opt.method = "MeDeCom.cppTAfact",
 		startT=NULL,
 		startA=NULL,
@@ -306,5 +308,265 @@ start_medecom_analysis<-function(
 		saveRDS(result, file=file.path(WORK_DIR, "collected.result.RDS"))
 	}
 	
+	if(factorviz.outputs){
+	  store.path <- file.path(WORK_DIR,"FactorViz_outputs")
+	  if(!file.exists(store.path)){
+	    dir.create(store.path)
+	  }
+	  medecom.set <- result
+	  save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+	  if(!is.null(rnb.set)){
+	    ann.C <- annotation(rnb.set)
+	    ann.S <- pheno(rnb.set)
+	    save(ann.C,file=file.path(store.path,"ann_C.RData"))
+	    save(ann.S,file=file.path(store.path,"ann_S.RData"))
+	  }
+	  if(!is.null(trueT)){
+	    ref.meth <- trueT
+	    save(ref.meth,file=file.path(store.path,"ref_meth.RData"))
+	  }
+	}
+	
 	return(result)
+}
+
+#' CPG FILTERING (BeadChip)
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
+#' @param Ks Vector of integers used as components in MeDeCom.
+#' @param lambda.grid Vector of doubles representing the regularization parameter in MeDeCom.
+#' @param work.dir A path to a existing directory, in which the results are to be stored
+#' @param analysis.name A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
+#'                 descriptive name of the analysis.
+#' @param sample.selection.col A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
+#'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
+#' @param sample.selection.grep A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
+#' @param pheno.cols Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
+#'                 exploration.
+#' @param id.column Sample-specific ID column name in \code{RNB_SET}
+#' @param normalization Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob"} (BeadChip only).
+#' @param ref.ct.column Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
+#' @param ref.rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information on reference cell types (BeadChip only).
+#' @param ref.rnb.ct.column Column name in \code{REF_RNB_SET} used to extract methylation information on the reference cell types (BeadChip only).
+#' @param prepare.true.proportions Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+#'                          with Houseman's reference-based deconvolution approach (BeadChip only).
+#' @param true.A.token String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+#'                      cell types.
+#' @param houseman.A.token Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+#'                      by Houseman's method (BeadChip only).
+#' @param estimate.houseman.prop If neither \code{TRUE_A_TOKEN} nor \code{HOUSEMAN_A_TOKEN} are given, the proportions of the reference
+#'                      cell type are estimated with Houseman's approach (BeadChip only).
+#' @param filter.beads Flag indicating, if site-filtering based on the number of beads available is to be conducted (BeadChip only).
+#' @param min.n.beads Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom (BeadChip only).
+#' @param filter.intensity  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
+#'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}) (BeadChip only).
+#' @param min.int.quant Lower quantile of intensities which is to be removed (BeadChip only).
+#' @param max.int.quant Upper quantile of intensities which is to be removed (BeadChip only).
+#' @param filter.na Flag indicating if sites with any missing values are to be removed or not.
+#' @param filter.context Flag indicating if only CG probes are to be kept (BeadChip only).
+#' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
+#'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
+#' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
+#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
+#' CPG FILTERING (BS)
+#' @param filter.coverage Flag indicating, if site-filtering based on coverage is to be conducted (BS only).
+#' @param min.coverage Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom (BS only).
+#' @param min.covg.quant Lower quantile of coverages. Values lower than this value will be ignored for analysis (BS only).
+#' @param max.covg.quant Upper quantile of coverages. Values higher than this value will be ignored for analysis (BS only).
+#' CG_SUBSET SELECTION
+#' @param marker.selection A vector of strings representing marker selection methods. Available method are \itemize{
+#'                                  \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
+#'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
+#'                                         selected by employing limma on the methylation matrix.
+#'                                  \item{"\code{houseman2012}"} The 50k sites reported as cell-type specific in the Houseman's reference-
+#'                                         based deconvolution. See Houseman et.al. 2012.
+#'                                  \item{"\code{houseman2014}"} Selects the sites said to be linked to cell type composition by \code{RefFreeEWAS},
+#'                                         which is similar to surrogate variable analysis. See Houseman et.al. 2014.
+#'                                  \item{"\code{jaffe2014}"} The sites stated as related to cell-type composition Jaffe et.al. 2014.
+#'                                  \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
+#'                                         types with F-statistics. If this option is selected, \code{REF_DATA_SET} and \code{REF_PHENO_COLUMN}
+#'                                         need to be specified.
+#'                                  \item{"\code{random}"} Sites are randomly selected.
+#'                                  \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
+#'                                  \item{"\code{var}"} Selects the most variable sites.
+#'                                  \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
+#'                                  \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
+#'                                       across samples.
+#'                                  \item{"\code{custom}"} Specifying a custom file with indices.
+#'                         }
+#' @param n.markers The number of sites to be selected. Defaults to 5000.
+#' @param write.files Flag indicating if the selected sites are to be stored on disk.
+#' @param n.prin.comp Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
+#' @param range.diff Optional argument specifying the difference between maximum and minimum required.
+#' @param custom.marker.file Optional argument containing a file that specifies the indices used for employing MeDeCom.
+#' @param store.heatmaps Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
+#'                       The files are then stored in the 'heatmaps' folder in WD.
+#' @param heatmap.sample.col Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.
+#' @param sample.subset Vector of indices of samples to be included in the analysis. If \code{NULL}, all samples are included.
+#' @param k.fixed Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.
+#' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
+#' @param opt.method Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).
+#' @param startT Inital matrix for T.
+#' @param startA Initial matrix for A.
+#' @param folds Integer representing the number of folds used in the analysis.
+#' @param cores Integer representing the number of cores to be used in the analysis.
+#' @param itermax Maximum number of iterations
+#' @param ninit Number if initialtions.
+#' @param cluster.submit Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE supported).
+#' @param cluster.Rdir Path to an executable version of R.
+#' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
+#' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
+#' @param cleanup Flag indicating if temprary files are to be deleted.
+
+start_decomp_pipeline <- function(rnb.set,
+                                  Ks,
+                                  lambda.grid,
+                                  work.dir=getwd(),
+                                  factorviz.outputs=F,
+                                  analysis.name="Analysis",
+                                  sample.selection.col=NA,
+                                  sample.selection.grep=NA,
+                                  pheno.cols=NA,
+                                  id.column=rnb.getOption("identifiers.column"),
+                                  normalization="none",
+                                  ref.ct.column=NA,
+                                  ref.rnb.set=NA,
+                                  ref.rnb.ct.column=NA,
+                                  prepare.true.proportions=F,
+                                  true.A.token=NA,
+                                  houseman.A.token=NA,
+                                  estimate.houseman.prop=F,
+                                  filter.beads=!is.null(rnb.set@covg.sites),
+                                  min.n.beads=3,
+                                  filter.intensity=inherits(rnb.set, "RnBeadRawSet"),
+                                  min.int.quant = 0.1,
+                                  max.int.quant = 0.95, 
+                                  filter.na=TRUE,
+                                  filter.context=TRUE,
+                                  filter.snp=TRUE,
+                                  filter.somatic=TRUE,
+                                  snp.list=NULL,
+                                  filter.coverage = hasCovg(rnb.set),
+                                  min.coverage=5,
+                                  min.covg.quant=0.05,
+                                  max.covg.quant=0.95,
+                                  marker.selection="var",
+                                  n.markers=5000,
+                                  write.files=FALSE,
+                                  n.prin.comp=10,
+                                  range.diff=0.05,
+                                  custom.marker.file="",
+                                  store.heatmaps=F,
+                                  heatmap.sample.col=NULL,
+                                  sample.subset=NULL,
+                                  k.fixed=NULL,
+                                  opt.method = "MeDeCom.cppTAfact",
+                                  startT=NULL,
+                                  startA=NULL,
+                                  folds=10,
+                                  cores=1,
+                                  itermax=1000,
+                                  ninit=100,
+                                  cluster.submit=FALSE,
+                                  cluster.Rdir=NA,
+                                  cluster.hostlist="*",
+                                  cluster.memlimit="5G",
+                                  cleanup=FALSE
+                                  ){
+  if(inherits(rnb.set,"RnBeadSet")){
+    data.prep <- prepare_data(RNB_SET=rnb.set,
+                              WORK_DIR=work.dir,
+                              analysis.name=analysis.name,
+                              SAMPLE_SELECTION_COL=sample.selection.col,
+                              SAMPLE_SELECTION_GREP=sample.selection.grep,
+                              PHENO_COLUMNS=pheno.cols,
+                              ID_COLUMN=id.column,
+                              NORMALIZATION=normalization,
+                              REF_CT_COLUMN=ref.ct.column,
+                              REF_RNB_SET=ref.rnb.set,
+                              REF_RNB_CT_COLUMN=ref.rnb.ct.column,
+                              PREPARE_TRUE_PROPORTIONS=prepare.true.proportions,
+                              TRUE_A_TOKEN=true.A.token,
+                              HOUSEMAN_A_TOKEN=houseman.A.token,
+                              ESTIMATE_HOUSEMAN_PROP=estimate.houseman.prop,
+                              FILTER_BEADS=filter.beads,
+                              MIN_N_BEADS=min.n.beads,
+                              FILTER_INTENSITY=filter.intensity,
+                              MIN_INT_QUANT = min.int.quant,
+                              MAX_INT_QUANT = max.int.quant, 
+                              FILTER_NA=filter.na,
+                              FILTER_CONTEXT=filter.context,
+                              FILTER_SNP=filter.snp,
+                              FILTER_SOMATIC=filter.somatic,
+                              snp.list=snp.list
+    )
+  }else if(inherits(rnb.set,"RnBiseqSet")){
+    data.prep <- prepare_data_BS(RNB_SET = rnb.set,
+                                WORK_DIR = work.dir,
+                                analysis.name = analysis.name,
+                                SAMPLE_SELECTION_COL = sample.selection.col,
+                                SAMPLE_SELECTION_GREP = sample.selection.grep,
+                                REF_CT_COLUMN=ref.ct.column,
+                                PHENO_COLUMNS=pheno.cols,
+                                TRUE_A_TOKEN=true.A.token,
+                                ID_COLUMN=id.column,
+                                FILTER_COVERAGE = filter.coverage,
+                                MIN_COVERAGE=min.coverage,
+                                MIN_COVG_QUANT=min.covg.quant,
+                                MAX_COVG_QUANT=max.covg.quant,
+                                FILTER_NA=filter.na,
+                                FILTER_SNP=filter.snp,
+                                snp.list=snp.list,
+                                FILTER_SOMATIC=filter.somatic
+      
+    )
+  }
+  cg_subsets <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
+                                     MARKER_SELECTION=marker.selection,
+                                     N_MARKERS=n.markers,
+                                     WRITE_FILES=write.files,
+                                     WD=work.dir,
+                                     REF_DATA_SET=ref.rnb.set,
+                                     REF_PHENO_COLUMN=ref.rnb.ct.column,
+                                     N_PRIN_COMP=n.prin.comp,
+                                     RANGE_DIFF=range.diff,
+                                     CUSTOM_MARKER_FILE=custom.marker.file,
+                                     store.heatmaps=store.heatmaps,
+                                     heatmap.sample.col=heatmap.sample.col
+  )
+  if("RefMeth" %in% names(data.prep)){
+    trueT <- data.prep$RefMeth
+  }else{
+    trueT <- NULL
+  }
+  if("RefProps" %in% names(data.prep)){
+    trueA <- data.prep$RefProps
+  }else{
+    trueA <- NULL
+  }
+  medecom.result <- start_medecom_analysis(rnb.set=data.prep$rnb.set.filtered,
+                                             WORK_DIR=work.dir,
+                                             cg_groups=cg_subsets,
+                                             Ks=Ks,
+                                             LAMBDA_GRID=lambda.grid,
+                                             SAMPLE_SUBSET=sample.subset,
+                                             K_FIXED=k.fixed,
+                                             WRITE_FILES=write.files,
+                                             factorviz.outputs=factorviz.outputs,
+                                             opt.method = opt.method,
+                                             startT = startT,
+                                             startA = startA,
+                                             trueT = trueT,
+                                             trueA = trueA,
+                                             analysis.name=analysis.name,
+                                             folds=folds,
+                                             cores=cores,
+                                             itermax=itermax,
+                                             ninit=ninit,
+                                             CLUSTER_SUBMIT=cluster.submit,
+                                             CLUSTER_RDIR=cluster.Rdir,
+                                             CLUSTER_HOSTLIST=cluster.hostlist,
+                                             CLUSTER_MEMLIMIT=cluster.memlimit,
+                                             CLEANUP=cleanup
+  )
+  return(medecom.result)
 }

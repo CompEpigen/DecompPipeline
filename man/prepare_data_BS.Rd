@@ -6,7 +6,7 @@
 \usage{
 prepare_data_BS(RNB_SET, WORK_DIR, analysis.name, SAMPLE_SELECTION_COL = NA,
   SAMPLE_SELECTION_GREP = NA, REF_CT_COLUMN = NA, PHENO_COLUMNS = NA,
-  ID_COLUMN = rnb.getOption("identifiers.column"),
+  TRUE_A_TOKEN = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
   FILTER_COVERAGE = hasCovg(RNB_SET), MIN_COVERAGE = 5,
   MIN_COVG_QUANT = 0.05, MAX_COVG_QUANT = 0.95, FILTER_NA = TRUE,
   FILTER_SNP = TRUE, snp.list = NULL, FILTER_SOMATIC = TRUE)
@@ -28,6 +28,9 @@ analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.}
 
 \item{PHENO_COLUMNS}{Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 exploration.}
+
+\item{TRUE_A_TOKEN}{String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+cell types.}
 
 \item{ID_COLUMN}{Sample-specific ID column name in \code{RNB_SET}}
 

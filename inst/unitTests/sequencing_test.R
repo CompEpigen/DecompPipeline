@@ -7,16 +7,23 @@ options(fftempdir="/DEEP_fhgfs/projects/mscherer/deep/tmp")
   work.dir <- "/TL/deep/projects/work/mscherer/projects/MeDeCom/test/prepare_BS"
   analysis.name <- "TestBS"
   
-  data.prep <- prepare_data_BS(rnb.set,
-                               WORK_DIR=work.dir,
-                               analysis.name=analysis.name)
+#   data.prep <- prepare_data_BS(rnb.set,
+#                                WORK_DIR=work.dir,
+#                                analysis.name=analysis.name)
+# 
+# subsets <- prepare_CG_subsets(
+# 	data.prep$rnb.set.filtered,
+# 	MARKER_SELECTION=c("pheno","random","pca","var","hybrid","range"),
+# 		WD=file.path(work.dir,"data","foo_foo_none"),
+# 		N_MARKERS = 4242,
+# 		N_PRIN_COMP = 2,
+# 		RANGE_DIFF = 0.1
+# )
 
-subsets <- prepare_CG_subsets(
-	data.prep$rnb.set.filtered,
-	MARKER_SELECTION=c("pheno","random","pca","var","hybrid","range"),
-		WD=file.path(work.dir,"data","foo_foo_none"),
-		N_MARKERS = 4242,
-		N_PRIN_COMP = 2,
-		RANGE_DIFF = 0.1
+md.res <- start_decomp_pipeline(
+  rnb.set = rnb.set,
+  Ks = 2,
+  lambda=0,
+  work.dir = work.dir,
+  analysis.name = analysis.name
 )
-

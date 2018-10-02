@@ -6,11 +6,11 @@
 \usage{
 start_medecom_analysis(rnb.set = NULL, WORK_DIR, cg_groups, Ks, LAMBDA_GRID,
   SAMPLE_SUBSET = NULL, K_FIXED = NULL, WRITE_FILES = TRUE,
-  opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
-  trueT = NULL, trueA = NULL, analysis.name = "MeDeComRun", folds = 10,
-  cores = 1, itermax = 1000, ninit = 100, CLUSTER_SUBMIT = FALSE,
-  CLUSTER_RDIR = NA, CLUSTER_HOSTLIST = "*", CLUSTER_MEMLIMIT = "5G",
-  CLEANUP = FALSE)
+  factorviz.outputs = F, opt.method = "MeDeCom.cppTAfact", startT = NULL,
+  startA = NULL, trueT = NULL, trueA = NULL,
+  analysis.name = "MeDeComRun", folds = 10, cores = 1, itermax = 1000,
+  ninit = 100, CLUSTER_SUBMIT = FALSE, CLUSTER_RDIR = NA,
+  CLUSTER_HOSTLIST = "*", CLUSTER_MEMLIMIT = "5G", CLEANUP = FALSE)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.}
@@ -28,6 +28,8 @@ start_medecom_analysis(rnb.set = NULL, WORK_DIR, cg_groups, Ks, LAMBDA_GRID,
 \item{K_FIXED}{Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.}
 
 \item{WRITE_FILES}{Flag indicating if intermediate results are to be stored.}
+
+\item{factorviz.outputs}{Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration}
 
 \item{opt.method}{Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).}
 
