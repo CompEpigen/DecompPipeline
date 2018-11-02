@@ -1,0 +1,50 @@
+---
+title: "DecompPipeline: Preprocessing of DNA Methylation data for MeDeCom"
+author: "Michael Scherer, Pavlo Lutsik"
+date: "`r Sys.Date()`"
+output:
+  rmarkdown::html_document:
+    mathjax: default
+    toc: true
+    number_sections: false
+    fig_width: 5
+    fig_height: 5
+vignette: >
+  %\VignetteIndexEntry{MeDeCom}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+# Introduction
+
+*DecompPipeline* is an R package created for preprocessing DNA Methylation data for [MeDeCom](http://public.genetik.uni-sb.de/medecom/). Briefly, MeDeCom performs non-negative matrix factorization of complex methylation data sets to discover latent methylation components (LMCs). Those components can, for instance, represent cell types, but are not limited to that. The *DecompPipeline* uses the [RnBeads](https://rnbeads.org) package for handling input DNA methylation data and is able to handle both BeadArray (27k, 450k, EPIC) and bisulfite sequencing (RRBS, WGBS) data. Necessary steps include stringent filtering and selecting the correct subset of CpG sites for downstream MeDeCom analysis. As another MeDeCom helper package, check out [FactorViz](https://github.com/lutsik/FactorViz) for the visualization of MeDeCom results.
+
+# Installation
+
+You can install the *DecompPipeline* through GitHub using *devtools*:
+
+```{r}
+install.packages("devtools")
+library(devtools)
+devtools::install_github("lutsik/DecompPipeline")
+library(DecompPipeline)
+```
+
+# Using DecompPipeline
+## Default Pipeline
+
+The main workhorse for *DecompPipeline* is ```start_decomp_pipeline````. It only requires few inputs, including DNA methylation data either in the form of a *matrix\data.frame* or as an *RnBSet* object. We will now consider the rich functionalities that are available for the second type of input. A short introduction on how to import DNA methylation data is given in [this section](#rnbeads). For details on the many options available within the *DecompPipeline*, see the functions documentation. We will further explain the options in this vignette.
+
+```{r}
+?start_decomp_pipeline
+```
+
+## CpG Filtering
+## <a name="rnbeads"></a>Data Import through RnBeads
+# R session
+Here is the output of `sessionInfo()` on the system on which this document was compiled:
+```{r, echo=FALSE}
+sessionInfo()
+```
+
+ 
