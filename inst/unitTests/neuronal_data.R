@@ -20,8 +20,6 @@ rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/pr
 res<-prepare_data(
 		RNB_SET=rnb.set, 
 		WORK_DIR=file.path(PROJECT.DIR),
-		DATASET="foo",
-		DATA_SUBSET="foo",
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS="bcr",

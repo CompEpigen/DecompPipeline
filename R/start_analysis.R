@@ -2,6 +2,8 @@
 #' 
 #' Wrapper for runMeDeCom, for data preprocessed through the DecombPipeline
 #' 
+#' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+#'                   through \code{rnb.set}
 #' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.
 #' @param WORK_DIR Working directory for the analysis.
 #' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
@@ -29,6 +31,7 @@
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 #' @export
 start_medecom_analysis<-function(
+    meth.data=NULL,
 		rnb.set=NULL,
 		WORK_DIR,
 		cg_groups,
@@ -56,13 +59,32 @@ start_medecom_analysis<-function(
 #		WAIT_TIME="30m",
 #		PORTIONS=FALSE,
 #		JOB_FILE=NA,
-		CLEANUP=FALSE
+		CLEANUP=FALSE,
+		analysis_info=NULL,
+		LAMBDA_GRID_TYPE="standard",
+		ANALYSIS_TOKEN="customAnalysis"
 ){
 	library(MeDeCom)
 	library(R.utils)
 	
 	#RDIR="/TL/deep-share/archive00/software/bin"
 	#.libPaths(sprintf("%s/Rlib_test", WORK_DIR))
+  
+  if(!is.null(analysis_info)){
+    ANALYSIS_ID<-paste(
+      analysis_info$DATASET, 
+      analysis_info$DATA_SUBSET,
+      analysis_info$NORMALIZATION,
+      analysis_info$QUALITY_FILTERING, 
+      analysis_info$MARKER_SELECTION,
+      LAMBDA_GRID_TYPE,
+      ANALYSIS_TOKEN,
+      sep="_")
+  }else{
+    ANALYSIS_ID<-"customAnalysis"
+    analysis_info<-list()
+  }
+  analysis_info$ANALYSIS<-ANALYSIS_ID
   
   WORK_DIR <- file.path(WORK_DIR,analysis.name)
 	
@@ -89,11 +111,13 @@ start_medecom_analysis<-function(
 		dump(ls()[var_list], file=file.path(WORK_DIR, "analysis_settings.RDump"))
 	}
 	
-	if(is.null(rnb.set)){
-		load(sprintf("%s/data.set.RData", WORK_DIR))
-	}else{
-		meth.data<-meth(rnb.set)
-	}
+  if(is.null(meth.data)){
+  	if(is.null(rnb.set)){
+  		load(sprintf("%s/data.set.RData", WORK_DIR))
+  	}else{
+  		meth.data<-meth(rnb.set)
+  	}
+  }
 	
 #	if(!DATASET %in% c("sim", "simReal")){
 #		load(sprintf("%s/indices.RData", GLOBAL_DD))
@@ -200,11 +224,6 @@ start_medecom_analysis<-function(
 #		}
 #		
 #	}
-	# if(!is.null(A_LOWER) && is.null(A_UPPER)){
-	# 	saveRDS(A_LOWER, file=sprintf("%s/A_lower.RDS", WORK_DIR))
-	# 	saveRDS(A_UPPER, file=sprintf("%s/A_upper.RDS", WORK_DIR))
-	# }
-	
 	if(!is.null(K_FIXED)){
 		saveRDS(K_FIXED, file=sprintf("%s/fixed_T_cols.RDS", WORK_DIR))
 	}else{
@@ -292,17 +311,21 @@ start_medecom_analysis<-function(
 	
 	### TODO: Fix this once
 	
-	result@parameters$ANALYSIS <- analysis.name
-	result@parameters$GROUP_LISTS <- cg_groups
-	result@parameters$cg_subsets <- c(1:length(cg_groups))
+	#    result@parameters$ANALYSIS <- ANALYSIS_ID
+	#    result@parameters$NORMALIZATION <- NORMALIZATION
 	result@parameters$ITERMAX<-itermax
-	result@parameters$NFOLDS<- folds
+	#    result@parameters$MARKER_SELECTION<- MARKER_SELECTION
+	result@parameters$NFOLDS<-folds
+	#    result@parameters$ANALYSIS_TOKEN<-""
 	result@parameters$NINIT<-ninit
-	help<- NULL
-	for ( i in 1:length(cg_groups)){
-		help <- append(help, cg_groups[[i]])
-	}
-	result@parameters$ORIGINAL_GROUP_LISTS<- help
+	#    result@parameters$DATASET<-DATASET 
+	#    result@parameters$DATA_SUBSET<-DATA_SUBSET 
+	
+	result@parameters$cg_subsets <- c(1:length(cg_groups))
+	
+	analysis_info$GROUP_LISTS<-cg_groups
+	analysis_info$ANALYSIS_DATE<-date()
+	result@dataset_info<-c(result@dataset_info, analysis_info)
 	
 	if(WRITE_FILES){
 		saveRDS(result, file=file.path(WORK_DIR, "collected.result.RDS"))

@@ -1,0 +1,33 @@
+COMbined Rnb.set of 5 samples :- 
+/scratch/divanshu/finalsets/combinedrnbset.rds
+
+
+Extracted Healty Sample Dataset :- 
+/scratch/divanshu/finalsets/completehealtyset.rds
+
+
+RNBEADS Analysis of combined healty datset(without Rhenious) :-
+/scratch/divanshu/finalsets/rnbeadsanalysis
+
+
+Whole Blood datsets :-
+/scratch/divanshu/newset/rnb.set.rds
+
+
+Healty RNB.SET :-
+/scratch/divanshu/newset/healthyrnb.set.rds
+
+Healty and Filtered WholeBlood dataset :-
+/scratch/divanshu/newset/filteredrnb.set.rds
+
+
+Medecom out put on Whole blood dataset
+/scratch/divanshu/newset/medecomoutk_5_15.rds
+/scratch/divanshu/newset/final_medecomoutput.rds
+
+
+
+online shiny app :-
+https://divanshu-gupta.shinyapps.io/finalapp/
+
+

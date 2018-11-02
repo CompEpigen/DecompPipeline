@@ -2,6 +2,8 @@
 #' 
 #' This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
 #' 
+#' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+#'                   through \code{rnb.set}
 #' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.
 #' @param MARKER_SELECTION A vector of strings representing marker selection methods. Available method are \itemize{
 #'                                  \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
@@ -51,7 +53,8 @@
 #' }
 #' @export
 prepare_CG_subsets<-function(
-		rnb.set,
+    meth.data=NULL,
+		rnb.set=NULL,
 		MARKER_SELECTION,
 		N_MARKERS=5000,
 		WRITE_FILES=FALSE,
@@ -70,7 +73,9 @@ prepare_CG_subsets<-function(
 	
 	groups<-1:length(MARKER_SELECTION)
 	
-	meth.data<-meth(rnb.set)
+    if(is.null(meth.data)){
+	    meth.data<-meth(rnb.set)
+    }
 	
 	if(store.heatmaps){
 	  if(!is.null(heatmap.sample.col)){
@@ -341,8 +346,8 @@ prepare_CG_subsets<-function(
 		
 	}
 	names(cg_groups) <- MARKER_SELECTION
-	return(cg_groups)
-	
+
+	return(cg_groups=cg_groups)
 }
 
 #' create.heatmap

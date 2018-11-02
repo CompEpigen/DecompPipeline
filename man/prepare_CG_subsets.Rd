@@ -4,12 +4,16 @@
 \alias{prepare_CG_subsets}
 \title{prepare_CG_subsets}
 \usage{
-prepare_CG_subsets(rnb.set, MARKER_SELECTION, N_MARKERS = 5000,
-  WRITE_FILES = FALSE, WD = NA, REF_DATA_SET = NULL,
-  REF_PHENO_COLUMN = NULL, N_PRIN_COMP = 10, RANGE_DIFF = 0.05,
-  CUSTOM_MARKER_FILE = "", store.heatmaps = F, heatmap.sample.col = NULL)
+prepare_CG_subsets(meth.data = NULL, rnb.set = NULL, MARKER_SELECTION,
+  N_MARKERS = 5000, WRITE_FILES = FALSE, WD = NA,
+  REF_DATA_SET = NULL, REF_PHENO_COLUMN = NULL, N_PRIN_COMP = 10,
+  RANGE_DIFF = 0.05, CUSTOM_MARKER_FILE = "", store.heatmaps = F,
+  heatmap.sample.col = NULL)
 }
 \arguments{
+\item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+through \code{rnb.set}}
+
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.}
 
 \item{MARKER_SELECTION}{A vector of strings representing marker selection methods. Available method are \itemize{

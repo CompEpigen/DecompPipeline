@@ -4,9 +4,10 @@
 \alias{prepare_data_BS}
 \title{prepare_data_BS}
 \usage{
-prepare_data_BS(RNB_SET, WORK_DIR, analysis.name, SAMPLE_SELECTION_COL = NA,
-  SAMPLE_SELECTION_GREP = NA, REF_CT_COLUMN = NA, PHENO_COLUMNS = NA,
-  TRUE_A_TOKEN = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
+prepare_data_BS(RNB_SET, WORK_DIR, analysis.name,
+  SAMPLE_SELECTION_COL = NA, SAMPLE_SELECTION_GREP = NA,
+  REF_CT_COLUMN = NA, PHENO_COLUMNS = NA, TRUE_A_TOKEN = NA,
+  ID_COLUMN = rnb.getOption("identifiers.column"),
   FILTER_COVERAGE = hasCovg(RNB_SET), MIN_COVERAGE = 5,
   MIN_COVG_QUANT = 0.05, MAX_COVG_QUANT = 0.95, FILTER_NA = TRUE,
   FILTER_SNP = TRUE, snp.list = NULL, FILTER_SOMATIC = TRUE)

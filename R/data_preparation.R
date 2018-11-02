@@ -54,8 +54,8 @@
 #' @export
 prepare_data<-function(
 		RNB_SET, 
-		WORK_DIR,
-		analysis.name,
+		WORK_DIR=getwd(),
+		analysis.name="analysis",
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS=NA,
@@ -206,8 +206,6 @@ prepare_data<-function(
 			
 			save(Ahouseman2012, file=sprintf("%s/Ahouseman2012.RData", OUTPUTDIR))
 		}
-		
-		
 	}
 	
 	if(!is.na(REF_CT_COLUMN)){
@@ -269,7 +267,20 @@ prepare_data<-function(
 	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
 	
-	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f)
+	analysis_info<-list()
+	
+	analysis_info$QUALITY_FILTERING <- sprintf("%s%s%s%s%s%s",
+	                                           ifelse(FILTER_BEADS, "Beads", ""),
+	                                           ifelse(FILTER_INTENSITY, "Intensity", ""),
+	                                           ifelse(FILTER_NA, "Missing", ""),
+	                                           ifelse(FILTER_CONTEXT, "Context", ""),
+	                                           ifelse(FILTER_SNP, "SNP", ""),
+	                                           ifelse(FILTER_SOMATIC, "Somatic", "")
+	)
+	
+	analysis_info$NORMALIZATION <- NORMALIZATION
+	
+	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f, info=analysis_info)
 	if(exists("trueT")){
 	  res$RefMeth <- trueT
 	}
@@ -708,6 +719,6 @@ prepare_data_BS <- function(
 	if(exists("trueA")){
 	  res$RefProps <- trueA
 	}
+	
 	return(res)
 }
-
