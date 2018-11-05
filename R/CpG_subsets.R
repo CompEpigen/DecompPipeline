@@ -81,7 +81,7 @@ prepare_CG_subsets<-function(
     }
   }
 	
-	if(!is.data.frame(meth.data)&&!is.matrix(meth.data){
+	if(!is.data.frame(meth.data)&&!is.matrix(meth.data)){
 	  stop("Invalid value for meth.data")
 	}
 	  
