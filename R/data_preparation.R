@@ -606,8 +606,8 @@ filter.annotation.biseq<-function(
 #' @export
 prepare_data_BS <- function(
 		RNB_SET, 
-		WORK_DIR,
-		analysis.name,
+		WORK_DIR=getwd(),
+		analysis.name="analysis",
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		REF_CT_COLUMN=NA,
