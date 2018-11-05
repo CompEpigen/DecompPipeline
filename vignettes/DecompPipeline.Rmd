@@ -23,11 +23,9 @@ vignette: >
 
 You can install the *DecompPipeline* through GitHub using *devtools*:
 
-```{r}
+```{r, eval=F}
 install.packages("devtools")
-library(devtools)
-devtools::install_github("lutsik/DecompPipeline")
-library(DecompPipeline)
+#devtools::install_github("lutsik/DecompPipeline")
 ```
 
 # Using DecompPipeline
@@ -35,11 +33,48 @@ library(DecompPipeline)
 
 The main workhorse for *DecompPipeline* is ```start_decomp_pipeline````. It only requires few inputs, including DNA methylation data either in the form of a *matrix\data.frame* or as an *RnBSet* object. We will now consider the rich functionalities that are available for the second type of input. A short introduction on how to import DNA methylation data is given in [this section](#rnbeads). For details on the many options available within the *DecompPipeline*, see the functions documentation. We will further explain the options in this vignette.
 
-```{r}
+```{r, echo=F, message=F, warning=F}
+library(devtools)
+library(DecompPipeline)
 ?start_decomp_pipeline
 ```
 
 ## CpG Filtering
+
+This filtering step involves removing potentially unreliable and/or problematic CpGs from further analysis and works both for bisulfite sequencing and for array based data sets. We will discuss the two data types separately:
+
+### Array based data sets
+
+Filtering CpG sites of array based data sets (27k, 450k, EPIC) involves setting the minimum number of required beads on the chip (MIN_N_BEADS). Furthermore, low and high intensity outliers can be removed by a quantile approach, which removes the highest (MAX_INT_QUANT) and lowest quantile (MIN_INT_QUANT). In addition, all sites containing any missing value (FILTER_NA), outside of CpG context (FILTER_CONTEXT), mapping to an annotated Single Nucleotide Polymorphism (FILTER_SNP, snp.list) and on the sex chromosomes (FILTER_SOMATIC) can be omitted. Further options are available and describe in the functions documentation. The function also provides options to normalize data using the methods available in the RnBeads R package and will return the processed data set and further information on the steps executed.
+
+```{r}
+data("small.RnBeadSet")
+data.prep <- prepare_data(RNB_SET = rnb.set.example,
+                          NORMALIZATION = "wm.dasen",
+                          MIN_N_BEADS = 5,
+                          MIN_INT_QUANT = 0.05,
+                          MAX_INT_QUANT = 0.95,
+                          FILTER_NA = T,
+                          FILTER_SNP = T,
+                          FILTER_CONTEXT = FALSE,
+                          FILTER_SOMATIC = FALSE)
+```
+
+### Bisulfite sequencing based data sets
+
+For bisulfite sequencing data sets, different filtering criteria apply. First, a absolute coverage threshold can be specified with MIN_COVERAGE to remove all sites with lower coverage. Similar to array-based data sets, upper and lower quantile of coverage can be omitted using MIN_COVG_QUANT and MAX_COVG_QUANT. In complete accordance with array-based data sets, sites having missing values, located at annotated SNPs and on sex chromosomes can be removed. 
+
+```{r}
+rnb.set <- load.rnb.set(system.file("extdata/small_rnbSet.zip",package="DecompPipeline"))
+data.prep.bs <- prepare_data_BS(RNB_SET = rnb.set,
+                                MIN_COVERAGE = 5,
+                                MIN_COVG_QUANT = 0.1,
+                                MAX_COVG_QUANT = 0.9,
+                                FILTER_NA = T,
+                                FILTER_SOMATIC = F,
+                                FILTER_SNP = F)
+```
+
 ## <a name="rnbeads"></a>Data Import through RnBeads
 # R session
 Here is the output of `sessionInfo()` on the system on which this document was compiled:
