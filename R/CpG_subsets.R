@@ -73,9 +73,18 @@ prepare_CG_subsets<-function(
 	
 	groups<-1:length(MARKER_SELECTION)
 	
-    if(is.null(meth.data)){
+  if(is.null(meth.data)){
+    if(inherits(rnb.set,"RnBSet")){
 	    meth.data<-meth(rnb.set)
+    }else{
+      stop("Invalid value for rnb.set, needs to be RnBSet")
     }
+  }
+	
+	if(!is.data.frame(meth.data)&&!is.matrix(meth.data){
+	  stop("Invalid value for meth.data")
+	}
+	  
 	
 	if(store.heatmaps){
 	  if(!is.null(heatmap.sample.col)){

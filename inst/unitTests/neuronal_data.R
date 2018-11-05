@@ -23,7 +23,7 @@ res<-prepare_data(
 		SAMPLE_SELECTION_COL=NA,
 		SAMPLE_SELECTION_GREP=NA,
 		PHENO_COLUMNS="bcr",
-		ID_COLUMN=NA,
+		ID_COLUMN=NULL,
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
 		REF_RNB_SET="/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference_unnormalized.zip",
@@ -43,7 +43,7 @@ res<-prepare_data(
 
 
 cg_subsets<-prepare_CG_subsets(
-		res$rnb.set.filtered,
+		rnb.set=res$rnb.set.filtered,
 		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range"),
 		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
 		N_MARKERS = 4242,
