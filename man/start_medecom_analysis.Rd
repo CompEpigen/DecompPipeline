@@ -4,9 +4,9 @@
 \alias{start_medecom_analysis}
 \title{start_medecom_analysis}
 \usage{
-start_medecom_analysis(meth.data = NULL, rnb.set = NULL, WORK_DIR,
-  cg_groups, Ks, LAMBDA_GRID, SAMPLE_SUBSET = NULL, K_FIXED = NULL,
-  WRITE_FILES = TRUE, factorviz.outputs = F,
+start_medecom_analysis(meth.data = NULL, rnb.set = NULL,
+  WORK_DIR = getwd(), cg_groups, Ks, LAMBDA_GRID, SAMPLE_SUBSET = NULL,
+  K_FIXED = NULL, WRITE_FILES = TRUE, factorviz.outputs = F,
   opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
   trueT = NULL, trueA = NULL, analysis.name = "MeDeComRun",
   folds = 10, cores = 1, itermax = 1000, ninit = 100,

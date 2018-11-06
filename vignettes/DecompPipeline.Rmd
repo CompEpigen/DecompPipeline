@@ -99,7 +99,7 @@ For most of the options (except for **houseman2012**, **jaffe2014**, and **range
 ```{r}
 cg_subsets <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
                                  MARKER_SELECTION = c("houseman2012","var"),
-                                 N_MARKERS = 7500
+                                 N_MARKERS = 1000
 )
 lengths(cg_subsets)
 ```

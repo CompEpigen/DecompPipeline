@@ -6,8 +6,8 @@ Authors@R: c(
    person ( "Pavlo", "Lutsik", email="p.lutsik@mx.uni-saarland.de", role = c("aut")),
    person ( "Michael", "Scherer", email="mscherer@mpi-inf.mpg.de", role = c("cre","aut"))
  )
-Date: 2018-06-25
-Version: 0.1.1
+Date: 2018-11-06
+Version: 0.2.1
 Depends:
     R (>= 3.2.0),
     MeDeCom,
