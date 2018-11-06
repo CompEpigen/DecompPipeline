@@ -87,6 +87,9 @@ start_medecom_analysis<-function(
   analysis_info$ANALYSIS<-ANALYSIS_ID
   
   WORK_DIR <- file.path(WORK_DIR,analysis.name)
+  if(!file.exists(WORK_DIR)){
+    dir.create(WORK_DIR)
+  }
 	
 	if(is.na(CLUSTER_RDIR)){
 		if(any(grepl("deep", R.utils:::System$getHostname()))){
