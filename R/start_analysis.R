@@ -33,7 +33,7 @@
 start_medecom_analysis<-function(
     meth.data=NULL,
 		rnb.set=NULL,
-		WORK_DIR,
+		WORK_DIR=getwd(),
 		cg_groups,
 		Ks,
 		LAMBDA_GRID,
