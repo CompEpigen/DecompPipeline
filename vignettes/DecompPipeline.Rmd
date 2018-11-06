@@ -25,7 +25,7 @@ You can install the *DecompPipeline* through GitHub using *devtools*:
 
 ```{r, eval=F}
 install.packages("devtools")
-#devtools::install_github("lutsik/DecompPipeline")
+devtools::install_github("lutsik/DecompPipeline")
 ```
 
 # Using DecompPipeline
