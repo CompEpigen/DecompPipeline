@@ -32,7 +32,7 @@ devtools::install_github("lutsik/DecompPipeline")
 # Using DecompPipeline
 ## Default Pipeline
 
-The main workhorse for *DecompPipeline* is ```start_decomp_pipeline```. It only requires few inputs, including DNA methylation data either in the form of a *matrix\data.frame* or as an *RnBSet* object. We will now consider the rich functionalities that are available for the second type of input. A short introduction on how to import DNA methylation data is given in [this section](#rnbeads). For details on the many options available within the *DecompPipeline*, see the functions documentation. We will further explain the options in this vignette.
+The main workhorse for *DecompPipeline* is ```start_decomp_pipeline```. It only requires few inputs, including DNA methylation data either in the form of a *matrix\data.frame* or as an *RnBSet* object. We will now consider the rich functionalities that are available for the second type of input. A short introduction on how to import DNA methylation data is given in the last section. For details on the many options available within the *DecompPipeline*, see the functions documentation. We will further explain the options in this vignette.
 
 ```{r, echo=F, message=F, warning=F}
 library(devtools)
@@ -116,7 +116,28 @@ md.res <- start_medecom_analysis(rnb.set=data.prep$rnb.set.filtered,
                                  factorviz.outputs = T)
 ```
 
-# <a name="rnbeads"></a>Data Import through RnBeads
+## Executing DecomPipeline
+
+You can also peform all the steps above, by just calling a single function:
+
+```{r}
+md.res <- start_decomp_pipeline(rnb.set=rnb.set,
+                                Ks=2:5,
+                                lambda.grid = c(0.01,0.001),
+                                factorviz.outputs = T,
+                                marker.selection = c("houseman2012","var"),
+                                n.markers = 1000,
+                                min.n.beads = 5,
+                                min.int.quant = 0.05,
+                                max.int.quant = 0.95,
+                                filter.na = T,
+                                filter.snp  = T,
+                                filter.context = FALSE,
+                                filter.somatic = FALSE,
+                                normalization="wm.dasen")
+```
+
+# Data Import through RnBeads
 
 We recommend to use the [RnBeads](https://rnbeads.org) package to provide methylation data to *DecompPipeline*. *RnBeads* can handle BS and array-based datasets and provides an extensive toolset. BS data can be loaded directly from BED-files generated through methylation data mapping and calling software, such as bismark or bsmap. For array-based datasets, IDAT-files can be directly loaded or GEO accession numbers provided to download data from the repository, among other import options. We refer to the [RnBeads vignette](http://bioconductor.org/packages/release/bioc/vignettes/RnBeads/inst/doc/RnBeads.pdf) for further descriptions on the data import options. Data Import is the only module to be exectued ahead of using *DecompPipeline*.
 
