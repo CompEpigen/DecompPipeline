@@ -43,7 +43,7 @@ res<-prepare_data(
 
 
 cg_subsets<-prepare_CG_subsets(
-		rnb.set=res$rnb.set.filtered,
+		meth.data=meth(res$rnb.set.filtered),
 		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range"),
 		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
 		N_MARKERS = 4242,

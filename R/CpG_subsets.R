@@ -91,7 +91,7 @@ prepare_CG_subsets<-function(
 	     if(!heatmap.sample.col %in% colnames(pheno(rnb.set))){
 	       logger.error("heatmap.sample.col not a column name of the phenotypic table")
 	    }
-	    trait <- pheno(rnb.set)[,heatmap.sample.col]
+	    trait <- as.factor(pheno(rnb.set)[,heatmap.sample.col])
 	    palette <- rainbow(length(levels(trait)))
 	    sample.cols <- palette[as.integer(trait)]
 	  }else{
