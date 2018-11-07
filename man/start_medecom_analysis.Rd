@@ -4,9 +4,9 @@
 \alias{start_medecom_analysis}
 \title{start_medecom_analysis}
 \usage{
-start_medecom_analysis(meth.data = NULL, rnb.set = NULL, WORK_DIR,
-  cg_groups, Ks, LAMBDA_GRID, SAMPLE_SUBSET = NULL, K_FIXED = NULL,
-  WRITE_FILES = TRUE, factorviz.outputs = F,
+start_medecom_analysis(meth.data = NULL, rnb.set = NULL,
+  WORK_DIR = getwd(), cg_groups, Ks, LAMBDA_GRID, SAMPLE_SUBSET = NULL,
+  K_FIXED = NULL, WRITE_FILES = TRUE, factorviz.outputs = F,
   opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
   trueT = NULL, trueA = NULL, analysis.name = "MeDeComRun",
   folds = 10, cores = 1, itermax = 1000, ninit = 100,
@@ -65,6 +65,12 @@ through \code{rnb.set}}
 \item{CLUSTER_MEMLIMIT}{the \code{memlimit} resource value of the cluster submission.}
 
 \item{CLEANUP}{Flag indicating if temprary files are to be deleted.}
+
+\item{analysis_info}{Information to be saved about the analysis. Just stored as info.}
+
+\item{LAMBDA_GRID_TYPE}{String represent the lambda grid that was chosen. Just stored as info.}
+
+\item{ANALYSIS_TOKEN}{String specifying the type of analysis that was conducted. Just stored as info.}
 }
 \value{
 An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.

@@ -28,6 +28,9 @@
 #' @param CLUSTER_HOSTLIST Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param CLUSTER_MEMLIMIT the \code{memlimit} resource value of the cluster submission.
 #' @param CLEANUP Flag indicating if temprary files are to be deleted.
+#' @param analysis_info Information to be saved about the analysis. Just stored as info.
+#' @param LAMBDA_GRID_TYPE String represent the lambda grid that was chosen. Just stored as info.
+#' @param ANALYSIS_TOKEN String specifying the type of analysis that was conducted. Just stored as info.
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 #' @export
 start_medecom_analysis<-function(
@@ -341,6 +344,7 @@ start_medecom_analysis<-function(
 	  }
 	  medecom.set <- result
 	  save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+	  save(meth.data,file=file.path(store.path,"meth_data.RData"))
 	  if(!is.null(rnb.set)){
 	    ann.C <- annotation(rnb.set)
 	    ann.S <- pheno(rnb.set)

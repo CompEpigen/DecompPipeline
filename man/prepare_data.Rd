@@ -6,9 +6,9 @@
 FUNCTIONS
 prepare_data}
 \usage{
-prepare_data(RNB_SET, WORK_DIR, analysis.name, SAMPLE_SELECTION_COL = NA,
-  SAMPLE_SELECTION_GREP = NA, PHENO_COLUMNS = NA,
-  ID_COLUMN = rnb.getOption("identifiers.column"),
+prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
+  SAMPLE_SELECTION_COL = NA, SAMPLE_SELECTION_GREP = NA,
+  PHENO_COLUMNS = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
   NORMALIZATION = "none", REF_CT_COLUMN = NA, REF_RNB_SET = NA,
   REF_RNB_CT_COLUMN = NA, PREPARE_TRUE_PROPORTIONS = FALSE,
   TRUE_A_TOKEN = NA, HOUSEMAN_A_TOKEN = NA,
