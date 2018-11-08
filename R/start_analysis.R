@@ -317,6 +317,9 @@ start_medecom_analysis<-function(
 	
 	### TODO: Fix this once
 	
+	result@parameters$ANALYSIS <- analysis.name
+	result@parameters$GROUP_LISTS <- cg_groups
+	result@parameters$cg_subsets <- c(1:length(cg_groups))
 	#    result@parameters$ANALYSIS <- ANALYSIS_ID
 	#    result@parameters$NORMALIZATION <- NORMALIZATION
 	result@parameters$ITERMAX<-itermax
@@ -326,8 +329,6 @@ start_medecom_analysis<-function(
 	result@parameters$NINIT<-ninit
 	#    result@parameters$DATASET<-DATASET 
 	#    result@parameters$DATA_SUBSET<-DATA_SUBSET 
-	
-	result@parameters$cg_subsets <- c(1:length(cg_groups))
 	
 	analysis_info$GROUP_LISTS<-cg_groups
 	analysis_info$ANALYSIS_DATE<-date()
