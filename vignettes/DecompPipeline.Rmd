@@ -83,8 +83,8 @@ names(data.prep.bs)
 Since performing MeDeCom on complete 450k/EPIC or BS datasets is still computationally infeasible, it is crucial to select sites for subsequent analysis that might define LMCs. The *DecompPipeline* provides multiple options to preselect those CpGs and we will briefly introduce each of them:
 
 * **pheno** This option selects the markers that define sample identity for the grouping information given through *rnb.sample.groups*. Briefly, the limma method is used to define differentially methylated sites between the two groups and uses those markers for subsequent analysis.
-* **houseman2012** This option selects the 50,000 sites that were reported to be cell-type specific in @houseman_refbased.
-* **houseman2014** Here, sites are selected as cell-type specific by [RefFreeEWAS](https://cran.rstudio.com/web/packages/RefFreeEWAS/index.html). For further information, see @Houseman2014.
+* **houseman2012** This option selects 50,000 sites that were found to be cell-type specific using the  @houseman_refbased method on blood cell types. The Houseman method was employed on the @reiniusRef dataset and is thus only applicable to blood data sets.
+* **houseman2014** Here, sites are selected as cell-type specific by [RefFreeEWAS](https://cran.rstudio.com/web/packages/RefFreeEWAS/index.html). For further information, see @Houseman2014. This method is applicable to any kind of data set.
 * **jaffe2014** Another list of supposedly cell-type specific CpG sites reported in @Jaffe2014.
 * **rowFstat** If reference methylation profiles are provided through ```REF_DATA_SET``` and ```REF_PHENO_COLUMN```, sites are selected as those being linked to the reference cell types using an F-test.
 * **random** Sites are randomly selected from all possible sites.

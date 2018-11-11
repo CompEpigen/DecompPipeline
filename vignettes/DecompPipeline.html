@@ -8,7 +8,7 @@
 
 <meta name="author" content="Michael Scherer, Pavlo Lutsik">
 
-<meta name="date" content="2018-11-07">
+<meta name="date" content="2018-11-11">
 
 <title>DecompPipeline: Preprocessing of DNA Methylation data for MeDeCom</title>
 
@@ -216,7 +216,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">DecompPipeline: Preprocessing of DNA Methylation data for MeDeCom</h1>
 <h4 class="author"><em>Michael Scherer, Pavlo Lutsik</em></h4>
-<h4 class="date"><em>2018-11-07</em></h4>
+<h4 class="date"><em>2018-11-11</em></h4>
 
 </div>
 
@@ -288,11 +288,11 @@ data.prep &lt;- prepare_data(RNB_SET = rnb.set.example,
                           FILTER_SNP = <span class="hljs-literal">T</span>,
                           FILTER_CONTEXT = <span class="hljs-literal">FALSE</span>,
                           FILTER_SOMATIC = <span class="hljs-literal">FALSE</span>)</code></pre>
-<pre><code class="hljs">## 2018-11-07 16:52:12     1.5    INFO 239 sites removed in bead count filtering.
-## 2018-11-07 16:52:12     1.5    INFO 297 sites removed in intensity filtering.
-## 2018-11-07 16:52:12     1.5    INFO 0 sites removed in NA filtering
-## 2018-11-07 16:52:13     1.5    INFO 161 sites removed in SNP filtering
-## 2018-11-07 16:52:13     1.5    INFO Removing 697 sites, retaining  1039</code></pre>
+<pre><code class="hljs">## 2018-11-11 11:20:15     1.5    INFO 239 sites removed in bead count filtering.
+## 2018-11-11 11:20:15     1.5    INFO 297 sites removed in intensity filtering.
+## 2018-11-11 11:20:15     1.5    INFO 0 sites removed in NA filtering
+## 2018-11-11 11:20:16     1.5    INFO 161 sites removed in SNP filtering
+## 2018-11-11 11:20:16     1.5    INFO Removing 697 sites, retaining  1039</code></pre>
 <pre class="r"><code class="hljs">names(data.prep)</code></pre>
 <pre><code class="hljs">## [1] "quality.filter"   "annot.filter"     "total.filter"    
 ## [4] "rnb.set.filtered" "info"</code></pre>
@@ -314,12 +314,12 @@ data.prep.bs &lt;- prepare_data_BS(RNB_SET = rnb.set,
                                 FILTER_NA = <span class="hljs-literal">T</span>,
                                 FILTER_SOMATIC = <span class="hljs-literal">F</span>,
                                 FILTER_SNP = <span class="hljs-literal">F</span>)</code></pre>
-<pre><code class="hljs">## opening ff /tmp/RtmpOQv2qb/ff6f623a453210.ff</code></pre>
-<pre><code class="hljs">## 2018-11-07 16:52:15     1.7    INFO 8807 sites removed in absolute coverage filtering.
-## 2018-11-07 16:52:16     1.7    INFO 1130 sites removed in quantile coverage filtering.</code></pre>
-<pre><code class="hljs">## opening ff /tmp/RtmpOQv2qb/ff6f627581c0dd.ff</code></pre>
-<pre><code class="hljs">## 2018-11-07 16:52:16     1.7    INFO 0 sites removed in NA filtering
-## 2018-11-07 16:52:16     1.7    INFO Removing 9937 sites, retaining  63</code></pre>
+<pre><code class="hljs">## opening ff /tmp/Rtmp98Rw9g/ff6f623a453210.ff</code></pre>
+<pre><code class="hljs">## 2018-11-11 11:20:25     1.6    INFO 8807 sites removed in absolute coverage filtering.
+## 2018-11-11 11:20:25     1.6    INFO 1130 sites removed in quantile coverage filtering.</code></pre>
+<pre><code class="hljs">## opening ff /tmp/Rtmp98Rw9g/ff6f627581c0dd.ff</code></pre>
+<pre><code class="hljs">## 2018-11-11 11:20:25     1.6    INFO 0 sites removed in NA filtering
+## 2018-11-11 11:20:25     1.6    INFO Removing 9937 sites, retaining  63</code></pre>
 <pre class="r"><code class="hljs">names(data.prep.bs)</code></pre>
 <pre><code class="hljs">## [1] "quality.filter"   "annot.filter"     "total.filter"    
 ## [4] "rnb.set.filtered"</code></pre>
@@ -335,8 +335,8 @@ subsequent analysis that might define LMCs. The <em>DecompPipeline</em> provides
  Briefly, the limma method is used to define differentially methylated 
 sites between the two groups and uses those markers for subsequent 
 analysis.</li>
-<li><strong>houseman2012</strong> This option selects the 50,000 sites that were reported to be cell-type specific in <span class="citation">Eugene Andres Houseman et al. (2012)</span>.</li>
-<li><strong>houseman2014</strong> Here, sites are selected as cell-type specific by <a href="https://cran.rstudio.com/web/packages/RefFreeEWAS/index.html">RefFreeEWAS</a>. For further information, see <span class="citation">E. A. Houseman, Molitor, and Marsit (2014)</span>.</li>
+<li><strong>houseman2012</strong> This option selects 50,000 sites that were found to be cell-type specific using the <span class="citation">Eugene Andres Houseman et al. (2012)</span> method on blood cell types. The Houseman method was employed on the <span class="citation">Reinius et al. (2012)</span> dataset and is thus only applicable to blood data sets.</li>
+<li><strong>houseman2014</strong> Here, sites are selected as cell-type specific by <a href="https://cran.rstudio.com/web/packages/RefFreeEWAS/index.html">RefFreeEWAS</a>. For further information, see <span class="citation">E. A. Houseman, Molitor, and Marsit (2014)</span>. This method is applicable to any kind of data set.</li>
 <li><strong>jaffe2014</strong> Another list of supposedly cell-type specific CpG sites reported in <span class="citation">Jaffe and Irizarry (2014)</span>.</li>
 <li><strong>rowFstat</strong> If reference methylation profiles are provided through <code>REF_DATA_SET</code> and <code>REF_PHENO_COLUMN</code>, sites are selected as those being linked to the reference cell types using an F-test.</li>
 <li><strong>random</strong> Sites are randomly selected from all possible sites.</li>
@@ -420,12 +420,12 @@ lengths(cg_subsets)</code></pre>
 ## 
 ##     cat, commandArgs, getOption, inherits, isOpen, parse, warnings</code></pre>
 <pre><code class="hljs">## [1] "Did not write the variable dump: should only be executed from an environment with all the variables set"
-## [2018-11-07 16:52:45, Main:] checking inputs
-## [2018-11-07 16:52:45, Main:] preparing data
-## [2018-11-07 16:52:45, Main:] preparing jobs
-## [2018-11-07 16:52:45, Main:] 176 factorization runs in total
-## [2018-11-07 17:02:07, Main:] 100 runs complete
-## [2018-11-07 17:24:37, Main:] finished all jobs. Creating the object</code></pre>
+## [2018-11-11 11:20:54, Main:] checking inputs
+## [2018-11-11 11:20:54, Main:] preparing data
+## [2018-11-11 11:20:54, Main:] preparing jobs
+## [2018-11-11 11:20:54, Main:] 176 factorization runs in total
+## [2018-11-11 11:29:41, Main:] 100 runs complete
+## [2018-11-11 11:51:44, Main:] finished all jobs. Creating the object</code></pre>
 </div>
 <div id="executing-decomppipeline" class="section level2">
 <h2>Executing DecompPipeline</h2>
@@ -444,18 +444,18 @@ lengths(cg_subsets)</code></pre>
                                 filter.context = <span class="hljs-literal">FALSE</span>,
                                 filter.somatic = <span class="hljs-literal">FALSE</span>,
                                 normalization=<span class="hljs-string">"wm.dasen"</span>)</code></pre>
-<pre><code class="hljs">## 2018-11-07 17:24:38     5.0    INFO 8807 sites removed in absolute coverage filtering.
-## 2018-11-07 17:24:38     5.0    INFO 863 sites removed in quantile coverage filtering.
-## 2018-11-07 17:24:38     5.0    INFO 0 sites removed in NA filtering
-## 2018-11-07 17:25:22     7.3    INFO 4 sites removed in SNP filtering
-## 2018-11-07 17:25:22     7.3    INFO Removing 9674 sites, retaining  326
+<pre><code class="hljs">## 2018-11-11 11:52:00     5.0    INFO 8807 sites removed in absolute coverage filtering.
+## 2018-11-11 11:52:00     5.0    INFO 863 sites removed in quantile coverage filtering.
+## 2018-11-11 11:52:00     5.0    INFO 0 sites removed in NA filtering
+## 2018-11-11 11:52:15     7.3    INFO 4 sites removed in SNP filtering
+## 2018-11-11 11:52:17     7.3    INFO Removing 9674 sites, retaining  326
 ## [1] "Did not write the variable dump: should only be executed from an environment with all the variables set"
-## [2018-11-07 17:25:24, Main:] checking inputs
-## [2018-11-07 17:25:24, Main:] preparing data
-## [2018-11-07 17:25:24, Main:] preparing jobs
-## [2018-11-07 17:25:24, Main:] 176 factorization runs in total
-## [2018-11-07 17:26:59, Main:] 100 runs complete
-## [2018-11-07 17:31:44, Main:] finished all jobs. Creating the object</code></pre>
+## [2018-11-11 11:52:18, Main:] checking inputs
+## [2018-11-11 11:52:18, Main:] preparing data
+## [2018-11-11 11:52:18, Main:] preparing jobs
+## [2018-11-11 11:52:18, Main:] 176 factorization runs in total
+## [2018-11-11 11:53:46, Main:] 100 runs complete
+## [2018-11-11 11:58:30, Main:] finished all jobs. Creating the object</code></pre>
 </div>
 </div>
 <div id="data-import-through-rnbeads" class="section level1">
@@ -500,53 +500,52 @@ rnb.set &lt;- rnb.execute.import(data.source = c(idat.dir,sample.annotation),dat
 ##  [3] R.methodsS3_1.7.1                      
 ##  [4] RnBeads.hg19_1.14.0                    
 ##  [5] DecompPipeline_0.2.1                   
-##  [6] MeDeCom_0.2.1                          
-##  [7] RnBeads_2.0.0                          
-##  [8] plyr_1.8.4                             
-##  [9] methylumi_2.28.0                       
-## [10] minfi_1.28.0                           
-## [11] bumphunter_1.22.0                      
-## [12] locfit_1.5-9.1                         
-## [13] iterators_1.0.10                       
-## [14] foreach_1.4.4                          
-## [15] Biostrings_2.50.0                      
-## [16] XVector_0.22.0                         
-## [17] SummarizedExperiment_1.12.0            
-## [18] DelayedArray_0.8.0                     
-## [19] BiocParallel_1.16.0                    
-## [20] FDb.InfiniumMethylation.hg19_2.2.0     
-## [21] org.Hs.eg.db_3.7.0                     
-## [22] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
-## [23] GenomicFeatures_1.32.3                 
-## [24] AnnotationDbi_1.44.0                   
-## [25] reshape2_1.4.3                         
-## [26] scales_1.0.0                           
-## [27] Biobase_2.42.0                         
-## [28] illuminaio_0.24.0                      
-## [29] matrixStats_0.54.0                     
-## [30] limma_3.38.0                           
-## [31] gridExtra_2.3                          
-## [32] ggplot2_3.1.0                          
-## [33] fields_9.6                             
-## [34] maps_3.3.0                             
-## [35] spam_2.2-0                             
-## [36] dotCall64_1.0-0                        
-## [37] ff_2.2-14                              
-## [38] bit_1.1-14                             
-## [39] cluster_2.0.7-1                        
-## [40] MASS_7.3-50                            
-## [41] GenomicRanges_1.34.0                   
-## [42] GenomeInfoDb_1.18.0                    
-## [43] IRanges_2.16.0                         
-## [44] S4Vectors_0.20.0                       
-## [45] BiocGenerics_0.28.0                    
-## [46] RUnit_0.4.32                           
-## [47] gplots_3.0.1                           
-## [48] gtools_3.8.1                           
-## [49] pracma_2.1.8                           
-## [50] Rcpp_0.12.19                           
-## [51] usethis_1.4.0                          
-## [52] devtools_2.0.1                         
+##  [6] RnBeads_2.0.0                          
+##  [7] plyr_1.8.4                             
+##  [8] methylumi_2.28.0                       
+##  [9] minfi_1.28.0                           
+## [10] bumphunter_1.22.0                      
+## [11] locfit_1.5-9.1                         
+## [12] iterators_1.0.10                       
+## [13] foreach_1.4.4                          
+## [14] Biostrings_2.50.0                      
+## [15] XVector_0.22.0                         
+## [16] SummarizedExperiment_1.12.0            
+## [17] DelayedArray_0.8.0                     
+## [18] BiocParallel_1.16.0                    
+## [19] FDb.InfiniumMethylation.hg19_2.2.0     
+## [20] org.Hs.eg.db_3.7.0                     
+## [21] TxDb.Hsapiens.UCSC.hg19.knownGene_3.2.2
+## [22] GenomicFeatures_1.32.3                 
+## [23] AnnotationDbi_1.44.0                   
+## [24] reshape2_1.4.3                         
+## [25] scales_1.0.0                           
+## [26] Biobase_2.42.0                         
+## [27] illuminaio_0.24.0                      
+## [28] matrixStats_0.54.0                     
+## [29] limma_3.38.0                           
+## [30] gridExtra_2.3                          
+## [31] ggplot2_3.1.0                          
+## [32] fields_9.6                             
+## [33] maps_3.3.0                             
+## [34] spam_2.2-0                             
+## [35] dotCall64_1.0-0                        
+## [36] ff_2.2-14                              
+## [37] bit_1.1-14                             
+## [38] cluster_2.0.7-1                        
+## [39] MASS_7.3-51.1                          
+## [40] GenomicRanges_1.34.0                   
+## [41] GenomeInfoDb_1.18.0                    
+## [42] IRanges_2.16.0                         
+## [43] S4Vectors_0.20.0                       
+## [44] BiocGenerics_0.28.0                    
+## [45] MeDeCom_0.2                            
+## [46] gplots_3.0.1                           
+## [47] gtools_3.8.1                           
+## [48] pracma_2.1.8                           
+## [49] Rcpp_1.0.0                             
+## [50] usethis_1.4.0                          
+## [51] devtools_2.0.1                         
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] backports_1.1.2          lazyeval_0.2.1          
@@ -559,7 +558,7 @@ rnb.set &lt;- rnb.execute.import(data.source = c(idat.dir,sample.annotation),dat
 ## [15] blob_1.1.1               dplyr_0.7.7             
 ## [17] callr_3.0.0              crayon_1.3.4            
 ## [19] RCurl_1.95-4.11          genefilter_1.64.0       
-## [21] GEOquery_2.50.0          bindr_0.1.1             
+## [21] bindr_0.1.1              GEOquery_2.50.0         
 ## [23] survival_2.42-3          glue_1.3.0              
 ## [25] registry_0.5             gtable_0.2.0            
 ## [27] zlibbioc_1.28.0          pkgbuild_1.0.2          
@@ -616,6 +615,13 @@ cell mixture distribution.” <em>BMC Bioinformatics</em> 13 (86). doi:<a href="
 <p>Jaffe, Andrew E, and Rafael A Irizarry. 2014. “Accounting for 
 cellular heterogeneity is critical in epigenome-wide association 
 studies.” <em>Genome Biology</em> 15 (2): R31. doi:<a href="https://doi.org/10.1186/gb-2014-15-2-r31">10.1186/gb-2014-15-2-r31</a>.</p>
+</div>
+<div id="ref-reiniusRef">
+<p>Reinius, Lovisa E., Nathalie Acevedo, Maaike Joerink, Göran 
+Pershagen, Sven Erik Dahlén, Dario Greco, Cilla Söderhäll, Annika 
+Scheynius, and Juha Kere. 2012. “Differential DNA methylation in 
+purified human blood cells: Implications for cell lineage and studies on
+ disease susceptibility.” <em>PLoS ONE</em> 7 (7). doi:<a href="https://doi.org/10.1371/journal.pone.0041361">10.1371/journal.pone.0041361</a>.</p>
 </div>
 </div>
 </div>
