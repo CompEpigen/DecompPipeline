@@ -282,7 +282,7 @@ prepare_data<-function(
 	
 	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f, info=analysis_info)
 	if(exists("trueT")){
-	  res$RefMeth <- trueT
+	  res$RefMeth <- trueT[total.filter,]
 	}
 	if(exists("trueA")){
 	  res$RefProps <- trueA
@@ -714,7 +714,7 @@ prepare_data_BS <- function(
 	
 	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f)
 	if(exists("trueT")){
-	  res$RefMeth <- trueT
+	  res$RefMeth <- trueT[total.filter,]
 	}
 	if(exists("trueA")){
 	  res$RefProps <- trueA

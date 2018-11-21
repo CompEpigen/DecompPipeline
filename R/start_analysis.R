@@ -347,6 +347,7 @@ start_medecom_analysis<-function(
 	  save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
 	  save(meth.data,file=file.path(store.path,"meth_data.RData"))
 	  if(!is.null(rnb.set)){
+		result@parameters$ASSEMBLY <- assembly(rnb.set)
 	    ann.C <- annotation(rnb.set)
 	    ann.S <- pheno(rnb.set)
 	    save(ann.C,file=file.path(store.path,"ann_C.RData"))
