@@ -343,16 +343,16 @@ start_medecom_analysis<-function(
 	  if(!file.exists(store.path)){
 	    dir.create(store.path)
 	  }
-	  medecom.set <- result
-	  save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
-	  save(meth.data,file=file.path(store.path,"meth_data.RData"))
 	  if(!is.null(rnb.set)){
-		result@parameters$ASSEMBLY <- assembly(rnb.set)
+	    result@parameters$ASSEMBLY <- assembly(rnb.set)
 	    ann.C <- annotation(rnb.set)
 	    ann.S <- pheno(rnb.set)
 	    save(ann.C,file=file.path(store.path,"ann_C.RData"))
 	    save(ann.S,file=file.path(store.path,"ann_S.RData"))
 	  }
+	  medecom.set <- result
+	  save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+	  save(meth.data,file=file.path(store.path,"meth_data.RData"))
 	  if(!is.null(trueT)){
 	    ref.meth <- trueT
 	    save(ref.meth,file=file.path(store.path,"ref_meth.RData"))
