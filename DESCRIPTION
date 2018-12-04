@@ -12,7 +12,8 @@ Depends:
     R (>= 3.2.0),
     MeDeCom,
     RnBeads,
-    knitr
+    knitr,
+	R.utils
 VignetteBuilder: knitr    
 License: GPL-3
 RoxygenNote: 6.1.0
