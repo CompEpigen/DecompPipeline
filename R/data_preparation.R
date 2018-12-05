@@ -176,6 +176,7 @@ prepare_data<-function(
 		if(!is.na(TRUE_A_TOKEN)){
 			
 			trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
+			trueA <- apply(trueA,c(1,2),as.numeric)
 			rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
 			
 			save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
@@ -184,10 +185,11 @@ prepare_data<-function(
 		
 		if(!is.na(HOUSEMAN_A_TOKEN)){
 			
-			Ahouseman2012<-t(na.omit(pd[,grep(HOUSEMAN_A_TOKEN, colnames(pd))]))
-			rownames(Ahouseman2012)<-NULL
+			trueA<-t(na.omit(pd[,grep(HOUSEMAN_A_TOKEN, colnames(pd))]))
+			trueA <- apply(trueA,c(1,2),as.numeric)
+			rownames(trueA)<-gsub(HOUSEMAN_A_TOKEN, "", colnames(pd)[grep(HOUSEMAN_A_TOKEN, colnames(pd))])
 			
-			save(Ahouseman2012, file=sprintf("%s/Ahouseman2012.RData", OUTPUTDIR))
+			save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 			
 		}else if(ESTIMATE_HOUSEMAN_PROP){
 			
@@ -199,12 +201,12 @@ prepare_data<-function(
 			print("Estimating proportions using the Houseman et al, 2012 method")
 			res<-estimateProportionsCP(rnb.set, REF_CT_COLUMN, NA, 2000, full.output = TRUE)
 			
-			Ahouseman2012<-t(res$contributions.nonneg)
-			Ahouseman2012[Ahouseman2012<1e-5]<-0
+			trueA<-t(res$contributions.nonneg)
+			trueA[trueA<1e-5]<-0
 			
-			Ahouseman2012<-sweep(Ahouseman2012, 2, colSums(Ahouseman2012),"/")
+			trueA<-sweep(trueA, 2, colSums(trueA),"/")
 			
-			save(Ahouseman2012, file=sprintf("%s/Ahouseman2012.RData", OUTPUTDIR))
+			save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 		}
 	}
 	
@@ -587,8 +589,12 @@ filter.annotation.biseq<-function(
 #' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
 #' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 #'                 exploration.
+#' @param PREPARE_TRUE_PROPORTIONS Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+#'                          with Houseman's reference-based deconvolution approach.
 #' @param TRUE_A_TOKEN String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
 #'                      cell types.
+#' @param HOUSEMAN_A_TOKEN Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+#'                      by Houseman's method.
 #' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
 #' @param FILTER_COVERAGE Flag indicating, if site-filtering based on coverage is to be conducted.
 #' @param MIN_COVERAGE Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom.
@@ -612,7 +618,9 @@ prepare_data_BS <- function(
 		SAMPLE_SELECTION_GREP=NA,
 		REF_CT_COLUMN=NA,
 		PHENO_COLUMNS=NA,
+		PREPARE_TRUE_PROPORTIONS=FALSE,
 		TRUE_A_TOKEN=NA,
+		HOUSEMAN_A_TOKEN=NA,
 		ID_COLUMN=rnb.getOption("identifiers.column"),
 		FILTER_COVERAGE = hasCovg(RNB_SET),
 		MIN_COVERAGE=5,
@@ -659,13 +667,26 @@ prepare_data_BS <- function(
 		sample_ids<-pd[,ID_COLUMN]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
-	if(!is.na(TRUE_A_TOKEN)){
+	if(PREPARE_TRUE_PROPORTIONS){
+	  if(!is.na(TRUE_A_TOKEN)){
+	    
+	    trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
+	    trueA <- apply(trueA,c(1,2),as.numeric)
+	    rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
+	    
+	    save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
+	    
+	  }
 	  
-	  trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
-	  rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
-	  
-	  save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
-	  
+	  if(!is.na(HOUSEMAN_A_TOKEN)){
+	    
+	    trueA<-t(na.omit(pd[,grep(HOUSEMAN_A_TOKEN, colnames(pd))]))
+	    trueA <- apply(trueA,c(1,2),as.numeric)
+	    rownames(trueA)<-gsub(HOUSEMAN_A_TOKEN, "", colnames(pd)[grep(HOUSEMAN_A_TOKEN, colnames(pd))])
+	    
+	    save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
+	    
+	  }
 	}
 	if(!is.na(REF_CT_COLUMN)){
 	  ct<-pd[[REF_CT_COLUMN]]

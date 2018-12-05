@@ -357,8 +357,11 @@ start_medecom_analysis<-function(
 	    ref.meth <- trueT
 	    save(ref.meth,file=file.path(store.path,"ref_meth.RData"))
 	  }
+	  if(!is.null(trueA)){
+	    ref.props <- trueA
+	    save(ref.props,file=file.path(store.path,"ref_props.RData"))
+	  }
 	}
-	
 	return(result)
 }
 
@@ -544,7 +547,9 @@ start_decomp_pipeline <- function(rnb.set,
                                 SAMPLE_SELECTION_GREP = sample.selection.grep,
                                 REF_CT_COLUMN=ref.ct.column,
                                 PHENO_COLUMNS=pheno.cols,
+                                PREPARE_TRUE_PROPORTIONS=prepare.true.proportions,
                                 TRUE_A_TOKEN=true.A.token,
+                                HOUSEMAN_A_TOKEN=houseman.A.token,
                                 ID_COLUMN=id.column,
                                 FILTER_COVERAGE = filter.coverage,
                                 MIN_COVERAGE=min.coverage,

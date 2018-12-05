@@ -7,7 +7,9 @@
 prepare_data_BS(RNB_SET, WORK_DIR = getwd(),
   analysis.name = "analysis", SAMPLE_SELECTION_COL = NA,
   SAMPLE_SELECTION_GREP = NA, REF_CT_COLUMN = NA, PHENO_COLUMNS = NA,
-  TRUE_A_TOKEN = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
+  PREPARE_TRUE_PROPORTIONS = FALSE, TRUE_A_TOKEN = NA,
+  HOUSEMAN_A_TOKEN = NA,
+  ID_COLUMN = rnb.getOption("identifiers.column"),
   FILTER_COVERAGE = hasCovg(RNB_SET), MIN_COVERAGE = 5,
   MIN_COVG_QUANT = 0.05, MAX_COVG_QUANT = 0.95, FILTER_NA = TRUE,
   FILTER_SNP = TRUE, snp.list = NULL, FILTER_SOMATIC = TRUE)
@@ -30,8 +32,14 @@ analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.}
 \item{PHENO_COLUMNS}{Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 exploration.}
 
+\item{PREPARE_TRUE_PROPORTIONS}{Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+with Houseman's reference-based deconvolution approach.}
+
 \item{TRUE_A_TOKEN}{String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
 cell types.}
+
+\item{HOUSEMAN_A_TOKEN}{Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+by Houseman's method.}
 
 \item{ID_COLUMN}{Sample-specific ID column name in \code{RNB_SET}}
 
