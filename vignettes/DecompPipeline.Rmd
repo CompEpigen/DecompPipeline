@@ -23,7 +23,7 @@ bibliography: biblio.bib
 
 You can install the *DecompPipeline* through GitHub using *devtools*:
 
-```{r, eval=F}
+```{r, eval=T}
 install.packages("devtools")
 devtools::install_github("lutsik/DecompPipeline")
 ```
@@ -107,7 +107,7 @@ lengths(cg_subsets)
 
 After these preprocessing steps, you are ready to perfom the actual MeDeCom analysis using the ```start_medecom_analysis``` function. To store output in a format that is later on readable by FactorViz, you need to set the flag ```factorviz.outputs```. Further parameters are described in detail in the reference manual.
 
-```{r, eval=F}
+```{r, eval=T}
 md.res <- start_medecom_analysis(rnb.set=data.prep$rnb.set.filtered,
                                  cg_groups = cg_subsets,
                                  Ks=2:5,
@@ -119,7 +119,7 @@ md.res <- start_medecom_analysis(rnb.set=data.prep$rnb.set.filtered,
 
 You can also peform all the steps above, by just calling a single function:
 
-```{r, eval=F}
+```{r, eval=T}
 md.res <- start_decomp_pipeline(rnb.set=rnb.set,
                                 Ks=2:5,
                                 lambda.grid = c(0.01,0.001),

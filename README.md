@@ -1,6 +1,13 @@
 # DecompPipeline
 Large automated pipeline for running MeDeCom 
 
+# Installing DecompPipeline
+*DecompPipeline* can be directly installed from GitHub within an R session:
+```
+install.packages("devtools")
+devtools::install_github("lutsik/DecompPipeline")
+```
+
 # Using Decomp
 *DecompPipeline* includes three major steps, all of them are extensively documented. A more detailed introduction into *DecompPipeline* can be found in the package [vignette](https://github.com/lutsik/DecompPipeline/blob/master/vignettes/DecompPipeline.md).
 
