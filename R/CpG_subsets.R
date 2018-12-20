@@ -6,6 +6,7 @@
 #'                   through \code{rnb.set}
 #' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.
 #' @param MARKER_SELECTION A vector of strings representing marker selection methods. Available method are \itemize{
+#'                                  \item{"\code{all}"} Using all sites available in the input.
 #'                                  \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
 #'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
 #'                                         selected by employing limma on the methylation matrix.
@@ -34,7 +35,9 @@
 #'                      the reference cell type.
 #' @param N_PRIN_COMP Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
 #' @param RANGE_DIFF Optional argument specifying the difference between maximum and minimum required.
-#' @param CUSTOM_MARKER_FILE Optional argument containing a file that specifies the indices used for employing MeDeCom.
+#' @param CUSTOM_MARKER_FILE Optional argument containing an absolute path to a file that specifies the indices used for employing MeDeCom. Can be provided
+#'                   either as an \code{RDS} file containing a vector of indices to select or as a \code{txt, csv, tsv} file containing each index
+#'                   to be selected as a single row.
 #' @param store.heatmaps Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
 #'                       The files are then stored in the 'heatmaps' folder in WD.
 #' @param heatmap.sample.col Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.
@@ -104,7 +107,12 @@ prepare_CG_subsets<-function(
 	
 	for(group in groups){
 		
-		ind<-1:nrow(meth.data)	
+		ind<-1:nrow(meth.data)
+		
+		if(MARKER_SELECTION[group]=="all"){
+		  #' Do nothing
+		  ind <- ind
+		}
 		
 		if(MARKER_SELECTION[group]=="pheno"){
 			
@@ -137,9 +145,6 @@ prepare_CG_subsets<-function(
 			maxRank<-apply(ranks, 1, max)
 		
 			ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"pheno")
-			}
 		}
 		
 		if(MARKER_SELECTION[group]=="houseman2012" ){
@@ -147,9 +152,6 @@ prepare_CG_subsets<-function(
 		  if(file.exists(loc)){
 			  houseman.50k.markers<-readRDS(loc)
 			  ind<-intersect(ind, houseman.50k.markers)
-		  }
-		  if(store.heatmaps){
-		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"houseman2012")
 		  }
 		}
 		
@@ -237,17 +239,11 @@ prepare_CG_subsets<-function(
 				maxRank<-apply(ranks, 1, max)
 				ind<-ind[order(maxRank)[1:min(N_MARKERS, length(ind))]]
 			}
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"houseman2014")
-			}
 		}
 		
 		if(MARKER_SELECTION[group]=="jaffe2014"){
 			jaffe.markers <- readRDS(system.file(file.path("extdata","jaffe.irrizzary.markers.600.RDS"),package="DecompPipeline"))
 			ind<-intersect(ind, jaffe.markers)
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"jaffe2014")
-			}
 		}
 		
 		if(MARKER_SELECTION[group]==("rowFstat")){
@@ -273,17 +269,11 @@ prepare_CG_subsets<-function(
   		}else{
   		  logger.error("REF_DATA_SET and REF_PHENO_COLUMN need to be specified, if rowFstat is selected.")
   		}
-		  if(store.heatmaps){
-		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"rowFstat")
-		  }
 		}
 		
 		if(MARKER_SELECTION[group]=="random"){
 			subset<-sample.int(length(ind), min(N_MARKERS, length(ind)))
 			ind<-ind[subset]
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"random")
-			}
 		}
 		
 		if(MARKER_SELECTION[group]=="pca"){
@@ -298,18 +288,12 @@ prepare_CG_subsets<-function(
 				pca.ind<-union(pca.ind,order(abs(rot[,cix]), decreasing = TRUE)[1:add.sites])
 			}
 			ind<-ind[sort(pca.ind)]
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"pca")
-			}
 		}
 		
 		if(MARKER_SELECTION[group] == "var"){
 			
 			sds<-apply(meth.data[ind,], 1, sd)
 			ind<-ind[order(sds, decreasing=TRUE)[1:min(length(ind),N_MARKERS)]]
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"var")
-			}
 		}
 		
 		if(MARKER_SELECTION[group] == "hybrid"){
@@ -322,9 +306,6 @@ prepare_CG_subsets<-function(
 			ind<-sort(c(var.set, random.set))
 			rm(var.set)
 			rm(random.set)
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"hybrid")
-			}
 		}
 		
 		if(MARKER_SELECTION[group] == "range"){
@@ -332,19 +313,23 @@ prepare_CG_subsets<-function(
 			ranges<-ranges[2,]-ranges[1,]
 			ind<-ind[ranges>RANGE_DIFF]
 			rm(ranges)
-			if(store.heatmaps){
-			  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"range")
-			}
 		}
 		
 		if(MARKER_SELECTION[group]=="custom"){
-			if(file.exists(sprintf("%s/%s",WD, CUSTOM_MARKER_FILE))){
-				custom_filter<-readRDS(sprintf("%s/%s",WD,CUSTOM_MARKER_FILE))
-				ind<-intersect(ind, custom_filter)
+			if(file.exists(CUSTOM_MARKER_FILE)){
+			  if(grepl("RDS",CUSTOM_MARKER_FILE)){
+				  custom_filter<-readRDS(CUSTOM_MARKER_FILE)
+			  }else if(grepl("txt|csv|tsv",CUSTOM_MARKER_FILE)){
+			    custom_filter <- as.numeric(readLines(CUSTOM_MARKER_FILE))
+			  }else{
+			    stop("Invalid value for CUSTOM_MARKER_FILE")
+			  }
+			  ind<-intersect(ind, custom_filter)
 			}
-		  if(store.heatmaps){
-		    create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,"custom")
-		  }
+		}
+		
+		if(store.heatmaps){
+		  create.heatmap(meth.data[ind,],trait,sample.cols,palette,WD,MARKER_SELECTION[group])
 		}
 		
 		if(WRITE_FILES){

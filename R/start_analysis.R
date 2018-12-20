@@ -319,9 +319,9 @@ start_medecom_analysis<-function(
 	
 	result@parameters$ANALYSIS <- analysis.name
 	result@parameters$GROUP_LISTS <- cg_groups
-	result@parameters$cg_subsets <- c(1:length(cg_groups))
-	#    result@parameters$ANALYSIS <- ANALYSIS_ID
-	#    result@parameters$NORMALIZATION <- NORMALIZATION
+	# result@parameters$cg_subsets <- c(1:length(cg_groups))
+	# result@parameters$ANALYSIS <- ANALYSIS_ID
+	# result@parameters$NORMALIZATION <- NORMALIZATION
 	result@parameters$ITERMAX<-itermax
 	#    result@parameters$MARKER_SELECTION<- MARKER_SELECTION
 	result@parameters$NFOLDS<-folds
