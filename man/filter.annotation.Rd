@@ -5,7 +5,7 @@
 \title{filter.annotation}
 \usage{
 filter.annotation(rnb.set, snp = TRUE, snp.list, somatic = TRUE,
-  context = TRUE, cross.reactive = T, qual.filter = NULL)
+  context = TRUE, qual.filter = NULL)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.}
@@ -18,8 +18,6 @@ additional file with one SNP identifier per row in \code{snp.list}.}
 \item{somatic}{Flag indicating if only somatic probes are to be kept.}
 
 \item{context}{Flag indicating if probes in non-CpG context are to be removed.}
-
-\item{cross.reactive}{Flag indicating if cross-reactive probes are to be removed.}
 
 \item{qual.filter}{Vector of indices removed during quality filtering.}
 }
