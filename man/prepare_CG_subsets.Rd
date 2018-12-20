@@ -17,6 +17,7 @@ through \code{rnb.set}}
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.}
 
 \item{MARKER_SELECTION}{A vector of strings representing marker selection methods. Available method are \itemize{
+         \item{"\code{all}"} Using all sites available in the input.
          \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
                 groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
                 selected by employing limma on the methylation matrix.
@@ -53,7 +54,9 @@ the reference cell type.}
 
 \item{RANGE_DIFF}{Optional argument specifying the difference between maximum and minimum required.}
 
-\item{CUSTOM_MARKER_FILE}{Optional argument containing a file that specifies the indices used for employing MeDeCom.}
+\item{CUSTOM_MARKER_FILE}{Optional argument containing an absolute path to a file that specifies the indices used for employing MeDeCom. Can be provided
+either as an \code{RDS} file containing a vector of indices to select or as a \code{txt, csv, tsv} file containing each index
+to be selected as a single row.}
 
 \item{store.heatmaps}{Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
 The files are then stored in the 'heatmaps' folder in WD.}

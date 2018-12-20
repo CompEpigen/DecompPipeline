@@ -110,7 +110,7 @@ prepare_CG_subsets<-function(
 		ind<-1:nrow(meth.data)
 		
 		if(MARKER_SELECTION[group]=="all"){
-		  #' Do nothing
+		  #Do nothing
 		  ind <- ind
 		}
 		
@@ -177,6 +177,11 @@ prepare_CG_subsets<-function(
 			  rem.samples <- rem.samples | entry
 			}
 			X <- X[,!rem.samples]
+			pheno.data <- pheno.data[!rem.samples,]
+			level.problem <- unlist(lapply(sel.columns,function(x,mat){
+			  length(unique(mat[,x])) == length(levels(mat[,x]))
+			},pheno.data))
+			sel.columns <- sel.columns[level.problem]
 			formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
 			design <- model.matrix(as.formula(formula.text), data=pheno.data)
 			tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
