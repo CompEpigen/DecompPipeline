@@ -24,6 +24,10 @@
 #'                                  \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
 #'                                  \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
 #'                                       across samples.
+#'                                  \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
+#'                                       R package to determine sites that are significantly linked to the potential cell types. This
+#'                                       requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
+#'                                       Achard for providing the idea and parts of the codes.
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param N_MARKERS The number of sites to be selected. Defaults to 5000.
@@ -41,6 +45,7 @@
 #' @param store.heatmaps Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
 #'                       The files are then stored in the 'heatmaps' folder in WD.
 #' @param heatmap.sample.col Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.
+#' @param K.prior K determined from visual inspection. Only has an influence, if \code{MARKER_SELECTION="pcadapt"}.
 #' @return List of indices, one entry for each marker selection method specified by \code{MARKER_SELECTION}. The indices correspond
 #'          to the sites that should be used in \code{rnb.set}.
 #' @details For methods "\code{houseman2012}" and "\code{jaffe2014}", a predefined set of markers is used. Since those correspond to
@@ -68,7 +73,8 @@ prepare_CG_subsets<-function(
 		RANGE_DIFF=0.05,
 		CUSTOM_MARKER_FILE="",
 		store.heatmaps=F,
-		heatmap.sample.col=NULL
+		heatmap.sample.col=NULL,
+		K.prior=NULL
 		)
 {
   require("RnBeads")
@@ -318,6 +324,24 @@ prepare_CG_subsets<-function(
 			ranges<-ranges[2,]-ranges[1,]
 			ind<-ind[ranges>RANGE_DIFF]
 			rm(ranges)
+		}
+		
+		if(MARKER_SELECTION[group] == "pcadapt"){
+		  require("bigstatsr")
+		  require("robust")
+		  if(is.null(K.prior)){
+		    stop("K.prior needs to be specific for pcadapat marker selection method")
+		  }
+		  meth.t <- t(meth.data[ind,])
+		  meth.t <- as_FBM(meth.t)
+		  svd <- big_SVD(meth.t,fun.scaling = big_scale(),k=K.prior)
+		  singular.vectors <- svd$u
+		  z.scores <- sapply(cols_along(singular.vectors), function(k) {
+		    big_univLinReg(meth.t, singular.vectors[, k])$score
+		  })
+		  dist.math <- robust::covRob(z.scores, estim = "pairwiseGK")$dist
+		  lpval <- pchisq(dist.math, df = K.prior, lower.tail = FALSE, log.p = TRUE) / log(10)
+		  ind <- ind[order(lpval,decreasing = F)[1:N_MARKERS]]
 		}
 		
 		if(MARKER_SELECTION[group]=="custom"){

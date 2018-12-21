@@ -1,0 +1,6 @@
+DecompPipeline 0.2.2
+=============
+
+ * Cross-reactive probes can now be filtered
+ * Custom marker file can now be provided as RDS ot text file
+ * Added support for selecting markers according to pcadapt. We'd like to thank all participants of the Health Data Challenge (https://data-institute.univ-grenoble-alpes.fr/research/data-science-for-life-sciences/health-data-challenge-matrix-factorization-and-deconvolution-methods-to-quantify-tumor-heterogeneity-in-cancer-research-756672.htm?RH=10277933037836520), especially Florian Prive and Sophie Achard for their help.

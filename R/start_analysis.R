@@ -612,3 +612,9 @@ start_decomp_pipeline <- function(rnb.set,
   )
   return(medecom.result)
 }
+
+#' A small RnBeads object used to run the examples.
+#' @name rnb.set.example
+#' @docType data
+#' @author Michael Scherer
+NULL

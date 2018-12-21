@@ -13,6 +13,10 @@ output:
   pdf_document:
     toc: yes
 bibliography: biblio.bib
+vignette: >
+  %\VignetteIndexEntry{MeDeCom}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 # Introduction
@@ -24,7 +28,7 @@ bibliography: biblio.bib
 You can install the *DecompPipeline* through GitHub using *devtools*:
 
 ```{r, eval=T}
-install.packages("devtools")
+install.packages("devtools",repos="https://cran.uni-muenster.de/")
 devtools::install_github("lutsik/DecompPipeline")
 ```
 

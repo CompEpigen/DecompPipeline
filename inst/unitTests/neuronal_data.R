@@ -45,14 +45,15 @@ res<-prepare_data(
 
 cg_subsets<-prepare_CG_subsets(
 		rnb.set=res$rnb.set.filtered,
-		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range","custom","all"),
+		MARKER_SELECTION=c("pheno","houseman2012","houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range","custom","pcadapt","all"),
 		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
 		N_MARKERS = 4242,
 		REF_DATA_SET = "/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference_unnormalized.zip",
 		REF_PHENO_COLUMN = "tissue/cell type",
 		N_PRIN_COMP = 2,
 		RANGE_DIFF = 0.1,
-		CUSTOM_MARKER_FILE = "/DEEP_fhgfs/projects/mscherer/data/Aussois/MeDeCom/marker_file_Sophie.txt"
+		CUSTOM_MARKER_FILE = "/DEEP_fhgfs/projects/mscherer/data/Aussois/MeDeCom/marker_file_Sophie.txt",
+		K.prior=2
 )
 
 md.res<-start_medecom_analysis(
