@@ -1,6 +1,112 @@
+#' start.analysis
+#' 
+#' Wrapper function to start one of the deconvolution algorithms \code{MeDeCom}, \code{RefFreeEWAS} or \code{EDec}
+#' 
+#' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+#'                   through \code{rnb.set}
+#' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.
+#' @param work.dir Working directory for the analysis.
+#' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
+#' @param Ks Vector of integers used as components in MeDeCom.
+#' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
+#' @param method The method to be used for deconvolution. Can be one of \code{MeDeCom} or \code{RefFreeCellMix}.
+#' @author Michael Scherer
+#' @export
+start.analysis <- function(meth.data=NULL,
+                           rnb.set=NULL,
+                           cg_groups,
+                           Ks,
+                           work.dir,
+                           factorviz.outputs=FALSE,
+                           method="MeDeCom",
+                           ...){
+  all.methods <- c("MeDeCom","RefFreeCellMix")
+  if(!method %in% all.methods){
+    stop(paste0("Invalid value for method. Needs to be one of ",all.methods))
+  }
+  if(method == "MeDeCom"){
+    md.res <- start_medecom_analysis(meth.data = meth.data,
+                                     rnb.set = rnb.set,
+                                     cg_groups = cg_groups,
+                                     Ks = Ks,
+                                     WORK_DIR = work.dir,
+                                     factorviz.outputs = factorviz.outputs,
+                                     ...)
+  }else if(method == "RefFreeCellMix"){
+    md.res <- start.refreeewas.analysis <- function(meth.data=meth.data,
+                                                    rnb.set=rnb.set,
+                                                    cg_groups=cg_groups,
+                                                    Ks=cg_groups,
+                                                    work.dir=work.dir,
+                                                    factorviz.outputs=factorviz.outputs)
+  }
+  return(md.res)
+}
+
+#' start.refreeewas.analysis
+#' 
+#' This function executes RefFreeCellMix for the specified CpGs and the number of cell types K.
+#' 
+#' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+#'                   through \code{rnb.set}
+#' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.
+#' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
+#' @param Ks The number of cell types to be tested. Can be a single numeric value or an array of numbers.
+#' @param work.dir The working directory to be used.
+#' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
+#' @return An object of type \code{\link{MeDeComSet}} containing the results of the RefFreeCellMix experiment.
+#' @author Michael Scherer
+#' @export
+start.refreeewas.analysis <- function(meth.data=NULL,
+                                      rnb.set=NULL,
+                                      cg_groups,
+                                      Ks,
+                                      work.dir=getwd(),
+                                      factorviz.outputs=FALSE){
+  if(is.null(meth.data) && is.null(rnb.set)){
+    logger.error("No input methylation data provided")
+  }
+  if(is.null(meth.data)){
+    if(inherits(rnb.set,"RnBSet")){
+      meth.data <- meth(rnb.set)
+    }else{
+      logger.error("Invalid value for rnb.set")
+    }
+  }
+  res.all <- list()
+  for(i.group in 1:length(cg_groups)){
+    logger.info(paste("Processing group:",i.group))
+    group <- cg_groups[i.group]
+    for(K in Ks){
+      logger.info(paste("Processing K:",K))
+      meth.sset <- meth.data[group,]
+      ref.res <- RefFreeCellMix(meth.sset,K=K)
+      res.all[[paste(i.group,K,sep="_")]] <- ref.res
+    }
+  }
+  result <- as.MeDeComSet(res.all,cg_groups=cg_groups,Ks=Ks)
+  if(factorviz.outputs){
+    store.path <- file.path(work.dir,"FactorViz_outputs")
+    if(!file.exists(store.path)){
+      dir.create(store.path)
+    }
+    if(!is.null(rnb.set)){
+      result@parameters$ASSEMBLY <- assembly(rnb.set)
+      ann.C <- annotation(rnb.set)
+      ann.S <- pheno(rnb.set)
+      save(ann.C,file=file.path(store.path,"ann_C.RData"))
+      save(ann.S,file=file.path(store.path,"ann_S.RData"))
+    }
+    medecom.set <- result
+    save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+    save(meth.data,file=file.path(store.path,"meth_data.RData"))
+  }
+  return(result)
+}
+
 #' start_medecom_analysis
 #' 
-#' Wrapper for runMeDeCom, for data preprocessed through the DecombPipeline
+#' Wrapper for runMeDeCom, for data preprocessed through the DecompPipeline
 #' 
 #' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
 #'                   through \code{rnb.set}
