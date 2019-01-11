@@ -56,25 +56,33 @@ cg_subsets<-prepare_CG_subsets(
 		K.prior=2
 )
 
-md.res<-start_medecom_analysis(
-		rnb.set=res$rnb.set.filtered,
-		WORK_DIR=file.path(PROJECT.DIR),
-		cg_groups=cg_subsets,
-		Ks=2:10,
-		LAMBDA_GRID=c(0,10^(-5:-1)),
-		SAMPLE_SUBSET=NULL,
-		K_FIXED=NULL,
-		WRITE_FILES=TRUE,
-		startT=NULL,
-		startA=NULL,
-		CLUSTER_SUBMIT=FALSE,
-		CLUSTER_RDIR=NA,
-		CLUSTER_HOSTLIST="*",
-		CLUSTER_MEMLIMIT="5G",
-#		MAX_JOBS=1000,
-#		WAIT_TIME="30m",
-#		PORTIONS=FALSE,
-#		JOB_FILE=NA,
-		CLEANUP=FALSE
+md.res <- start.refreeewas.analysis(
+  rnb.set=res$rnb.set.filtered,
+  work.dir=file.path(PROJECT.DIR),
+  cg_groups=cg_subsets,
+  Ks=2:10,
+  factorviz.outputs=T
 )
+
+# md.res<-start_medecom_analysis(
+# 		rnb.set=res$rnb.set.filtered,
+# 		WORK_DIR=file.path(PROJECT.DIR),
+# 		cg_groups=cg_subsets,
+# 		Ks=2:10,
+# 		LAMBDA_GRID=c(0,10^(-5:-1)),
+# 		SAMPLE_SUBSET=NULL,
+# 		K_FIXED=NULL,
+# 		WRITE_FILES=TRUE,
+# 		startT=NULL,
+# 		startA=NULL,
+# 		CLUSTER_SUBMIT=FALSE,
+# 		CLUSTER_RDIR=NA,
+# 		CLUSTER_HOSTLIST="*",
+# 		CLUSTER_MEMLIMIT="5G",
+# #		MAX_JOBS=1000,
+# #		WAIT_TIME="30m",
+# #		PORTIONS=FALSE,
+# #		JOB_FILE=NA,
+# 		CLEANUP=FALSE
+# )
 

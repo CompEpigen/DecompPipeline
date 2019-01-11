@@ -33,7 +33,7 @@ start.analysis <- function(meth.data=NULL,
                                      factorviz.outputs = factorviz.outputs,
                                      ...)
   }else if(method == "RefFreeCellMix"){
-    md.res <- start.refreeewas.analysis <- function(meth.data=meth.data,
+    md.res <- start.refreeewas.analysis(meth.data=meth.data,
                                                     rnb.set=rnb.set,
                                                     cg_groups=cg_groups,
                                                     Ks=cg_groups,
@@ -74,17 +74,22 @@ start.refreeewas.analysis <- function(meth.data=NULL,
     }
   }
   res.all <- list()
+  devis.all <- list()
   for(i.group in 1:length(cg_groups)){
     logger.info(paste("Processing group:",i.group))
-    group <- cg_groups[i.group]
-    for(K in Ks){
-      logger.info(paste("Processing K:",K))
-      meth.sset <- meth.data[group,]
-      ref.res <- RefFreeCellMix(meth.sset,K=K)
-      res.all[[paste(i.group,K,sep="_")]] <- ref.res
+    group <- cg_groups[[i.group]]
+    meth.sset <- meth.data[group,]
+    res.sset <- RefFreeCellMixArray(meth.sset,Klist=Ks)
+    devis <- tryCatch(RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
+    if(inherits(devis,"error")){
+      devis <- rep(NA,length(Ks))
+    }else{
+      devis <- colMeans(devis)
     }
+    devis.all[[i.group]] <- devis
+    res.all[[i.group]] <- res.sset
   }
-  result <- as.MeDeComSet(res.all,cg_groups=cg_groups,Ks=Ks)
+  result <- as.MeDeComSet(res.all,cg_subsets=cg_groups,Ks=Ks,deviances=devis.all)
   if(factorviz.outputs){
     store.path <- file.path(work.dir,"FactorViz_outputs")
     if(!file.exists(store.path)){
