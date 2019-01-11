@@ -89,7 +89,8 @@ start.refreeewas.analysis <- function(meth.data=NULL,
     devis.all[[i.group]] <- devis
     res.all[[i.group]] <- res.sset
   }
-  result <- as.MeDeComSet(res.all,cg_subsets=cg_groups,Ks=Ks,deviances=devis.all)
+  result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
+  result@parameters$GROUP_LISTS <- cg_groups
   if(factorviz.outputs){
     store.path <- file.path(work.dir,"FactorViz_outputs")
     if(!file.exists(store.path)){
