@@ -39,6 +39,9 @@ through \code{rnb.set}}
               R package to determine sites that are significantly linked to the potential cell types. This
               requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
               Achard for providing the idea and parts of the codes.
+         \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
+              EDec's example reference data is provided. If a specific data set is to be provided, it needs
+              to be done through \code{REF_DATA_SET}.
          \item{"\code{custom}"} Specifying a custom file with indices.
 }}
 

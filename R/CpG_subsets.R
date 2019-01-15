@@ -28,6 +28,9 @@
 #'                                       R package to determine sites that are significantly linked to the potential cell types. This
 #'                                       requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
 #'                                       Achard for providing the idea and parts of the codes.
+#'                                  \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
+#'                                       EDec's example reference data is provided. If a specific data set is to be provided, it needs
+#'                                       to be done through \code{REF_DATA_SET}.
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param N_MARKERS The number of sites to be selected. Defaults to 5000.
@@ -342,6 +345,30 @@ prepare_CG_subsets<-function(
 		  dist.math <- robust::covRob(z.scores, estim = "pairwiseGK")$dist
 		  lpval <- pchisq(dist.math, df = K.prior, lower.tail = FALSE, log.p = TRUE) / log(10)
 		  ind <- ind[order(lpval,decreasing = F)[1:N_MARKERS]]
+		}
+		
+		if(MARKER_SELECTION[group]=="edec_stage0"){
+		  if(is.null(REF_DATA_SET)){
+		    require("EDec")
+		    require("EDecExampleData")
+		    markers <- run_edec_stage_0(reference_meth = EDecExampleData::reference_meth,
+		                                reference_classes = EDecExampleData::reference_meth_class,
+		                                max_p_value = 1e-5,
+		                                num_markers = N_MARKERS)
+		  }else{
+		    markers <- run_edec_stage_0(reference_meth = meth(REF_DATA_SET),
+		                                reference_classes = pheno(REF_DATA_SET)$REF_PHENO_COLUMN,
+		                                max_p_value = 1e-5,
+		                                num_markers = N_MARKERS)
+		  }
+		  if(is.null(rnb.set)){
+		    if(!grep("cg",row.names(meth.data))){
+		      stop("Row names of meth.data (cg-identifiers) need to be provided for EDec")
+		    }
+		    ind <- which(row.names(meth.data) %in% markers)
+		  }else{
+		    ind <- which(row.names(annotation(rnb.set)) %in% markers)
+		  }
 		}
 		
 		if(MARKER_SELECTION[group]=="custom"){

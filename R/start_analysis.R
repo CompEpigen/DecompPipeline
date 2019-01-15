@@ -9,7 +9,7 @@
 #' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
 #' @param Ks Vector of integers used as components in MeDeCom.
 #' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
-#' @param method The method to be used for deconvolution. Can be one of \code{MeDeCom} or \code{RefFreeCellMix}.
+#' @param method The method to be used for deconvolution. Can be one of \code{MeDeCom}, \code{RefFreeCellMix} or \code{EDec}.
 #' @author Michael Scherer
 #' @export
 start.analysis <- function(meth.data=NULL,
@@ -20,7 +20,7 @@ start.analysis <- function(meth.data=NULL,
                            factorviz.outputs=FALSE,
                            method="MeDeCom",
                            ...){
-  all.methods <- c("MeDeCom","RefFreeCellMix")
+  all.methods <- c("MeDeCom","RefFreeCellMix","EDec")
   if(!method %in% all.methods){
     stop(paste0("Invalid value for method. Needs to be one of ",all.methods))
   }
@@ -36,11 +36,82 @@ start.analysis <- function(meth.data=NULL,
     md.res <- start.refreeewas.analysis(meth.data=meth.data,
                                                     rnb.set=rnb.set,
                                                     cg_groups=cg_groups,
-                                                    Ks=cg_groups,
+                                                    Ks=Ks,
                                                     work.dir=work.dir,
                                                     factorviz.outputs=factorviz.outputs)
+  }else if(method == "EDec"){
+    md.res <- start.edec.analysis(meth.data=meth.data,
+                                  rnb.set=rnb.set,
+                                  cg_groups=cg_groups,
+                                  Ks=Ks,
+                                  work.dir = work.dir,
+                                  factorviz.outputs = factorviz.outputs)
   }
   return(md.res)
+}
+
+#' start.edec.analysis
+#' 
+#' This function executes EDec for the specified CpGs and the number of cell types K.
+#' 
+#' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
+#'                   through \code{rnb.set}
+#' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.
+#' @param cg_groups List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.
+#' @param Ks The number of cell types to be tested. Can be a single numeric value or an array of numbers.
+#' @param work.dir The working directory to be used.
+#' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
+#' @return An object of type \code{\link{MeDeComSet}} containing the results of the EDec experiment.
+#' @author Michael Scherer
+#' @export
+start.edec.analysis <- function(meth.data=NULL,
+                                rnb.set=NULL,
+                                cg_groups,
+                                Ks,
+                                work.dir=getwd(),
+                                factorviz.outputs=FALSE){
+  if(is.null(meth.data) && is.null(rnb.set)){
+    logger.error("No input methylation data provided")
+  }
+  if(is.null(meth.data)){
+    if(inherits(rnb.set,"RnBSet")){
+      meth.data <- meth(rnb.set,row.names=T)
+    }else{
+      logger.error("Invalid value for rnb.set")
+    }
+  }else if(!(grepl("cg",row.names(meth.data)))){
+    stop("Rownames of methylation data need to be provided for EDec")
+  }
+  require("EDec")
+  T.all <- list()
+  A.all <- list()
+  rss.all <- list()
+  res.all <- list()
+  for(i.group in 1:length(cg_groups)){
+    logger.start(paste("Processing group:",i.group))
+    group <- cg_groups[[i.group]]
+    group <- row.names(meth.data)[group]
+    rss.vec <- c()
+    T.list <- list()
+    A.list <- list()
+    for(K in Ks){
+      logger.start(paste("Processing K:",K))
+      edec.res <- run_edec_stage_1(meth.data,
+                                   informative_loci = group,
+                                   num_cell_types = K)
+      rss.vec <- c(rss.vec,edec.res$res.sum.squares)
+      T.list[[K]] <- edec.res$methylation
+      A.list[[K]] <- edec.res$proportions
+      logger.completed()
+    }
+    rss.all[[i.group]] <- rss.vec
+    T.all[[i.group]] <- T.list
+    A.all[[i.group]] <- A.list
+    res.all[[i.group]] <- list(T=T.all,A=A.all)
+    logger.completed()
+  }
+  result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=rss.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
+  result@parameters$GROUP_LISTS <- cg_groups
 }
 
 #' start.refreeewas.analysis
@@ -76,7 +147,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
   res.all <- list()
   devis.all <- list()
   for(i.group in 1:length(cg_groups)){
-    logger.info(paste("Processing group:",i.group))
+    logger.start(paste("Processing group:",i.group))
     group <- cg_groups[[i.group]]
     meth.sset <- meth.data[group,]
     res.sset <- RefFreeCellMixArray(meth.sset,Klist=Ks)
@@ -88,6 +159,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
     }
     devis.all[[i.group]] <- devis
     res.all[[i.group]] <- res.sset
+    logger.completed()
   }
   result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
   result@parameters$GROUP_LISTS <- cg_groups
