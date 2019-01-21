@@ -348,16 +348,24 @@ prepare_CG_subsets<-function(
 		}
 		
 		if(MARKER_SELECTION[group]=="edec_stage0"){
+		  require("EDec")
+		  require("EDecExampleData")
 		  if(is.null(REF_DATA_SET)){
-		    require("EDec")
-		    require("EDecExampleData")
 		    markers <- run_edec_stage_0(reference_meth = EDecExampleData::reference_meth,
 		                                reference_classes = EDecExampleData::reference_meth_class,
 		                                max_p_value = 1e-5,
 		                                num_markers = N_MARKERS)
 		  }else{
-		    markers <- run_edec_stage_0(reference_meth = meth(REF_DATA_SET),
-		                                reference_classes = pheno(REF_DATA_SET)$REF_PHENO_COLUMN,
+		    if(inherits(REF_DATA_SET,"RnBSet")){
+		      rnb.ref.set <- REF_DATA_SET
+		    }else{
+		      rnb.ref.set <- load.rnb.set(REF_DATA_SET)
+		    }
+		    if(!REF_PHENO_COLUMN %in% colnames(pheno(rnb.ref.set))){
+		      stop("Supplied REF_PHENO_COLUMN not in phenotypic information")
+		    }
+		    markers <- run_edec_stage_0(reference_meth = meth(rnb.ref.set),
+		                                reference_classes = pheno(rnb.ref.set)[,REF_PHENO_COLUMN],
 		                                max_p_value = 1e-5,
 		                                num_markers = N_MARKERS)
 		  }

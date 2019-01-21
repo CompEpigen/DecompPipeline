@@ -92,26 +92,42 @@ start.edec.analysis <- function(meth.data=NULL,
     group <- cg_groups[[i.group]]
     group <- row.names(meth.data)[group]
     rss.vec <- c()
-    T.list <- list()
-    A.list <- list()
-    for(K in Ks){
+    T.all <- list()
+    A.all <- list()
+    for(j.K in 1:length(Ks)){
+      K <- Ks[j.K]
       logger.start(paste("Processing K:",K))
       edec.res <- run_edec_stage_1(meth.data,
                                    informative_loci = group,
                                    num_cell_types = K)
       rss.vec <- c(rss.vec,edec.res$res.sum.squares)
-      T.list[[K]] <- edec.res$methylation
-      A.list[[K]] <- edec.res$proportions
+      T.all[[j.K]] <- edec.res$methylation
+      A.all[[j.K]] <- t(edec.res$proportions)
       logger.completed()
     }
     rss.all[[i.group]] <- rss.vec
-    T.all[[i.group]] <- T.list
-    A.all[[i.group]] <- A.list
     res.all[[i.group]] <- list(T=T.all,A=A.all)
     logger.completed()
   }
-  result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=rss.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
+  result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,rss=rss.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
   result@parameters$GROUP_LISTS <- cg_groups
+  if(factorviz.outputs){
+    store.path <- file.path(work.dir,"FactorViz_outputs")
+    if(!file.exists(store.path)){
+      dir.create(store.path)
+    }
+    if(!is.null(rnb.set)){
+      result@parameters$ASSEMBLY <- assembly(rnb.set)
+      ann.C <- annotation(rnb.set)
+      ann.S <- pheno(rnb.set)
+      save(ann.C,file=file.path(store.path,"ann_C.RData"))
+      save(ann.S,file=file.path(store.path,"ann_S.RData"))
+    }
+    medecom.set <- result
+    save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+    save(meth.data,file=file.path(store.path,"meth_data.RData"))
+  }
+  return(result)
 }
 
 #' start.refreeewas.analysis
