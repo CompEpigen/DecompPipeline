@@ -39,13 +39,14 @@ res<-prepare_data(
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
 		FILTER_CROSS_REACTIVE=T,
-		snp.list="/DEEP_fhgfs/projects/mscherer/data/EPIC/Radar_Genetik/commonSNPs137.txt"
+		snp.list="/DEEP_fhgfs/projects/mscherer/data/EPIC/Radar_Genetik/commonSNPs137.txt",
+		execute.lump=T
 )
 
 
 cg_subsets<-prepare_CG_subsets(
 		rnb.set=res$rnb.set.filtered,
-		MARKER_SELECTION=c("edec_stage0","pheno","houseman2012"),#,"houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range","custom","pcadapt","all"),
+		MARKER_SELECTION=c("random","var"),#,"edec_stage0","pheno","houseman2012"),#,"houseman2014","jaffe2014","rowFstat","random","pca","var","hybrid","range","custom","pcadapt","all"),
 		WD=file.path(PROJECT.DIR,"data","foo_foo_none"),
 		N_MARKERS = 4242,
 		REF_DATA_SET = "/DEEP_fhgfs/projects/mscherer/data/450K/Reinius_Blood_Reference_unnormalized.zip",

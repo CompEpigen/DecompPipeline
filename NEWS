@@ -1,7 +1,8 @@
 DecompPipeline 0.2.3
 =============
 
- * Integrated support for RefFreeEWAS (RefFreeCellMix) into the workflow
+ * Added LUMP estimate to data preparation
+ * Integrated support for RefFreeEWAS (RefFreeCellMix) and EDec into the workflow
 
 DecompPipeline 0.2.2
 =============

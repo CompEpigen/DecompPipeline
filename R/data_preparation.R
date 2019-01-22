@@ -49,6 +49,7 @@
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
 #' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
 #' @param FILTER_CROSS_REACTIVE Flag indicating if sites showing cross reactivity on the array are to be removed.
+#' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
@@ -79,7 +80,8 @@ prepare_data<-function(
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
 		FILTER_CROSS_REACTIVE=T,
-		snp.list=NULL
+		snp.list=NULL,
+		execute.lump=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
@@ -220,6 +222,11 @@ prepare_data<-function(
 	colnames(meth.data)<-NULL
 	
 	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
+	
+	if(execute.lump){
+	  lump.est <- rnb.execute.lump(rnb.set)
+	  rnb.set <- addPheno(rnb.set,as.vector(lump.est),"LUMP_estimate")
+	}
 	
 	####################### FILTERING
 	################################# QUALITY FILTERING ######################################
