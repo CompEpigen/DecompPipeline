@@ -22,8 +22,6 @@ This protocols aims at guiding reasearcher how to correcting employ deconvolutio
 We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinum 450k BeadChip and comprises 461 samples. Due to restrucuring of the TCGA data archive, the clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples. We used the GDC data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the IDAT files listed in the manifest file and its associated metadata. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for RnBeads analyis, the following code was employed.
 
 ```{r map_ids, eval=F}
-#knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
-#setwd("/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
 clinical.data <- read.table("annotation/clinical.tsv",sep="\t",header=T)
 idat.files <- list.files("idat",full.names = T)
 meta.files <- list.files(idat.files[1],full.names = T)
@@ -52,8 +50,7 @@ lapply(idat.files,function(x){
 After downloading the data, it has to be processed into a format that can be used by downstream software. We used RnBeads to convert the files into a data object and did basic quality control steps on the dataset. Most notably, analysis options need to be specified for RnBeads, either through an XML file or in the command line. We will follow the latter strategy here, and deactivate the preprocessing, exploratory, covariate inference and differential methylation modules. In the next step, we specify the input to RnBeads: the created sample annotation sheet, the folder in which the IDAT files are stored and a folder to which the HTML report is to be saved. We additionally recommend to specify a temporary directory for the analysis. Then we start the RnBeads analysis.
 
 ```{r RnBeads}
-library(RnBeads)
-#knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
+suppressPackageStartupMessages(library(RnBeads))
 rnb.options(
   assembly="hg19",
   identifiers.column="submitter_id",
@@ -82,7 +79,7 @@ rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno
 
 For further analysis, we use the DecompPipeline package (https://github.com/lutsik/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individuals function's parameters. We follow a stringent filtering strategy. First, all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles. We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. Then, BMIQ normalization [@bmiq] is employed to account for the chip's design bias.
 ```{r data_preparation}
-library(DecompPipeline)
+suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare_data(RNB_SET = rnb.set,
                           analysis.name = "TCGA_Deconvolution",
                           NORMALIZATION = "bmiq",
