@@ -600,6 +600,8 @@ start_medecom_analysis<-function(
 #' @param max.int.quant Upper quantile of intensities which is to be removed (BeadChip only).
 #' @param filter.na Flag indicating if sites with any missing values are to be removed or not.
 #' @param filter.context Flag indicating if only CG probes are to be kept (BeadChip only).
+#' @param filter.cross.reactive Flag indicating if sites showing cross reactivity on the array are to be removed.
+#' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 #'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
@@ -611,6 +613,7 @@ start_medecom_analysis<-function(
 #' @param max.covg.quant Upper quantile of coverages. Values higher than this value will be ignored for analysis (BS only).
 #' CG_SUBSET SELECTION
 #' @param marker.selection A vector of strings representing marker selection methods. Available method are \itemize{
+#'                                  \item{"\code{all}"} Using all sites available in the input.
 #'                                  \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
 #'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
 #'                                         selected by employing limma on the methylation matrix.
@@ -628,6 +631,13 @@ start_medecom_analysis<-function(
 #'                                  \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
 #'                                  \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
 #'                                       across samples.
+#'                                  \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
+#'                                       R package to determine sites that are significantly linked to the potential cell types. This
+#'                                       requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
+#'                                       Achard for providing the idea and parts of the codes.
+#'                                  \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
+#'                                       EDec's example reference data is provided. If a specific data set is to be provided, it needs
+#'                                       to be done through \code{REF_DATA_SET}.
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param n.markers The number of sites to be selected. Defaults to 5000.
@@ -640,6 +650,7 @@ start_medecom_analysis<-function(
 #' @param heatmap.sample.col Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.
 #' @param sample.subset Vector of indices of samples to be included in the analysis. If \code{NULL}, all samples are included.
 #' @param k.fixed Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.
+#' @param K.prior K determined from visual inspection. Only has an influence, if \code{MARKER_SELECTION="pcadapt"}.
 #' @param factorviz.outputs Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration
 #' @param opt.method Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).
 #' @param startT Inital matrix for T.
@@ -669,7 +680,7 @@ start_decomp_pipeline <- function(rnb.set,
                                   id.column=rnb.getOption("identifiers.column"),
                                   normalization="none",
                                   ref.ct.column=NA,
-                                  ref.rnb.set=NA,
+                                  ref.rnb.set=NULL,
                                   ref.rnb.ct.column=NA,
                                   prepare.true.proportions=F,
                                   true.A.token=NA,
@@ -682,6 +693,8 @@ start_decomp_pipeline <- function(rnb.set,
                                   max.int.quant = 0.95, 
                                   filter.na=TRUE,
                                   filter.context=TRUE,
+                                  filter.cross.reactive=TRUE,
+                                  execute.lump=FALSE,
                                   filter.snp=TRUE,
                                   filter.somatic=TRUE,
                                   snp.list=NULL,
@@ -699,6 +712,7 @@ start_decomp_pipeline <- function(rnb.set,
                                   heatmap.sample.col=NULL,
                                   sample.subset=NULL,
                                   k.fixed=NULL,
+                                  K.prior=NULL,
                                   opt.method = "MeDeCom.cppTAfact",
                                   startT=NULL,
                                   startA=NULL,
@@ -735,6 +749,8 @@ start_decomp_pipeline <- function(rnb.set,
                               MAX_INT_QUANT = max.int.quant, 
                               FILTER_NA=filter.na,
                               FILTER_CONTEXT=filter.context,
+                              FILTER_CROSS_REACTIVE=filter.cross.reactive,
+                              execute.lump=execute.lump,
                               FILTER_SNP=filter.snp,
                               FILTER_SOMATIC=filter.somatic,
                               snp.list=snp.list
@@ -773,7 +789,8 @@ start_decomp_pipeline <- function(rnb.set,
                                      RANGE_DIFF=range.diff,
                                      CUSTOM_MARKER_FILE=custom.marker.file,
                                      store.heatmaps=store.heatmaps,
-                                     heatmap.sample.col=heatmap.sample.col
+                                     heatmap.sample.col=heatmap.sample.col,
+                                     K.prior = K.prior
   )
   if("RefMeth" %in% names(data.prep)){
     trueT <- data.prep$RefMeth

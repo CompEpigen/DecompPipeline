@@ -15,13 +15,14 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   filter.beads = !is.null(rnb.set@covg.sites), min.n.beads = 3,
   filter.intensity = inherits(rnb.set, "RnBeadRawSet"),
   min.int.quant = 0.1, max.int.quant = 0.95, filter.na = TRUE,
-  filter.context = TRUE, filter.snp = TRUE, filter.somatic = TRUE,
+  filter.context = TRUE, filter.cross.reactive = TRUE,
+  execute.lump = FALSE, filter.snp = TRUE, filter.somatic = TRUE,
   snp.list = NULL, filter.coverage = hasCovg(rnb.set),
   min.coverage = 5, min.covg.quant = 0.05, max.covg.quant = 0.95,
   marker.selection = "var", n.markers = 5000, write.files = FALSE,
   n.prin.comp = 10, range.diff = 0.05, custom.marker.file = "",
   store.heatmaps = F, heatmap.sample.col = NULL,
-  sample.subset = NULL, k.fixed = NULL,
+  sample.subset = NULL, k.fixed = NULL, K.prior = NULL,
   opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
   folds = 10, cores = 1, itermax = 1000, ninit = 100,
   cluster.submit = FALSE, cluster.Rdir = NA, cluster.hostlist = "*",
@@ -86,6 +87,10 @@ given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}) (BeadChip only).}
 
 \item{filter.context}{Flag indicating if only CG probes are to be kept (BeadChip only).}
 
+\item{filter.cross.reactive}{Flag indicating if sites showing cross reactivity on the array are to be removed.}
+
+\item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
+
 \item{filter.snp}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)}
 
@@ -104,6 +109,7 @@ CPG FILTERING (BS)}
 CG_SUBSET SELECTION}
 
 \item{marker.selection}{A vector of strings representing marker selection methods. Available method are \itemize{
+         \item{"\code{all}"} Using all sites available in the input.
          \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
                 groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
                 selected by employing limma on the methylation matrix.
@@ -121,6 +127,13 @@ CG_SUBSET SELECTION}
          \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
          \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
               across samples.
+         \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
+              R package to determine sites that are significantly linked to the potential cell types. This
+              requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
+              Achard for providing the idea and parts of the codes.
+         \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
+              EDec's example reference data is provided. If a specific data set is to be provided, it needs
+              to be done through \code{REF_DATA_SET}.
          \item{"\code{custom}"} Specifying a custom file with indices.
 }}
 
@@ -142,6 +155,8 @@ The files are then stored in the 'heatmaps' folder in WD.}
 \item{sample.subset}{Vector of indices of samples to be included in the analysis. If \code{NULL}, all samples are included.}
 
 \item{k.fixed}{Columns in the T matrix that should be fixed. If \code{NULL}, no columns are fixed.}
+
+\item{K.prior}{K determined from visual inspection. Only has an influence, if \code{MARKER_SELECTION="pcadapt"}.}
 
 \item{opt.method}{Optimization method to be used. Either MeDeCom.quadPen or MeDeCom.cppTAfact (default).}
 

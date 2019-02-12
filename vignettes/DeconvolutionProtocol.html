@@ -1,0 +1,377 @@
+<h2 id="introduction">Introduction</h2>
+<p>This protocols aims at guiding reasearcher how to correcting employ deconvolution of methylomes obtained from complex tissue. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing protocols that provide single base pair resolution.</p>
+<h2 id="obtaining-data-from-a-public-resource-duration-5h">Obtaining data from a public resource (duration ~5h)</h2>
+<p>We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinum 450k BeadChip and comprises 461 samples. Due to restrucuring of the TCGA data archive, the clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples. We used the GDC data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the IDAT files listed in the manifest file and its associated metadata. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for RnBeads analyis, the following code was employed.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#knitr::opts_knit$set(root.dir=&quot;/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/&quot;)</span>
+<span class="co">#setwd(&quot;/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/&quot;)</span>
+clinical.data &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;annotation/clinical.tsv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>,<span class="dt">header=</span>T)
+idat.files &lt;-<span class="st"> </span><span class="kw">list.files</span>(<span class="st">&quot;idat&quot;</span>,<span class="dt">full.names =</span> T)
+meta.files &lt;-<span class="st"> </span><span class="kw">list.files</span>(idat.files[<span class="dv">1</span>],<span class="dt">full.names =</span> T)
+<span class="kw">untar</span>(meta.files[<span class="dv">3</span>],<span class="dt">exdir =</span> idat.files[<span class="dv">1</span>])
+meta.files &lt;-<span class="st"> </span><span class="kw">untar</span>(meta.files[<span class="dv">3</span>],<span class="dt">list=</span>T)
+meta.info &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="kw">file.path</span>(idat.files[<span class="dv">1</span>],meta.files[<span class="dv">5</span>]),<span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>,<span class="dt">header=</span>T)
+meta.info &lt;-<span class="st"> </span>meta.info[<span class="kw">match</span>(<span class="kw">unique</span>(meta.info$Comment..TCGA.Barcode.),meta.info$Comment..TCGA.Barcode.),]
+match.meta.clin &lt;-<span class="st"> </span><span class="kw">match</span>(clinical.data$submitter_id,<span class="kw">substr</span>(meta.info$Comment..TCGA.Barcode.,<span class="dv">1</span>,<span class="dv">12</span>))
+anno.frame &lt;-<span class="st"> </span><span class="kw">na.omit</span>(<span class="kw">data.frame</span>(clinical.data,meta.info[match.meta.clin,]))
+anno.frame$barcode &lt;-<span class="st"> </span><span class="kw">unlist</span>(<span class="kw">lapply</span>(<span class="kw">lapply</span>(<span class="kw">as.character</span>(anno.frame$Array.Data.File),function(x)<span class="kw">strsplit</span>(x,<span class="st">&quot;_&quot;</span>)),function(x)<span class="kw">paste</span>(x[[<span class="dv">1</span>]][<span class="dv">1</span>],x[[<span class="dv">1</span>]][<span class="dv">2</span>],<span class="dt">sep=</span><span class="st">&quot;_&quot;</span>)))
+anno.frame$Sentrix_ID &lt;-<span class="st"> </span><span class="kw">unlist</span>(<span class="kw">lapply</span>(<span class="kw">lapply</span>(<span class="kw">as.character</span>(anno.frame$Array.Data.File),function(x)<span class="kw">strsplit</span>(x,<span class="st">&quot;_&quot;</span>)),function(x)<span class="kw">paste</span>(x[[<span class="dv">1</span>]][<span class="dv">1</span>])))
+anno.frame$Sentrix_Position &lt;-<span class="st"> </span><span class="kw">unlist</span>(<span class="kw">lapply</span>(<span class="kw">lapply</span>(<span class="kw">as.character</span>(anno.frame$Array.Data.File),function(x)<span class="kw">strsplit</span>(x,<span class="st">&quot;_&quot;</span>)),function(x)<span class="kw">paste</span>(x[[<span class="dv">1</span>]][<span class="dv">2</span>])))
+<span class="kw">write.table</span>(anno.frame,<span class="st">&quot;annotation/sample_annotation.tsv&quot;</span>,<span class="dt">quote=</span>F,<span class="dt">row.names =</span> F,<span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)
+anno.frame &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;annotation/sample_annotation.tsv&quot;</span>,<span class="dt">quote=</span>F,<span class="dt">row.names =</span> F,<span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)
+
+<span class="co">#&#39; write idat files to parent directory</span>
+<span class="kw">lapply</span>(idat.files,function(x){
+  is.idat &lt;-<span class="st"> </span><span class="kw">list.files</span>(x,<span class="dt">pattern =</span> <span class="st">&quot;.idat&quot;</span>,<span class="dt">full.names =</span> T)
+  <span class="kw">file.copy</span>(is.idat,<span class="st">&quot;idat/&quot;</span>)
+  <span class="kw">unlink</span>(x,<span class="dt">recursive =</span> T)
+})</code></pre>
+<h2 id="data-import-and-quality-control-in-rnbeads-3h">Data Import and Quality Control in RnBeads (~3h)</h2>
+<p>After downloading the data, it has to be processed into a format that can be used by downstream software. We used RnBeads to convert the files into a data object and did basic quality control steps on the dataset. Most notably, analysis options need to be specified for RnBeads, either through an XML file or in the command line. We will follow the latter strategy here, and deactivate the preprocessing, exploratory, covariate inference and differential methylation modules. In the next step, we specify the input to RnBeads: the created sample annotation sheet, the folder in which the IDAT files are stored and a folder to which the HTML report is to be saved. We additionally recommend to specify a temporary directory for the analysis. Then we start the RnBeads analysis.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(RnBeads)</code></pre>
+<pre><code>## Loading required package: BiocGenerics</code></pre>
+<pre><code>## Loading required package: parallel</code></pre>
+<pre><code>## 
+## Attaching package: &#39;BiocGenerics&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:parallel&#39;:
+## 
+##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+##     clusterExport, clusterMap, parApply, parCapply, parLapply,
+##     parLapplyLB, parRapply, parSapply, parSapplyLB</code></pre>
+<pre><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     IQR, mad, sd, var, xtabs</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     Filter, Find, Map, Position, Reduce, anyDuplicated, append,
+##     as.data.frame, basename, cbind, colMeans, colSums, colnames,
+##     dirname, do.call, duplicated, eval, evalq, get, grep, grepl,
+##     intersect, is.unsorted, lapply, lengths, mapply, match, mget,
+##     order, paste, pmax, pmax.int, pmin, pmin.int, rank, rbind,
+##     rowMeans, rowSums, rownames, sapply, setdiff, sort, table,
+##     tapply, union, unique, unsplit, which, which.max, which.min</code></pre>
+<pre><code>## Loading required package: S4Vectors</code></pre>
+<pre><code>## Warning: package &#39;S4Vectors&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## Loading required package: stats4</code></pre>
+<pre><code>## 
+## Attaching package: &#39;S4Vectors&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     expand.grid</code></pre>
+<pre><code>## Loading required package: GenomicRanges</code></pre>
+<pre><code>## Warning: package &#39;GenomicRanges&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## Loading required package: IRanges</code></pre>
+<pre><code>## Warning: package &#39;IRanges&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## Loading required package: GenomeInfoDb</code></pre>
+<pre><code>## Loading required package: MASS</code></pre>
+<pre><code>## Loading required package: cluster</code></pre>
+<pre><code>## Loading required package: ff</code></pre>
+<pre><code>## Warning: package &#39;ff&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## Loading required package: bit</code></pre>
+<pre><code>## Warning: package &#39;bit&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## Attaching package bit</code></pre>
+<pre><code>## package:bit (c) 2008-2012 Jens Oehlschlaegel (GPL-2)</code></pre>
+<pre><code>## creators: bit bitwhich</code></pre>
+<pre><code>## coercion: as.logical as.integer as.bit as.bitwhich which</code></pre>
+<pre><code>## operator: ! &amp; | xor != ==</code></pre>
+<pre><code>## querying: print length any all min max range sum summary</code></pre>
+<pre><code>## bit access: length&lt;- [ [&lt;- [[ [[&lt;-</code></pre>
+<pre><code>## for more help type ?bit</code></pre>
+<pre><code>## 
+## Attaching package: &#39;bit&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     xor</code></pre>
+<pre><code>## Attaching package ff</code></pre>
+<pre><code>## - getOption(&quot;fftempdir&quot;)==&quot;/tmp/RtmpnLc80g&quot;</code></pre>
+<pre><code>## - getOption(&quot;ffextension&quot;)==&quot;ff&quot;</code></pre>
+<pre><code>## - getOption(&quot;ffdrop&quot;)==TRUE</code></pre>
+<pre><code>## - getOption(&quot;fffinonexit&quot;)==TRUE</code></pre>
+<pre><code>## - getOption(&quot;ffpagesize&quot;)==65536</code></pre>
+<pre><code>## - getOption(&quot;ffcaching&quot;)==&quot;mmnoflush&quot;  -- consider &quot;ffeachflush&quot; if your system stalls on large writes</code></pre>
+<pre><code>## - getOption(&quot;ffbatchbytes&quot;)==16777216 -- consider a different value for tuning your system</code></pre>
+<pre><code>## - getOption(&quot;ffmaxbytes&quot;)==536870912 -- consider a different value for tuning your system</code></pre>
+<pre><code>## 
+## Attaching package: &#39;ff&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:bit&#39;:
+## 
+##     clone, clone.default, clone.list</code></pre>
+<pre><code>## The following objects are masked from &#39;package:utils&#39;:
+## 
+##     write.csv, write.csv2</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     is.factor, is.ordered</code></pre>
+<pre><code>## Loading required package: fields</code></pre>
+<pre><code>## Loading required package: spam</code></pre>
+<pre><code>## Loading required package: dotCall64</code></pre>
+<pre><code>## Loading required package: grid</code></pre>
+<pre><code>## Spam version 2.1-4 (2018-04-12) is loaded.
+## Type &#39;help( Spam)&#39; or &#39;demo( spam)&#39; for a short introduction 
+## and overview of this package.
+## Help for individual functions is also obtained by adding the
+## suffix &#39;.spam&#39; to the function name, e.g. &#39;help( chol.spam)&#39;.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;spam&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats4&#39;:
+## 
+##     mle</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     backsolve, forwardsolve</code></pre>
+<pre><code>## Loading required package: maps</code></pre>
+<pre><code>## 
+## Attaching package: &#39;maps&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:cluster&#39;:
+## 
+##     votes.repub</code></pre>
+<pre><code>## See www.image.ucar.edu/~nychka/Fields for
+##  a vignette and other supplements.</code></pre>
+<pre><code>## Loading required package: ggplot2</code></pre>
+<pre><code>## Loading required package: gplots</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gplots&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:IRanges&#39;:
+## 
+##     space</code></pre>
+<pre><code>## The following object is masked from &#39;package:S4Vectors&#39;:
+## 
+##     space</code></pre>
+<pre><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     lowess</code></pre>
+<pre><code>## Loading required package: gridExtra</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gridExtra&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:BiocGenerics&#39;:
+## 
+##     combine</code></pre>
+<pre><code>## Loading required package: limma</code></pre>
+<pre><code>## Warning: package &#39;limma&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## 
+## Attaching package: &#39;limma&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:BiocGenerics&#39;:
+## 
+##     plotMA</code></pre>
+<pre><code>## Loading required package: matrixStats</code></pre>
+<pre><code>## Loading required package: illuminaio</code></pre>
+<pre><code>## Loading required package: methylumi</code></pre>
+<pre><code>## Loading required package: Biobase</code></pre>
+<pre><code>## Welcome to Bioconductor
+## 
+##     Vignettes contain introductory material; view with
+##     &#39;browseVignettes()&#39;. To cite Bioconductor, see
+##     &#39;citation(&quot;Biobase&quot;)&#39;, and for packages &#39;citation(&quot;pkgname&quot;)&#39;.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;Biobase&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:matrixStats&#39;:
+## 
+##     anyMissing, rowMedians</code></pre>
+<pre><code>## Loading required package: scales</code></pre>
+<pre><code>## Loading required package: reshape2</code></pre>
+<pre><code>## Loading required package: FDb.InfiniumMethylation.hg19</code></pre>
+<pre><code>## Loading required package: GenomicFeatures</code></pre>
+<pre><code>## Loading required package: AnnotationDbi</code></pre>
+<pre><code>## 
+## Attaching package: &#39;AnnotationDbi&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:MASS&#39;:
+## 
+##     select</code></pre>
+<pre><code>## Loading required package: TxDb.Hsapiens.UCSC.hg19.knownGene</code></pre>
+<pre><code>## Loading required package: org.Hs.eg.db</code></pre>
+<pre><code>## </code></pre>
+<pre><code>## Loading required package: minfi</code></pre>
+<pre><code>## Loading required package: SummarizedExperiment</code></pre>
+<pre><code>## Loading required package: DelayedArray</code></pre>
+<pre><code>## Loading required package: BiocParallel</code></pre>
+<pre><code>## 
+## Attaching package: &#39;DelayedArray&#39;</code></pre>
+<pre><code>## The following objects are masked from &#39;package:matrixStats&#39;:
+## 
+##     colMaxs, colMins, colRanges, rowMaxs, rowMins, rowRanges</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     aperm, apply</code></pre>
+<pre><code>## Loading required package: Biostrings</code></pre>
+<pre><code>## Loading required package: XVector</code></pre>
+<pre><code>## 
+## Attaching package: &#39;Biostrings&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:DelayedArray&#39;:
+## 
+##     type</code></pre>
+<pre><code>## The following objects are masked from &#39;package:ff&#39;:
+## 
+##     mismatch, pattern</code></pre>
+<pre><code>## The following object is masked from &#39;package:base&#39;:
+## 
+##     strsplit</code></pre>
+<pre><code>## Loading required package: bumphunter</code></pre>
+<pre><code>## Loading required package: foreach</code></pre>
+<pre><code>## Loading required package: iterators</code></pre>
+<pre><code>## Loading required package: locfit</code></pre>
+<pre><code>## locfit 1.5-9.1    2013-03-22</code></pre>
+<pre><code>## Setting options(&#39;download.file.method.GEOquery&#39;=&#39;auto&#39;)</code></pre>
+<pre><code>## Setting options(&#39;GEOquery.inmemory.gpl&#39;=FALSE)</code></pre>
+<pre><code>## Loading required package: plyr</code></pre>
+<pre><code>## 
+## Attaching package: &#39;plyr&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:XVector&#39;:
+## 
+##     compact</code></pre>
+<pre><code>## The following object is masked from &#39;package:matrixStats&#39;:
+## 
+##     count</code></pre>
+<pre><code>## The following object is masked from &#39;package:maps&#39;:
+## 
+##     ozone</code></pre>
+<pre><code>## The following object is masked from &#39;package:IRanges&#39;:
+## 
+##     desc</code></pre>
+<pre><code>## The following object is masked from &#39;package:S4Vectors&#39;:
+## 
+##     rename</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="co">#knitr::opts_knit$set(root.dir=&quot;/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/&quot;)</span>
+<span class="kw">rnb.options</span>(
+  <span class="dt">assembly=</span><span class="st">&quot;hg19&quot;</span>,
+  <span class="dt">identifiers.column=</span><span class="st">&quot;submitter_id&quot;</span>,
+  <span class="dt">import=</span>T,
+  <span class="dt">import.default.data.type=</span><span class="st">&quot;idat.dir&quot;</span>,
+  <span class="dt">import.table.separator=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>,
+  <span class="dt">import.sex.prediction=</span>T,
+  <span class="dt">qc=</span>F,
+  <span class="dt">preprocessing=</span>F,
+  <span class="dt">exploratory=</span>F,
+  <span class="dt">inference=</span>F,
+  <span class="dt">differential=</span>F,
+  <span class="dt">export.to.bed=</span>F,
+  <span class="dt">export.to.trackhub=</span><span class="ot">NULL</span>,
+  <span class="dt">export.to.csv=</span>F
+)
+sample.anno &lt;-<span class="st"> &quot;annotation/sample_annotation.tsv&quot;</span>
+idat.folder &lt;-<span class="st"> &quot;idat/&quot;</span>
+dir.report &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;report&quot;</span>,<span class="kw">Sys.Date</span>(),<span class="st">&quot;/&quot;</span>)
+temp.dir &lt;-<span class="st"> &quot;/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp&quot;</span>
+<span class="kw">options</span>(<span class="dt">fftempdir=</span>temp.dir)
+rnb.set &lt;-<span class="st"> </span><span class="kw">rnb.run.analysis</span>(<span class="dt">dir.reports =</span> dir.report, <span class="dt">sample.sheet =</span> sample.anno, <span class="dt">data.dir =</span> idat.folder)</code></pre>
+<pre><code>## 2019-01-30 09:20:52     1.1  STATUS STARTED RnBeads Pipeline
+## 2019-01-30 09:20:52     1.1    INFO     Initialized report index and saved to index.html
+## 2019-01-30 09:20:52     1.1  STATUS     STARTED Loading Data
+## 2019-01-30 09:20:52     1.1    INFO         Number of cores: 1
+## 2019-01-30 09:20:52     1.1    INFO         Loading data of type &quot;idat.dir&quot;
+## 2019-01-30 09:20:52     1.1  STATUS         STARTED Loading Data from IDAT Files
+## 2019-01-30 09:20:53     1.1    INFO             Detected platform: HumanMethylation450</code></pre>
+<pre><code>## Warning: package &#39;RnBeads.hg19&#39; was built under R version 3.5.1</code></pre>
+<pre><code>## 2019-01-30 09:38:12     1.4  STATUS         COMPLETED Loading Data from IDAT Files
+## 2019-01-30 10:27:29     2.1  STATUS         Loaded data from idat/
+## 2019-01-30 10:28:07     7.7  STATUS         Predicted sex for the loaded samples
+## 2019-01-30 10:28:27     7.1  STATUS         Added data loading section to the report
+## 2019-01-30 10:28:27     7.1  STATUS         Loaded 461 samples and 485577 sites
+## 2019-01-30 10:28:27     7.1    INFO         Output object is of type RnBeadRawSet
+## 2019-01-30 10:28:27     7.1  STATUS     COMPLETED Loading Data
+## 2019-01-30 10:42:13     7.1    INFO     Initialized report index and saved to index.html
+## 2019-01-30 10:42:13     7.1  STATUS     STARTED Saving RData
+## 2019-01-30 10:42:13     7.1  STATUS     COMPLETED Saving RData
+## 2019-01-30 10:42:13     7.1  STATUS COMPLETED RnBeads Pipeline</code></pre>
+<h2 id="preprocessing-and-filtering">Preprocessing and Filtering</h2>
+<p>For further analysis, we use the DecompPipeline package (https://github.com/lutsik/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individuals function's parameters. We follow a stringent filtering strategy. First, all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles. We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. Then, BMIQ normalization <span class="citation">[@bmiq]</span> is employed to account for the chip's design bias.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(DecompPipeline)</code></pre>
+<pre><code>## Loading required package: MeDeCom</code></pre>
+<pre><code>## Loading required package: Rcpp</code></pre>
+<pre><code>## Loading required package: pracma</code></pre>
+<pre><code>## 
+## Attaching package: &#39;pracma&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:ff&#39;:
+## 
+##     quad</code></pre>
+<pre><code>## The following object is masked from &#39;package:bit&#39;:
+## 
+##     is.sorted</code></pre>
+<pre><code>## Loading required package: gtools</code></pre>
+<pre><code>## 
+## Attaching package: &#39;gtools&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:pracma&#39;:
+## 
+##     logit</code></pre>
+<pre><code>## Loading required package: RUnit</code></pre>
+<pre><code>## Warning: replacing previous import &#39;gtools::logit&#39; by &#39;pracma::logit&#39; when
+## loading &#39;MeDeCom&#39;</code></pre>
+<pre><code>## Loading required package: R.utils</code></pre>
+<pre><code>## Loading required package: R.oo</code></pre>
+<pre><code>## Loading required package: R.methodsS3</code></pre>
+<pre><code>## R.methodsS3 v1.7.1 (2016-02-15) successfully loaded. See ?R.methodsS3 for help.</code></pre>
+<pre><code>## R.oo v1.22.0 (2018-04-21) successfully loaded. See ?R.oo for help.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;R.oo&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:methylumi&#39;:
+## 
+##     getHistory</code></pre>
+<pre><code>## The following object is masked from &#39;package:SummarizedExperiment&#39;:
+## 
+##     trim</code></pre>
+<pre><code>## The following objects are masked from &#39;package:ff&#39;:
+## 
+##     clone, finalize</code></pre>
+<pre><code>## The following object is masked from &#39;package:bit&#39;:
+## 
+##     clone</code></pre>
+<pre><code>## The following object is masked from &#39;package:GenomicRanges&#39;:
+## 
+##     trim</code></pre>
+<pre><code>## The following object is masked from &#39;package:IRanges&#39;:
+## 
+##     trim</code></pre>
+<pre><code>## The following objects are masked from &#39;package:methods&#39;:
+## 
+##     getClasses, getMethods</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     attach, detach, gc, load, save</code></pre>
+<pre><code>## R.utils v2.7.0 successfully loaded. See ?R.utils for help.</code></pre>
+<pre><code>## 
+## Attaching package: &#39;R.utils&#39;</code></pre>
+<pre><code>## The following object is masked from &#39;package:gtools&#39;:
+## 
+##     capture</code></pre>
+<pre><code>## The following object is masked from &#39;package:RnBeads&#39;:
+## 
+##     off</code></pre>
+<pre><code>## The following object is masked from &#39;package:spam&#39;:
+## 
+##     cleanup</code></pre>
+<pre><code>## The following object is masked from &#39;package:utils&#39;:
+## 
+##     timestamp</code></pre>
+<pre><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     cat, commandArgs, getOption, inherits, isOpen, parse, warnings</code></pre>
+<pre class="sourceCode r"><code class="sourceCode r">data.prep &lt;-<span class="st"> </span><span class="kw">prepare_data</span>(<span class="dt">RNB_SET =</span> rnb.set,
+                          <span class="dt">analysis.name =</span> <span class="st">&quot;TCGA_Deconvolution&quot;</span>,
+                          <span class="dt">NORMALIZATION =</span> <span class="st">&quot;bmiq&quot;</span>,
+                          <span class="dt">FILTER_BEADS =</span> T,
+                          <span class="dt">MIN_N_BEADS =</span> <span class="dv">3</span>,
+                          <span class="dt">FILTER_INTENSITY =</span> T,
+                          <span class="dt">MIN_INT_QUANT =</span> <span class="fl">0.05</span>,
+                          <span class="dt">MAX_INT_QUANT =</span> <span class="fl">0.95</span>,
+                          <span class="dt">FILTER_NA =</span> T,
+                          <span class="dt">FILTER_CONTEXT =</span> T,
+                          <span class="dt">FILTER_SNP =</span> T,
+                          <span class="dt">FILTER_SOMATIC =</span> T,
+                          <span class="dt">FILTER_CROSS_REACTIVE =</span> T)</code></pre>
+<pre><code>## 2019-01-30 10:52:13    18.8    INFO 163614 sites removed in bead count filtering.
+## 2019-01-30 10:53:23    21.4    INFO 249310 sites removed in intensity filtering.
+## 2019-01-30 10:53:44    13.8    INFO 0 sites removed in NA filtering
+## 2019-01-30 10:53:45    13.8    INFO 8866 sites removed in SNP filtering
+## 2019-01-30 10:53:45    13.8    INFO 611 sites removed in somatic sites filtering
+## 2019-01-30 10:53:45    13.8    INFO 236 sites removed in CG context filtering
+## 2019-01-30 10:53:45    13.8    INFO Removing 422637 sites, retaining  62940</code></pre>
+<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff674237573b8b.ff</code></pre>
+<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff674236a92ae3.ff</code></pre>
+<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff67427ac840ca.ff</code></pre>
+<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff67423c650c75.ff</code></pre>
+<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff67422bd2cc9d.ff</code></pre>
+<pre><code>## 2019-01-30 11:25:33    13.3    INFO 2646 sites removed in cross-reactive filtering</code></pre>
+<h2 id="selecting-informative-features-cpgs">Selecting informative features (CpGs)</h2>
+<p>The next, crucial, step is selecting a subset of sites that are informative about the cell type composition of your sample. This can be done in various ways, and DecompPipeline provides a list of them through the <code>prepare_CG_subsets</code> function. However, we focus on a single option, which we found to work well in many scenarios: feature selection through Indepedent Component Analysis (ICA).</p>
+<h2 id="performing-deconvolution">Performing Deconvolution</h2>
+<p>In this step, the actual deconvolution experiment is performed. There are different approaches, which are conceptually similar, yet different in their performance, running time and robustness. Among others, EDec, RefFreeCellMix from the RefFreeEWAS package and MeDeCom can be used to execute non-negative matrix factorization on your data. This will lead to two matrices, the proportions matrix of potential cell types (here referred to as LMCs) and the matrix of those pure profiles. We here focus on MeDeCom as the Deconvolution tool, although DecompPipeline equally support RefFreeCellMix and EDec.</p>
+<h2 id="downstream-analysis">Downstream analysis</h2>
+<p>After performing deconvolution, results need to be visualized and interpreted. Most notably, the contribution matrix can be linked to phenotypic information about the samples to indicate different cellular compositions of the groups and the LMC matrix can be used to determine what the component represent. For visualization and downstream analysis, we use FactorViz. Enrichment analysis can be employed on sites that are specifically methylated/unmethylated in one of the LMCs.</p>

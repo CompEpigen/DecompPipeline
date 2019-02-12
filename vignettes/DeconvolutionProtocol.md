@@ -4,6 +4,8 @@ author: "Michael Scherer, Pavlo Lutsik, Petr Nazarov, Tony Kamoa"
 date: "January 23, 2019"
 output:
   pdf_document: default
+	toc: true
+	toc_depth: 2
   html_document: default
 bibliography: bibliography.bib
 ---
