@@ -64,7 +64,7 @@ prepare_data<-function(
 		ID_COLUMN=rnb.getOption("identifiers.column"),
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
-		REF_RNB_SET=NA,
+		REF_RNB_SET=NULL,
 		REF_RNB_CT_COLUMN=NA,
 		PREPARE_TRUE_PROPORTIONS=FALSE,
 		TRUE_A_TOKEN=NA,
@@ -143,7 +143,7 @@ prepare_data<-function(
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
 	
-	if(!is.na(REF_RNB_SET) && !is.na(REF_RNB_CT_COLUMN)){
+	if(!is.null(REF_RNB_SET) && !is.na(REF_RNB_CT_COLUMN)){
 		
 		rnb.set.ref<-load.rnb.set(REF_RNB_SET)
 		meth.rnb.ref<-meth(rnb.set.ref)
