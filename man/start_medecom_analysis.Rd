@@ -76,5 +76,5 @@ through \code{rnb.set}}
 An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 }
 \description{
-Wrapper for runMeDeCom, for data preprocessed through the DecombPipeline
+Wrapper for runMeDeCom, for data preprocessed through the DecompPipeline
 }

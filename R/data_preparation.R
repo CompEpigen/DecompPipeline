@@ -48,6 +48,8 @@
 #'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
 #' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
+#' @param FILTER_CROSS_REACTIVE Flag indicating if sites showing cross reactivity on the array are to be removed.
+#' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
@@ -62,7 +64,7 @@ prepare_data<-function(
 		ID_COLUMN=rnb.getOption("identifiers.column"),
 		NORMALIZATION="none",
 		REF_CT_COLUMN=NA,
-		REF_RNB_SET=NA,
+		REF_RNB_SET=NULL,
 		REF_RNB_CT_COLUMN=NA,
 		PREPARE_TRUE_PROPORTIONS=FALSE,
 		TRUE_A_TOKEN=NA,
@@ -77,7 +79,9 @@ prepare_data<-function(
 		FILTER_CONTEXT=TRUE,
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
-		snp.list=NULL
+		FILTER_CROSS_REACTIVE=T,
+		snp.list=NULL,
+		execute.lump=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
@@ -139,7 +143,7 @@ prepare_data<-function(
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
 	
-	if(!is.na(REF_RNB_SET) && !is.na(REF_RNB_CT_COLUMN)){
+	if(!is.null(REF_RNB_SET) && !is.na(REF_RNB_CT_COLUMN)){
 		
 		rnb.set.ref<-load.rnb.set(REF_RNB_SET)
 		meth.rnb.ref<-meth(rnb.set.ref)
@@ -219,6 +223,11 @@ prepare_data<-function(
 	
 	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
 	
+	if(execute.lump){
+	  lump.est <- rnb.execute.lump(rnb.set)
+	  rnb.set <- addPheno(rnb.set,as.vector(lump.est),"LUMP_estimate")
+	}
+	
 	####################### FILTERING
 	################################# QUALITY FILTERING ######################################
 	FILTER_QUALITY<- FILTER_BEADS || FILTER_INTENSITY
@@ -268,6 +277,12 @@ prepare_data<-function(
 	total.filter<-intersect(qual.filter, annot.filter)
 	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
+	
+	if(FILTER_CROSS_REACTIVE && inherits(rnb.set.f, "RnBeadSet")){
+	  cross.reactive.filter <- rnb.execute.cross.reactive.removal(rnb.set.f)
+	  logger.info(paste(length(cross.reactive.filter$filtered),"sites removed in cross-reactive filtering"))
+	  rnb.set.f <- cross.reactive.filter$dataset
+	}
 	
 	analysis_info<-list()
 	

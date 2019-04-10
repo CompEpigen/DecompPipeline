@@ -17,7 +17,7 @@ prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
   FILTER_INTENSITY = inherits(RNB_SET, "RnBeadRawSet"),
   MIN_INT_QUANT = 0.1, MAX_INT_QUANT = 0.95, FILTER_NA = TRUE,
   FILTER_CONTEXT = TRUE, FILTER_SNP = TRUE, FILTER_SOMATIC = TRUE,
-  snp.list = NULL)
+  FILTER_CROSS_REACTIVE = T, snp.list = NULL, execute.lump = FALSE)
 }
 \arguments{
 \item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
@@ -77,7 +77,11 @@ could provide an addititional list of SNPs, similar to RnBeads blacklist for fil
 
 \item{FILTER_SOMATIC}{Flag indicating if only somatic probes are to be kept.}
 
+\item{FILTER_CROSS_REACTIVE}{Flag indicating if sites showing cross reactivity on the array are to be removed.}
+
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.}
+
+\item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
 }
 \value{
 A list with four elements: \itemize{

@@ -8,7 +8,7 @@ prepare_CG_subsets(meth.data = NULL, rnb.set = NULL, MARKER_SELECTION,
   N_MARKERS = 5000, WRITE_FILES = FALSE, WD = NA,
   REF_DATA_SET = NULL, REF_PHENO_COLUMN = NULL, N_PRIN_COMP = 10,
   RANGE_DIFF = 0.05, CUSTOM_MARKER_FILE = "", store.heatmaps = F,
-  heatmap.sample.col = NULL)
+  heatmap.sample.col = NULL, K.prior = NULL)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
@@ -17,6 +17,7 @@ through \code{rnb.set}}
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.}
 
 \item{MARKER_SELECTION}{A vector of strings representing marker selection methods. Available method are \itemize{
+         \item{"\code{all}"} Using all sites available in the input.
          \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
                 groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
                 selected by employing limma on the methylation matrix.
@@ -34,6 +35,13 @@ through \code{rnb.set}}
          \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
          \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
               across samples.
+         \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
+              R package to determine sites that are significantly linked to the potential cell types. This
+              requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
+              Achard for providing the idea and parts of the codes.
+         \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
+              EDec's example reference data is provided. If a specific data set is to be provided, it needs
+              to be done through \code{REF_DATA_SET}.
          \item{"\code{custom}"} Specifying a custom file with indices.
 }}
 
@@ -53,12 +61,16 @@ the reference cell type.}
 
 \item{RANGE_DIFF}{Optional argument specifying the difference between maximum and minimum required.}
 
-\item{CUSTOM_MARKER_FILE}{Optional argument containing a file that specifies the indices used for employing MeDeCom.}
+\item{CUSTOM_MARKER_FILE}{Optional argument containing an absolute path to a file that specifies the indices used for employing MeDeCom. Can be provided
+either as an \code{RDS} file containing a vector of indices to select or as a \code{txt, csv, tsv} file containing each index
+to be selected as a single row.}
 
 \item{store.heatmaps}{Flag indicating if a heatmap of the selected input sites is to be create from the input methylation matrix.
 The files are then stored in the 'heatmaps' folder in WD.}
 
 \item{heatmap.sample.col}{Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.}
+
+\item{K.prior}{K determined from visual inspection. Only has an influence, if \code{MARKER_SELECTION="pcadapt"}.}
 }
 \value{
 List of indices, one entry for each marker selection method specified by \code{MARKER_SELECTION}. The indices correspond

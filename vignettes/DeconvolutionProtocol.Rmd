@@ -1,0 +1,127 @@
+---
+title: "DNA Methylation Deconvolution Protocol"
+author: "Michael Scherer, Pavlo Lutsik, Petr Nazarov, Tony Kamoa"
+date: "February 6, 2019"
+output:
+  pdf_document: default
+    toc: true
+    toc_depth: 3
+    df_print: kable
+    highlight: tango
+    documentclass: scrartcl
+    mainfont: ebgaramond
+bibliography: bibliography.bib
+---
+
+```{r setup, include=FALSE, cache=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
+```
+
+# Introduction
+
+This protocols aims at guiding reasearcher how to correctly employ deconvolution of methylomes obtained from complex tissue. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing protocols that provide single base pair resolution.
+Deconvolution here refers to creating two matrices (proportion matrix A and methylation pattern matrix T) from a single matrix of input DNA methylation data (dimension CpGs x samples). Non-negative matrix factorization can be employed for this task, and we will discuss some of the advantages and caveats of the methods.
+
+# Protocol
+
+## Data Retrival
+
+### Obtaining data from a public resource (duration ~5h)
+
+We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinum 450k BeadChip and comprises 461 samples. Due to restrucuring of the TCGA data archive, the clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples. We used the GDC data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the intensity data (IDAT) files listed in the manifest file and its associated metadata. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for downstream analysis, the following code was employed.
+
+```{r map_ids, eval=F}
+clinical.data <- read.table("annotation/clinical.tsv",sep="\t",header=T)
+idat.files <- list.files("idat",full.names = T)
+meta.files <- list.files(idat.files[1],full.names = T)
+untar(meta.files[3],exdir = idat.files[1])
+meta.files <- untar(meta.files[3],list=T)
+meta.info <- read.table(file.path(idat.files[1],meta.files[5]),sep="\t",header=T)
+meta.info <- meta.info[match(unique(meta.info$Comment..TCGA.Barcode.),meta.info$Comment..TCGA.Barcode.),]
+match.meta.clin <- match(clinical.data$submitter_id,substr(meta.info$Comment..TCGA.Barcode.,1,12))
+anno.frame <- na.omit(data.frame(clinical.data,meta.info[match.meta.clin,]))
+anno.frame$barcode <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][1],x[[1]][2],sep="_")))
+anno.frame$Sentrix_ID <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][1])))
+anno.frame$Sentrix_Position <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][2])))
+write.table(anno.frame,"annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
+anno.frame <- read.table("annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
+
+#' write idat files to parent directory
+lapply(idat.files,function(x){
+  is.idat <- list.files(x,pattern = ".idat",full.names = T)
+  file.copy(is.idat,"idat/")
+  unlink(x,recursive = T)
+})
+```
+
+## Data Processing
+
+### Data Import and Quality Control in RnBeads (~3h)
+
+After downloading the data, it has to be processed into a format that can be used by downstream software. We used RnBeads to convert the files into a data object and did basic quality control steps on the dataset. Most notably, analysis options need to be specified for RnBeads, either through an XML file or in the command line. We will follow the latter strategy here, and deactivate the preprocessing, exploratory, covariate inference and differential methylation modules. In the next step, we specify the input to RnBeads: the created sample annotation sheet, the folder in which the IDAT files are stored and a folder to which the HTML report is to be saved. We additionally recommend to specify a temporary directory for the analysis. Then we start the RnBeads analysis.
+
+```{r RnBeads}
+suppressPackageStartupMessages(library(RnBeads))
+rnb.options(
+  assembly="hg19",
+  identifiers.column="submitter_id",
+  import=T,
+  import.default.data.type="idat.dir",
+  import.table.separator="\t",
+  import.sex.prediction=T,
+  qc=T,
+  preprocessing=F,
+  exploratory=F,
+  inference=F,
+  differential=F,
+  export.to.bed=F,
+  export.to.trackhub=NULL,
+  export.to.csv=F
+)
+sample.anno <- "annotation/sample_annotation.tsv"
+idat.folder <- "idat/"
+dir.report <- paste0("report",Sys.Date(),"/")
+temp.dir <- "/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp"
+options(fftempdir=temp.dir)
+rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
+```
+
+RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that is can be used for further analysis. (Include two screenshots from the RnBeads report)
+
+### Preprocessing and Filtering
+
+For further analysis, we use the DecompPipeline package (https://github.com/lutsik/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individual function's parameters. We follow a stringent filtering strategy. First, all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles, respectively. We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. Then, BMIQ normalization [@bmiq] is employed to account for the chip's design bias.
+We decided not to adjust for potential covariate, since we found that methods like ComBat have the tendency to over-correct. This would here include removing biologically relevant noise that the method assumes to be related to technical variation.
+```{r data_preparation}
+suppressPackageStartupMessages(library(DecompPipeline))
+data.prep <- prepare_data(RNB_SET = rnb.set,
+                          analysis.name = "TCGA_Deconvolution",
+                          NORMALIZATION = "bmiq",
+                          FILTER_BEADS = T,
+                          MIN_N_BEADS = 3,
+                          FILTER_INTENSITY = T,
+                          MIN_INT_QUANT = 0.05,
+                          MAX_INT_QUANT = 0.95,
+                          FILTER_NA = T,
+                          FILTER_CONTEXT = T,
+                          FILTER_SNP = T,
+                          FILTER_SOMATIC = T,
+                          FILTER_CROSS_REACTIVE = T)
+```
+
+### Selecting informative features (CpGs)
+
+The next, crucial, step is selecting a subset of sites that are informative about the cell type composition of your sample. This can be done in various ways, and DecompPipeline provides a list of them through the ```prepare_CG_subsets``` function. However, we focus on a single option, which we found to work well in many scenarios: feature selection through Independent Component Analysis (ICA).
+
+## Methylome Deconvolution
+
+### Performing Deconvolution
+
+In this step, the actual deconvolution experiment is performed. There are different approaches, which are conceptually similar, yet different in their performance, running time and robustness. Among others, EDec, RefFreeCellMix from the RefFreeEWAS package and MeDeCom can be used to execute non-negative matrix factorization on your data. This will lead to two matrices, the proportions matrix of potential cell types (here referred to as LMCs) and the matrix of those pure profiles. We here focus on MeDeCom as the Deconvolution tool, although DecompPipeline equally support RefFreeCellMix and EDec.
+
+## Downstream analysis
+
+After performing deconvolution, results need to be visualized and interpreted. Most notably, the contribution matrix can be linked to phenotypic information about the samples to indicate different cellular compositions of the groups and the LMC matrix can be used to determine what the component represent. For visualization and downstream analysis, we use FactorViz. Enrichment analysis can be employed on sites that are specifically methylated/unmethylated in one of the LMCs.
+
+# References
