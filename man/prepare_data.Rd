@@ -9,7 +9,7 @@ prepare_data}
 prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
   SAMPLE_SELECTION_COL = NA, SAMPLE_SELECTION_GREP = NA,
   PHENO_COLUMNS = NA, ID_COLUMN = rnb.getOption("identifiers.column"),
-  NORMALIZATION = "none", REF_CT_COLUMN = NA, REF_RNB_SET = NA,
+  NORMALIZATION = "none", REF_CT_COLUMN = NA, REF_RNB_SET = NULL,
   REF_RNB_CT_COLUMN = NA, PREPARE_TRUE_PROPORTIONS = FALSE,
   TRUE_A_TOKEN = NA, HOUSEMAN_A_TOKEN = NA,
   ESTIMATE_HOUSEMAN_PROP = FALSE,
@@ -17,7 +17,8 @@ prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
   FILTER_INTENSITY = inherits(RNB_SET, "RnBeadRawSet"),
   MIN_INT_QUANT = 0.1, MAX_INT_QUANT = 0.95, FILTER_NA = TRUE,
   FILTER_CONTEXT = TRUE, FILTER_SNP = TRUE, FILTER_SOMATIC = TRUE,
-  FILTER_CROSS_REACTIVE = T, snp.list = NULL, execute.lump = FALSE)
+  FILTER_CROSS_REACTIVE = T, remove.ICA = F, conf.fact.ICA = NULL,
+  snp.list = NULL, execute.lump = FALSE)
 }
 \arguments{
 \item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
@@ -78,6 +79,11 @@ could provide an addititional list of SNPs, similar to RnBeads blacklist for fil
 \item{FILTER_SOMATIC}{Flag indicating if only somatic probes are to be kept.}
 
 \item{FILTER_CROSS_REACTIVE}{Flag indicating if sites showing cross reactivity on the array are to be removed.}
+
+\item{remove.ICA}{Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
+If \code{TRUE},conf.fact.ICA needs to be specified.}
+
+\item{conf.fact.ICA}{Column name in the sample annotation sheet representing a potential confounding factor.}
 
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.}
 

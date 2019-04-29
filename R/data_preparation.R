@@ -39,7 +39,8 @@
 #' @param FILTER_BEADS Flag indicating, if site-filtering based on the number of beads available is to be conducted.
 #' @param MIN_N_BEADS Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.
 #' @param FILTER_INTENSITY  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
-#'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}).
+#'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}). Note that all sites are removed that have a value outside of
+#'                      the provided quantile range in either of the channels and in any of the samples. 
 #' @param MIN_INT_QUANT Lower quantile of intensities which is to be removed.
 #' @param MAX_INT_QUANT Upper quantile of intensities which is to be removed.
 #' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
@@ -49,6 +50,11 @@
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
 #' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
 #' @param FILTER_CROSS_REACTIVE Flag indicating if sites showing cross reactivity on the array are to be removed.
+#' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
+#'             If \code{TRUE},conf.fact.ICA needs to be specified.
+#' @param conf.fact.ICA Column name in the sample annotation sheet representing a potential confounding factor.
+#' @param ica.setting Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact}. See 
+#'             \code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
@@ -73,13 +79,16 @@ prepare_data<-function(
 		FILTER_BEADS=!is.null(RNB_SET@covg.sites),
 		MIN_N_BEADS=3,
 		FILTER_INTENSITY=inherits(RNB_SET, "RnBeadRawSet"),
-		MIN_INT_QUANT = 0.1,
-		MAX_INT_QUANT = 0.95, 
+		MIN_INT_QUANT = 0.01,
+		MAX_INT_QUANT = 0.99, 
 		FILTER_NA=TRUE,
 		FILTER_CONTEXT=TRUE,
 		FILTER_SNP=TRUE,
 		FILTER_SOMATIC=TRUE,
 		FILTER_CROSS_REACTIVE=T,
+		remove.ICA=F,
+		conf.fact.ICA=NULL,
+		ica.setting=NULL,
 		snp.list=NULL,
 		execute.lump=FALSE
 ){
@@ -88,6 +97,15 @@ prepare_data<-function(
 	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
 	  dir.create(OUTPUTDIR)
+	}
+	log.file <- file.path(OUTPUTDIR,"analysis.log")
+	if(!file.exists(log.file)){
+	  if(logger.isinitialized()){
+	    logger.close()
+	    logger.start(fname=log.file)
+	  }else{
+	    logger.start(fname=log.file)
+	  }
 	}
 	
 	################################# PREPARE THE PARAMETER TUNING RUN ############################################
@@ -282,6 +300,15 @@ prepare_data<-function(
 	  cross.reactive.filter <- rnb.execute.cross.reactive.removal(rnb.set.f)
 	  logger.info(paste(length(cross.reactive.filter$filtered),"sites removed in cross-reactive filtering"))
 	  rnb.set.f <- cross.reactive.filter$dataset
+	}
+	
+	if(remove.ICA){
+	  if(!inherits(rnb.set.f,"RnBSet")){
+	    logger.error("ICA only applicable to RnBSet objects.")
+	  }
+	  logger.start("Removing confounding factors using ICA")
+	  rnb.set.f <- run.rnb.ICA(rnb.set.f,conf.fact.ICA,out.folder=OUTPUTDIR,ica.setting=ica.setting)
+	  logger.completed()
 	}
 	
 	analysis_info<-list()
@@ -651,7 +678,16 @@ prepare_data_BS <- function(
 	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
 	  dir.create(OUTPUTDIR)
-	}	
+	}
+	log.file <- file.path(OUTPUTDIR,"analysis.log")
+	if(!file.exists(log.file)){
+	  if(logger.isinitialized()){
+	    logger.close()
+	    logger.start(fname=log.file)
+	  }else{
+	    logger.start(fname=log.file)
+	  }
+	}
 	if(is.character(RNB_SET)){
 		rnb.set<-load.rnb.set(RNB_SET)
 	}else if(inherits(RNB_SET,"RnBSet")){

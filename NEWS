@@ -1,3 +1,8 @@
+DecompPipeline 0.2.4
+=============
+
+ * Added ICA to remove effect of potential confounding factor (PN, TK)
+
 DecompPipeline 0.2.3
 =============
 

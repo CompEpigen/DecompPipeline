@@ -8,7 +8,7 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   factorviz.outputs = F, analysis.name = "Analysis",
   sample.selection.col = NA, sample.selection.grep = NA,
   pheno.cols = NA, id.column = rnb.getOption("identifiers.column"),
-  normalization = "none", ref.ct.column = NA, ref.rnb.set = NA,
+  normalization = "none", ref.ct.column = NA, ref.rnb.set = NULL,
   ref.rnb.ct.column = NA, prepare.true.proportions = F,
   true.A.token = NA, houseman.A.token = NA,
   estimate.houseman.prop = F,
@@ -16,9 +16,10 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   filter.intensity = inherits(rnb.set, "RnBeadRawSet"),
   min.int.quant = 0.1, max.int.quant = 0.95, filter.na = TRUE,
   filter.context = TRUE, filter.cross.reactive = TRUE,
-  execute.lump = FALSE, filter.snp = TRUE, filter.somatic = TRUE,
-  snp.list = NULL, filter.coverage = hasCovg(rnb.set),
-  min.coverage = 5, min.covg.quant = 0.05, max.covg.quant = 0.95,
+  execute.lump = FALSE, remove.ICA = FALSE, conf.fact.ICA = FALSE,
+  filter.snp = TRUE, filter.somatic = TRUE, snp.list = NULL,
+  filter.coverage = hasCovg(rnb.set), min.coverage = 5,
+  min.covg.quant = 0.05, max.covg.quant = 0.95,
   marker.selection = "var", n.markers = 5000, write.files = FALSE,
   n.prin.comp = 10, range.diff = 0.05, custom.marker.file = "",
   store.heatmaps = F, heatmap.sample.col = NULL,
@@ -90,6 +91,11 @@ given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}) (BeadChip only).}
 \item{filter.cross.reactive}{Flag indicating if sites showing cross reactivity on the array are to be removed.}
 
 \item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
+
+\item{remove.ICA}{Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
+If \code{TRUE},conf.fact.ICA needs to be specified.}
+
+\item{conf.fact.ICA}{Column name in the sample annotation sheet representing a potential confounding factor.}
 
 \item{filter.snp}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)}

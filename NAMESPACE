@@ -3,6 +3,7 @@
 export(prepare_CG_subsets)
 export(prepare_data)
 export(prepare_data_BS)
+export(run.rnb.ICA)
 export(start.analysis)
 export(start.edec.analysis)
 export(start.refreeewas.analysis)

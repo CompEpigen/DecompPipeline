@@ -4,10 +4,12 @@ Description: Preparation pipeline for MeDeCom
 Maintainer: Michael Scherer <mscherer@mpi-inf.mpg.de>
 Authors@R: c(
    person ( "Pavlo", "Lutsik", email="p.lutsik@mx.uni-saarland.de", role = c("aut")),
-   person ( "Michael", "Scherer", email="mscherer@mpi-inf.mpg.de", role = c("cre","aut"))
+   person ( "Michael", "Scherer", email="mscherer@mpi-inf.mpg.de", role = c("cre","aut")),
+   person ( "Tony", "Kamoa", email="Tony.Kaoma@lih.lu", role = c("aut")),
+   person ( "Petr", "Nazarov", email="Petr.Nazarov@lih.lu", role = c("aut"))
  )
-Date: 2019-01-14
-Version: 0.2.3
+Date: 2019-05-23
+Version: 0.2.4
 Depends:
     R (>= 3.2.0),
     MeDeCom,

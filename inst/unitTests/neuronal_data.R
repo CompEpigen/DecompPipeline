@@ -40,7 +40,9 @@ res<-prepare_data(
 		FILTER_SOMATIC=TRUE,
 		FILTER_CROSS_REACTIVE=T,
 		snp.list="/DEEP_fhgfs/projects/mscherer/data/EPIC/Radar_Genetik/commonSNPs137.txt",
-		execute.lump=T
+		execute.lump=T,
+		remove.ICA = T,
+		conf.fact.ICA = "vital_status"
 )
 
 

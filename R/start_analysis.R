@@ -293,6 +293,15 @@ start_medecom_analysis<-function(
   if(!file.exists(WORK_DIR)){
     dir.create(WORK_DIR)
   }
+  log.file <- file.path(WORK_DIR,"analysis.log")
+  if(!file.exists(log.file)){
+    if(logger.isinitialized()){
+      logger.close()
+      logger.start(fname=log.file)
+    }else{
+      logger.start(fname=log.file)
+    }
+  }
 	
 	if(is.na(CLUSTER_RDIR)){
 		if(any(grepl("deep", R.utils:::System$getHostname()))){
@@ -602,6 +611,9 @@ start_medecom_analysis<-function(
 #' @param filter.context Flag indicating if only CG probes are to be kept (BeadChip only).
 #' @param filter.cross.reactive Flag indicating if sites showing cross reactivity on the array are to be removed.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
+#' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
+#'             If \code{TRUE},conf.fact.ICA needs to be specified.
+#' @param conf.fact.ICA Column name in the sample annotation sheet representing a potential confounding factor.
 #' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 #'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
@@ -695,6 +707,8 @@ start_decomp_pipeline <- function(rnb.set,
                                   filter.context=TRUE,
                                   filter.cross.reactive=TRUE,
                                   execute.lump=FALSE,
+                                  remove.ICA=FALSE,
+                                  conf.fact.ICA=FALSE,
                                   filter.snp=TRUE,
                                   filter.somatic=TRUE,
                                   snp.list=NULL,
@@ -753,7 +767,9 @@ start_decomp_pipeline <- function(rnb.set,
                               execute.lump=execute.lump,
                               FILTER_SNP=filter.snp,
                               FILTER_SOMATIC=filter.somatic,
-                              snp.list=snp.list
+                              snp.list=snp.list,
+                              remove.ICA=remove.ICA,
+                              conf.fact.ICA=conf.fact.ICA
     )
   }else if(inherits(rnb.set,"RnBiseqSet")){
     data.prep <- prepare_data_BS(RNB_SET = rnb.set,
