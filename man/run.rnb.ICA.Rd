@@ -4,14 +4,17 @@
 \alias{run.rnb.ICA}
 \title{run.rnb.ICA}
 \usage{
-run.rnb.ICA(rnb.set, conf.factor, nmin = 3, nmax = 20, ntry = 1,
-  thr.sd = 0, alpha.fact = 1e-10)
+run.rnb.ICA(rnb.set, conf.factor, ica.setting = NULL, nmin = 10,
+  nmax = 30, ntry = 1, thr.sd = 0, alpha.fact = 1e-10,
+  out.folder = NULL)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation information}
 
 \item{conf.factor}{A column name in the sample annotation sheet of \code{rnb.set} representing the confounding factor to be 
 removed.}
+
+\item{ica.setting}{Optional argument. If specified a named vector of arguments to be used. Can be one of the following.}
 
 \item{nmin}{Minimum number of components to be used}
 

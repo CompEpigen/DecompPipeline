@@ -15,10 +15,10 @@ prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
   ESTIMATE_HOUSEMAN_PROP = FALSE,
   FILTER_BEADS = !is.null(RNB_SET@covg.sites), MIN_N_BEADS = 3,
   FILTER_INTENSITY = inherits(RNB_SET, "RnBeadRawSet"),
-  MIN_INT_QUANT = 0.1, MAX_INT_QUANT = 0.95, FILTER_NA = TRUE,
+  MIN_INT_QUANT = 0.01, MAX_INT_QUANT = 0.99, FILTER_NA = TRUE,
   FILTER_CONTEXT = TRUE, FILTER_SNP = TRUE, FILTER_SOMATIC = TRUE,
   FILTER_CROSS_REACTIVE = T, remove.ICA = F, conf.fact.ICA = NULL,
-  snp.list = NULL, execute.lump = FALSE)
+  ica.setting = NULL, snp.list = NULL, execute.lump = FALSE)
 }
 \arguments{
 \item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
@@ -63,7 +63,8 @@ cell type are estimated with Houseman's approach.}
 \item{MIN_N_BEADS}{Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.}
 
 \item{FILTER_INTENSITY}{Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
-given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}).}
+given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}). Note that all sites are removed that have a value outside of
+the provided quantile range in either of the channels and in any of the samples.}
 
 \item{MIN_INT_QUANT}{Lower quantile of intensities which is to be removed.}
 
@@ -84,6 +85,9 @@ could provide an addititional list of SNPs, similar to RnBeads blacklist for fil
 If \code{TRUE},conf.fact.ICA needs to be specified.}
 
 \item{conf.fact.ICA}{Column name in the sample annotation sheet representing a potential confounding factor.}
+
+\item{ica.setting}{Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact}. See 
+\code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.}
 
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.}
 

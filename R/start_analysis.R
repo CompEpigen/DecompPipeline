@@ -614,6 +614,7 @@ start_medecom_analysis<-function(
 #' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
 #'             If \code{TRUE},conf.fact.ICA needs to be specified.
 #' @param conf.fact.ICA Column name in the sample annotation sheet representing a potential confounding factor.
+#' @param ica.setting Optional argument setting up ICA.
 #' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 #'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
@@ -709,6 +710,7 @@ start_decomp_pipeline <- function(rnb.set,
                                   execute.lump=FALSE,
                                   remove.ICA=FALSE,
                                   conf.fact.ICA=FALSE,
+                                  ica.setting=NULL,
                                   filter.snp=TRUE,
                                   filter.somatic=TRUE,
                                   snp.list=NULL,
@@ -769,7 +771,8 @@ start_decomp_pipeline <- function(rnb.set,
                               FILTER_SOMATIC=filter.somatic,
                               snp.list=snp.list,
                               remove.ICA=remove.ICA,
-                              conf.fact.ICA=conf.fact.ICA
+                              conf.fact.ICA=conf.fact.ICA,
+                              ica.setting=ica.setting
     )
   }else if(inherits(rnb.set,"RnBiseqSet")){
     data.prep <- prepare_data_BS(RNB_SET = rnb.set,

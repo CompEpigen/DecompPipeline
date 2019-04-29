@@ -17,9 +17,9 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   min.int.quant = 0.1, max.int.quant = 0.95, filter.na = TRUE,
   filter.context = TRUE, filter.cross.reactive = TRUE,
   execute.lump = FALSE, remove.ICA = FALSE, conf.fact.ICA = FALSE,
-  filter.snp = TRUE, filter.somatic = TRUE, snp.list = NULL,
-  filter.coverage = hasCovg(rnb.set), min.coverage = 5,
-  min.covg.quant = 0.05, max.covg.quant = 0.95,
+  ica.setting = NULL, filter.snp = TRUE, filter.somatic = TRUE,
+  snp.list = NULL, filter.coverage = hasCovg(rnb.set),
+  min.coverage = 5, min.covg.quant = 0.05, max.covg.quant = 0.95,
   marker.selection = "var", n.markers = 5000, write.files = FALSE,
   n.prin.comp = 10, range.diff = 0.05, custom.marker.file = "",
   store.heatmaps = F, heatmap.sample.col = NULL,
@@ -96,6 +96,8 @@ given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}) (BeadChip only).}
 If \code{TRUE},conf.fact.ICA needs to be specified.}
 
 \item{conf.fact.ICA}{Column name in the sample annotation sheet representing a potential confounding factor.}
+
+\item{ica.setting}{Optional argument setting up ICA.}
 
 \item{filter.snp}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
 could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)}
