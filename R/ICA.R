@@ -156,7 +156,7 @@ removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qth
     mod = aov(IC$M[ic,]~Var[[fact]])
     pv[ic] = summary(mod)[[1]][1,"Pr(>F)"]
     if (pv[ic] < alpha.fact){
-      logger.info(cat("Component",ic,"is linked to",fact,"factor, p-value=",pv[ic]))
+      logger.info(paste("Component",ic,"is linked to",fact,"factor, p-value=",pv[ic]))
     } 
   }
   
@@ -200,19 +200,19 @@ run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntr
     logger.error("Invalid value for rnb.set, needs to be RnBSet object")
   }
   if(!is.null(ica.setting)){
-    if(!is.null(ica.setting["nmin"])){
+    if(!is.na(ica.setting["nmin"])){
       nmin <- ica.setting["nmin"]
     }
-    if(!is.null(ica.setting["nmax"])){
+    if(!is.na(ica.setting["nmax"])){
       nmax <- ica.setting["nmax"]
     }
-    if(!is.null(ica.setting["ntry"])){
+    if(!is.na(ica.setting["ntry"])){
       nrty <- ica.setting["ntry"]
     }
-    if(!is.null(ica.setting["thr.sd"])){
+    if(!is.na(ica.setting["thr.sd"])){
       thr.sd <- ica.setting["thr.sd"]
     }
-    if(!is.null(ica.setting["alpha.fact"])){
+    if(!is.na(ica.setting["alpha.fact"])){
       alpha.fact <- ica.setting["alpha.fact"]
     }
   }
