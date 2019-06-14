@@ -23,7 +23,7 @@
 ## Searches for the number of components required to identify factor effect
 ## with maximized significance
 ##    file - file path to RnBeads dataset
-##    fact - factor name to be investigated
+##    fact - vector of factor names to be investigated
 ##    nmin - minimal number of components to try
 ##    nmax - maximal number of components to try
 ##    ntry - number of ICA runs (1 is fastest, but leads to noisy log-p-value profiles)
@@ -40,8 +40,8 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
   logger.info(sprintf("Only sites with SD > %g were kept: %d of %d",thr.sd,sum(ikeep),length(ikeep)))
   
   Var = df2factor(pheno.data,maxlev=20)
-  if(!fact %in% names(Var)) {
-    logger.error(paste("Error in getComponentNumber: poor factor or wrong factor name `",fact))
+  if(sum(fact %in% names(Var))!= length(fact)) {
+    logger.error(paste("Error in getComponentNumber: poor factor or wrong factor name `",fact[! fact %in% names(Var)]))
     return(NA)
   }
   
@@ -51,20 +51,27 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
   }
   
   ncomp = nmin:nmax
-  logPV = double(length(ncomp))+NA
+  logPV = data.frame(matrix(nrow=length(ncomp),ncol=length(fact)))
+  rownames(logPV) = paste0("nc.",ncomp)
+  colnames(logPV) = fact
+  nc = ncomp[1]
   for (nc in ncomp){
     logger.start(paste("getMinCompNumber: working with",nc,"components"))
-    IC = runICA(meth.data,ncomp=nc, ntry = ntry)
-    pv=1
-    for (ic in 1:nc){
-      mod = aov(IC$M[ic,]~Var[[fact]])
-      pv = min(pv,summary(mod)[[1]][1,"Pr(>F)"])
+    IC = runICA(meth.data,ncomp=nc, ntry = ntry, ncores = ncores)
+    logPV[paste0("nc.",nc),] = 1
+    for (fct in fact){
+      for (ic in 1:nc){
+        mod = aov(IC$M[ic,]~Var[[fct]])
+        logPV[paste0("nc.",nc),fct] = min(logPV[paste0("nc.",nc),fct],summary(mod)[[1]][1,"Pr(>F)"])
+      }
     }
-    logPV[which(is.na(logPV))[1]] = -log10(pv)
-    write(print(pv),file=logger.getfiles(),append = T)
+    if(!is.na(logger.getfiles())){
+      write(paste(logPV[paste0("nc.",nc),],collapse="; "),file=logger.getfiles(),append = T)
+    }
+    logPV[paste0("nc.",nc),] = -log10(logPV[paste0("nc.",nc),])
     logger.completed()
   }
-  return(ncomp[which.max(logPV)])
+  return(ncomp[which.max(apply(logPV,1,min))])
   ##ToDo: later we could perform shape analysis - fitting with sigmoid
   ## e.g.
   #sigreg = function(x,p){return(p[1]+p[2]/(1+exp(-p[4]^2*(x-p[3]))))}
@@ -144,25 +151,27 @@ removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qth
   anno.data = annotation(rnb.set)
   ## variables = factors
   Var = df2factor(pheno.data,maxlev=20)
-  if(!fact %in% names(Var)){
-    logger.error(paste("Error in getFeatures: poor factor or wrong factor name `",fact))
+  if(!all(fact %in% names(Var))){
+    logger.error(paste("Error in getFeatures: poor factor or wrong factor name `",fact[!fact %in% names(Var)]))
     return(NA)
   }
   ## ICA
   IC = runICA(meth.data,ncomp=ncomp, ntry = ntry)
   ## assign components to removed factor
-  pv = double(ncomp)
-  for (ic in 1:ncomp){
-    mod = aov(IC$M[ic,]~Var[[fact]])
-    pv[ic] = summary(mod)[[1]][1,"Pr(>F)"]
-    if (pv[ic] < alpha.fact){
-      logger.info(paste("Component",ic,"is linked to",fact,"factor, p-value=",pv[ic]))
-    } 
+  pv = double(ncomp)+1
+  for (fa in fact){ ## loop for factors
+    for (ic in 1:ncomp){
+      mod = aov(IC$M[ic,]~Var[[fact]])
+      pv1 = summary(mod)[[1]][1,"Pr(>F)"]
+      if (pv[ic] < alpha.fact){
+        logger.info(paste("Component",ic,"is linked to",fa,"factor, p-value=",pv1))
+      } 
+      pv[ic] = min(pv[ic],pv1)
+    }
   }
-  
   ## check whether any component is linked to confounding factor
   if (sum(pv < alpha.fact)==0){
-    logger.info(paste("Cannot find a component linked to",fact,"factor. Min p-value=",min(pv),",while alpha=",alpha.fact))
+    logger.info(paste("Cannot find a component linked to",paste(fact,collapse=","),"factor. Min p-value=",min(pv),",while alpha=",alpha.fact))
     return(meth.data)
   }
   
@@ -182,7 +191,7 @@ removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qth
 #' Performs ICA to remove the effect of a confounding factor from the methylation matrix
 #' 
 #' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation information
-#' @param conf.factor A column name in the sample annotation sheet of \code{rnb.set} representing the confounding factor to be 
+#' @param conf.factor A vector of column names in the sample annotation sheet of \code{rnb.set} representing confounding factors to be 
 #'                removed.
 #' @param ica.setting Optional argument. If specified a named vector of arguments to be used. Can be one of the following. 
 #' @param nmin Minimum number of components to be used

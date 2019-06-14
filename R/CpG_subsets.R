@@ -114,6 +114,10 @@ prepare_CG_subsets<-function(
 	  }
 	}
 	
+	if(N_MARKERS>nrow(meth.data)){
+	  logger.error("You cannot select more markers than you have sites")
+	}
+	
 	for(group in groups){
 		
 		ind<-1:nrow(meth.data)
