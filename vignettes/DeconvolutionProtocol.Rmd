@@ -1,7 +1,7 @@
 ---
 title: "DNA Methylation Deconvolution Protocol"
 author: "Michael Scherer, Pavlo Lutsik, Petr Nazarov, Tony Kamoa"
-date: "May 12, 2019"
+date: "July 31, 2019"
 output:
   pdf_document: default
     toc: true
@@ -15,7 +15,7 @@ bibliography: bibliography.bib
 
 ```{r setup, include=FALSE, cache=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
+knitr::opts_knit$set(root.dir="")
 ```
 
 # Introduction
@@ -83,7 +83,7 @@ rnb.options(
 sample.anno <- "annotation/sample_annotation.tsv"
 idat.folder <- "idat/"
 dir.report <- paste0("report",Sys.Date(),"/")
-temp.dir <- "/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp"
+temp.dir <- "/tmp"
 options(fftempdir=temp.dir)
 rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
 ```
@@ -93,7 +93,7 @@ RnBeads creates an interactive HTML report, specifying the steps performed and t
 ### Preprocessing and Filtering
 
 For further analysis, we use the DecompPipeline package (https://github.com/lutsik/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individual function parameters. We follow a stringent filtering strategy. First, all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles, respectively. We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. Then, BMIQ normalization [@bmiq] is employed to account for the chip's design bias.
-Accounting for potential confounding factor is crucial in epigenomic studies. Especially, the influence of donor sex on the DNA methylation pattern is well-studied and strong. We used Independent Component Analysis (ICA) to account for DNA methylation differences that are due to sex. ICA detects components in the data accounting for most of the variance similar to PCA, but does not require orthogonality of the components but statistical independence. We used an external library (http://sablab.net/scripts/LibICA.r) for performing ICA to adjust for sex.
+Accounting for potential confounding factor is crucial in epigenomic studies. Especially, the influence of donor sex and age on the DNA methylation pattern is well-studied and strong. Furthermore, genetic differences between groups of individuals due to different origins may influence the DNA methylation paterrn. We used Independent Component Analysis (ICA) to account for DNA methylation differences that are due to these confounding factors. ICA detects components in the data accounting for most of the variance similar to PCA, but does not require orthogonality of the components but statistical independence. We used an external library (http://sablab.net/scripts/LibICA.r) for performing ICA to adjust for sex, age, race and ethnicity.
 ```{r data_preparation}
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare_data(RNB_SET = rnb.set,
@@ -111,8 +111,8 @@ data.prep <- prepare_data(RNB_SET = rnb.set,
                           FILTER_CROSS_REACTIVE = T,
                           execute.lump=T,
                           remove.ICA=T,
-                          conf.fact.ICA="gender",
-                          ica.setting=c("alpha.fact"=1e-5))
+                          conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
+                          ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"ntry"=10,"nmax"=50,"ncores"=10))
 names(data.prep)
 ```
 

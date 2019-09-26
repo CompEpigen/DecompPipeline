@@ -34,6 +34,9 @@
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param N_MARKERS The number of sites to be selected. Defaults to 5000.
+#' @param REMOVE_CORRELATED Flag indicating if highly correlated sites are to be removed
+#' @param COR_THRESHOLD Numeric indicating a threshold above which sites are not to be considered in the feature selection.
+#'          If \code{"quantile"}, sites correlated higher than the 95th quantile are removed.
 #' @param WRITE_FILES Flag indicating if the selected sites are to be stored on disk.
 #' @param WD Path to the working directory used for analyis, or data preparation.
 #' @param REF_DATA_SET An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
@@ -68,6 +71,8 @@ prepare_CG_subsets<-function(
 		rnb.set=NULL,
 		MARKER_SELECTION,
 		N_MARKERS=5000,
+		REMOVE_CORRELATED=FALSE,
+		COR_THRESHOLD="quantile",
 		WRITE_FILES=FALSE,
 		WD=NA,
 		REF_DATA_SET=NULL,
@@ -118,9 +123,49 @@ prepare_CG_subsets<-function(
 	  logger.error("You cannot select more markers than you have sites")
 	}
 	
+	ind.all <- 1:nrow(meth.data)
+	if(REMOVE_CORRELATED){
+	  if(inherits(rnb.set,'RnBSet')){
+  	  logger.start("Removing highly correlated features")
+  	  if(!isImputed(rnb.set)){
+  	    meth.data <- rnb.execute.imputation(meth.data)
+  	  }
+  	  logger.start("Correlation matrix computation for chromosomes separately")
+  	  anno.set <- annotation(rnb.set)
+  	  all.cor <- rep(NA,nrow(anno.set))
+  	  for(chr in unique(anno.set$Chromosome)){
+  	    to.cor <- meth.data[anno.set$Chromosome %in% chr,]
+  	    if(any(is.na(to.cor))){
+  	      logger.error(paste("Missing values in correlation for chromosome",chr))
+  	    }
+    	  cor.mat <- cor(t(to.cor))
+    	  max.cor <- apply(cor.mat,1,max,na.rm=T)
+    	  all.cor[anno.set$Chromosome %in% chr] <- max.cor
+  	  }
+  	  logger.completed()
+  	  logger.start("removing features")
+  	  if(!is.numeric(COR_THRESHOLD)){
+  	    if(COR_THRESHOLD != "quantile"){
+  	      logger.error("COR_THRESHOLD only allows numeric values and 'quantile'")
+  	    }
+  	    COR_THRESHOLD <- quantile(all.cor,0.95,na.rm = T)
+  	  }
+  	  logger.completed()
+  	  if(COR_THRESHOLD < 0 | COR_THRESHOLD > 1){
+  	    logger.error("COR_THRESHOLD needs to be between 0 and 1")
+  	  }
+  	  logger.info(paste("COR_THRESHOLD is",COR_THRESHOLD))
+  	  logger.info(paste("Removed ",sum(all.cor>COR_THRESHOLD),"sites in correlation filtering"))
+  	  ind.all <- intersect(ind.all,which(all.cor<=COR_THRESHOLD))
+  	  logger.completed()
+    }else{
+	    logger.warning("Removing highly correlated features only applicable for 'RnBSet' input")
+	  }
+	}
+	
 	for(group in groups){
 		
-		ind<-1:nrow(meth.data)
+		ind<-ind.all
 		
 		if(MARKER_SELECTION[group]=="all"){
 		  #Do nothing

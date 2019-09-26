@@ -8,8 +8,8 @@ Authors@R: c(
    person ( "Tony", "Kamoa", email="Tony.Kaoma@lih.lu", role = c("aut")),
    person ( "Petr", "Nazarov", email="Petr.Nazarov@lih.lu", role = c("aut"))
  )
-Date: 2019-05-23
-Version: 0.2.4
+Date: 2019-09-26
+Version: 0.2.5
 Depends:
     R (>= 3.2.0),
     MeDeCom,

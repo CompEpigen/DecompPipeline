@@ -45,15 +45,17 @@
 #' @param MAX_INT_QUANT Upper quantile of intensities which is to be removed.
 #' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
 #' @param FILTER_CONTEXT Flag indicating if only CG probes are to be kept.
-#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
-#'                     could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)
+#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. Or as the sites
+#'                  specified in \code{snp.list}.
+#' @param dist.snps Flag indicating if SNPs are to removed by determining if the pairwise differences between the CpGs in the samples are trimodally
+#'                  distributed as it is frequently found around SNPs.                  
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
 #' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
 #' @param FILTER_CROSS_REACTIVE Flag indicating if sites showing cross reactivity on the array are to be removed.
 #' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
 #'             If \code{TRUE},conf.fact.ICA needs to be specified.
-#' @param conf.fact.ICA Column name in the sample annotation sheet representing a potential confounding factor.
-#' @param ica.setting Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact}. See 
+#' @param conf.fact.ICA A vector of column names in the sample annotation sheet representing potential confounding factors.
+#' @param ica.setting Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact, save.report, alpha.feat, type, ncores}. See 
 #'             \code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
@@ -90,7 +92,8 @@ prepare_data<-function(
 		conf.fact.ICA=NULL,
 		ica.setting=NULL,
 		snp.list=NULL,
-		execute.lump=FALSE
+		execute.lump=FALSE,
+		dist.snps=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
@@ -284,7 +287,7 @@ prepare_data<-function(
 	if(FILTER_ANNOTATION){
 		
 		annot.filter<-filter.annotation(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, snp.list = snp.list,
-		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter)
+		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter, dist.snps = dist.snps)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
@@ -526,6 +529,8 @@ filter.nas.biseq <- function(rnb.set,
 #' @param somatic Flag indicating if only somatic probes are to be kept.
 #' @param context Flag indicating if probes in non-CpG context are to be removed.
 #' @param qual.filter Vector of indices removed during quality filtering.
+#' @param dist.snps Flag indicating of potential SNPs are to be determined by selecting those sites that have trimodally
+#'           distributed (differences 0, 0.5 and 1.0) pairwise differences across the samples.
 #' @return A vector of indices of sites surviving the annotation filter criteria.
 filter.annotation<-function(
   rnb.set,
@@ -533,7 +538,8 @@ filter.annotation<-function(
   snp.list,
   somatic=TRUE,
   context=TRUE,
-  qual.filter=NULL)
+  qual.filter=NULL,
+  dist.snps=FALSE)
 {
   annot<-annotation(rnb.set)
   
@@ -544,11 +550,29 @@ filter.annotation<-function(
   }
   
   if(snp){
+    snp.filter <- probe.ind.filtered
     if(is.null(snp.list)){
       snp.filter<-which(!annot$`SNPs 3` & !annot$`SNPs 5` & !annot$`SNPs Full`)
     }else{
       snps <- readLines(snp.list)
       snp.filter <- which(!(row.names(annot) %in% snps))
+    }
+    if(dist.snps){
+      require("LaplacesDemon")
+      meth.data <- meth(rnb.set)
+      meth.data <- meth(rnb.set)
+      pair.dist.rand <- apply(meth.data,1,function(snp){
+        pair.snp <- c()	
+        for(snp2 in snp){
+          diff <- abs(snp-snp2)
+          pair.snp <- c(pair.snp,diff)
+        }
+        pair.snp
+      })
+      modes.rand <- unlist(lapply(pair.dist.rand,function(snp)is.trimodal(unlist(snp))))
+      logger.info(paste("Filtered",length(setdiff(snp.filter,which(!modes.rand))),"CpGs in distribution SNP filtering"))
+      snp.filter <- intersect(snp.filter,which(!modes.rand))
+      rm(meth.data)
     }
     logger.info(paste(length(setdiff(probe.ind.filtered,snp.filter)),"sites removed in SNP filtering"))
     probe.ind.filtered<-intersect(probe.ind.filtered, snp.filter)

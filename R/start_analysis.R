@@ -654,6 +654,9 @@ start_medecom_analysis<-function(
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param n.markers The number of sites to be selected. Defaults to 5000.
+#' @param remove.correlated Flag indicating if highly correlated features are to be removed.
+#' @param cor.threshold Numeric indicating a threshold above which sites are not to be considered in the feature selection.
+#'          If \code{"quantile"}, sites correlated higher than the 95th quantile are removed.
 #' @param write.files Flag indicating if the selected sites are to be stored on disk.
 #' @param n.prin.comp Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
 #' @param range.diff Optional argument specifying the difference between maximum and minimum required.
@@ -720,6 +723,8 @@ start_decomp_pipeline <- function(rnb.set,
                                   max.covg.quant=0.95,
                                   marker.selection="var",
                                   n.markers=5000,
+                                  remove.correlated=FALSE,
+                                  cor.threshold="quantile",
                                   write.files=FALSE,
                                   n.prin.comp=10,
                                   range.diff=0.05,
@@ -800,6 +805,8 @@ start_decomp_pipeline <- function(rnb.set,
   cg_subsets <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
                                      MARKER_SELECTION=marker.selection,
                                      N_MARKERS=n.markers,
+                                     REMOVE_CORRELATED = remove.correlated,
+                                     COR_THRESHOLD = cor.threshold,
                                      WRITE_FILES=write.files,
                                      WD=work.dir,
                                      REF_DATA_SET=ref.rnb.set,

@@ -31,13 +31,30 @@
 ##             set it to 0 to avoid filtering
 ## Returns: optimal number of components (scalar)
 ##-----------------------------------------------------------------------------
-getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.05){
+getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, ncores = 1, thr.sd=0.05, assume.numbers = TRUE){
   # get methylation data & annotations as data frames
   meth.data = meth(rnb.set)
   pheno.data = pheno(rnb.set)
   anno.data = annotation(rnb.set)
   ikeep = apply(meth.data,1,sd)>thr.sd
-  logger.info(sprintf("Only sites with SD > %g were kept: %d of %d",thr.sd,sum(ikeep),length(ikeep)))
+  logger.info(sprintf("Only sites with SD > %g were kept: %d of %d\n",thr.sd,sum(ikeep),length(ikeep)))
+  
+  ## check whether factors are, in fact, numbers
+  if (assume.numbers){
+    icol=1
+    for (icol in 1:ncol(pheno.data)){
+      if (class(pheno.data[[icol]])=="factor"){
+        if (nlevels(pheno.data[[icol]]) > nrow(pheno.data)*0.25) {## if nlevels > 25% of nsamples
+          v = pheno.data[[icol]]
+          v =as.numeric( as.character(v))
+          if (sum(!is.na(v)) > nrow(pheno.data)*0.25) {
+            pheno.data[[icol]] = v
+            logger.info(paste("Assuming numeric data for pheno column `",colnames(pheno.data)[icol]))
+          }
+        }
+      }
+    }
+  }
   
   Var = df2factor(pheno.data,maxlev=20)
   if(sum(fact %in% names(Var))!= length(fact)) {
@@ -46,7 +63,7 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
   }
   
   if (nmin>=nmax) {
-    logger.error(paste("Error in getComponentNumber: nmin >= nmax"))
+    logger.error("Error in getComponentNumber: nmin >= nmax\n")
     return(NA)
   }
   
@@ -56,7 +73,7 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
   colnames(logPV) = fact
   nc = ncomp[1]
   for (nc in ncomp){
-    logger.start(paste("getMinCompNumber: working with",nc,"components"))
+    logger.info(paste("getMinCompNumber: working with",nc,"components"))
     IC = runICA(meth.data,ncomp=nc, ntry = ntry, ncores = ncores)
     logPV[paste0("nc.",nc),] = 1
     for (fct in fact){
@@ -65,12 +82,11 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
         logPV[paste0("nc.",nc),fct] = min(logPV[paste0("nc.",nc),fct],summary(mod)[[1]][1,"Pr(>F)"])
       }
     }
-    if(!is.na(logger.getfiles())){
-      write(paste(logPV[paste0("nc.",nc),],collapse="; "),file=logger.getfiles(),append = T)
-    }
+    logger.info(paste(logPV[paste0("nc.",nc),],collapse="; "))
     logPV[paste0("nc.",nc),] = -log10(logPV[paste0("nc.",nc),])
-    logger.completed()
   }
+  
+  
   return(ncomp[which.max(apply(logPV,1,min))])
   ##ToDo: later we could perform shape analysis - fitting with sigmoid
   ## e.g.
@@ -96,15 +112,36 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, thr.sd=0.0
 ##    alpha.feat - significance level detecting features contributing to component
 ## Returns: logical vector showing whether features are linked to any of `fact` factors
 ##-----------------------------------------------------------------------------
-getFeatures = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, alpha.feat=0.01){
-  rnb.set <- rnb.execute.imputation(rnb.set)
+getFeatures = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, alpha.feat=0.01, assume.numbers = TRUE){
   ## get methylation data & annotations as data frames
-  meth.data = meth(rnb.set)
+  meth.data = meth(rnb.set,row.names=T)
   pheno.data = pheno(rnb.set)
   anno.data = annotation(rnb.set)
+  
+  ## check whether factors are, in fact, numbers
+  if (assume.numbers){
+    icol=1
+    for (icol in 1:ncol(pheno.data)){
+      if (class(pheno.data[[icol]])=="factor"){
+        if (nlevels(pheno.data[[icol]]) > nrow(pheno.data)*0.25) {## if nlevels > 25% of nsamples
+          v = pheno.data[[icol]]
+          v =as.numeric( as.character(v))
+          if (sum(!is.na(v)) > nrow(pheno.data)*0.25) {
+            pheno.data[[icol]] = v
+            logger.info(paste("Assuming numeric data for pheno column `",colnames(pheno.data)[icol]))
+          }
+        }
+      }
+    }
+  }
+  
+  
   ## variables = factors
   Var = df2factor(pheno.data,maxlev=20)
-  if(!all(fact %in% names(Var))) {cat("Error in getFeatures: poor factor or wrong factor name `",fact,"`\n");return(NA)}
+  if(!all(fact %in% names(Var))) {
+    logger.error(paste("Error in getFeatures: poor factor or wrong factor name `",fact))
+    return(NA)
+  }
   ## ICA
   IC = runICA(meth.data,ncomp=ncomp, ntry = ntry)
   ## assign components to factors
@@ -117,7 +154,8 @@ getFeatures = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, alph
     }
   }
   ## feature names are required to select and combine them
-  features = paste("f",1:nrow(meth.data),sep=".")
+  #features = paste("f",1:nrow(meth.data),sep=".")
+  features = rownames(meth.data)
   rownames(IC$X) = features
   rownames(IC$S) = features
   Genes=getGenesICA(IC,alpha.feat)
@@ -125,7 +163,7 @@ getFeatures = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, alph
   for (fa in fact){ 
     for (ic in 1:ncomp){
       if (PV[fa,ic]<alpha.fact) {
-        cat("for",fa,"we take component",ic,"\n")
+        logger.info(paste("for",fa,"we take component",ic))
         sign.features = unique(c(sign.features,c(rownames(Genes[[ic]]$pos),rownames(Genes[[ic]]$neg))))
       }
     }
@@ -134,44 +172,69 @@ getFeatures = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, alph
 }
 
 ##=============================================================================
-## remFactor(file,fact,ncomp,alpha)
-## Generates features that are important for the top component linked to the factor
+## removeFactors(file,facts,ncomp,alpha)
+## Generates features that are important for the top component linked to MULTIPLE factors
 ##    file - file path to RnBeads dataset
-##    fact - the name of the factor to be removed
+##    fact - the names of several factors to be removed
 ##    ncomp - number of components in ICA deconvolution
 ##    ntry - number of ICA runs
 ##    alpha.fact - significance level linking component to a factor
 ##    qthr - quantile at which boundaries are put on the corrected signal (to make it [0,1])
 ## Returns: matrix of corrected beta values
 ##-----------------------------------------------------------------------------
-removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qthr=0.01){
+removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qthr=0.01, assume.numbers = TRUE, save.report=NULL){
   ## get methylation data & annotations as data frames
-  meth.data = meth(rnb.set)
+  meth.data = meth(rnb.set,row.names=T)
   pheno.data = pheno(rnb.set)
   anno.data = annotation(rnb.set)
+  
+  ## check whether factors are, in fact, numbers
+  if (assume.numbers){
+    icol=1
+    for (icol in 1:ncol(pheno.data)){
+      if (class(pheno.data[[icol]])=="factor"){
+        if (nlevels(pheno.data[[icol]]) > nrow(pheno.data)*0.25) {## if nlevels > 25% of nsamples
+          v = pheno.data[[icol]]
+          v =as.numeric( as.character(v))
+          if (sum(!is.na(v)) > nrow(pheno.data)*0.25) {
+            pheno.data[[icol]] = v
+            logger.info(paste("Assuming numeric data for pheno column `",colnames(pheno.data)[icol]))
+          }
+        }
+      }
+    }
+  }
+  
+  
   ## variables = factors
   Var = df2factor(pheno.data,maxlev=20)
-  if(!all(fact %in% names(Var))){
-    logger.error(paste("Error in getFeatures: poor factor or wrong factor name `",fact[!fact %in% names(Var)]))
+  if(!fact %in% names(Var)) {
+    logger.info(paste("Error in getFeatures: poor factor or wrong factor name `",fact))
     return(NA)
   }
   ## ICA
   IC = runICA(meth.data,ncomp=ncomp, ntry = ntry)
+  if(!is.null(save.report)){
+    print(head(IC$S))
+    saveReport(IC=IC,Var=Var[,fact],file=save.report) 
+    #dev.off()
+  }
   ## assign components to removed factor
   pv = double(ncomp)+1
   for (fa in fact){ ## loop for factors
-    for (ic in 1:ncomp){
-      mod = aov(IC$M[ic,]~Var[[fact]])
+    for (ic in 1:ncomp){  ## loop for components
+      mod = aov(IC$M[ic,]~Var[[fa]])
       pv1 = summary(mod)[[1]][1,"Pr(>F)"]
-      if (pv[ic] < alpha.fact){
+      if (pv1 < alpha.fact){
         logger.info(paste("Component",ic,"is linked to",fa,"factor, p-value=",pv1))
-      } 
+      }
       pv[ic] = min(pv[ic],pv1)
     }
   }
-  ## check whether any component is linked to confounding factor
+  
+  ## check whether any component is linked to confounding factor(s)
   if (sum(pv < alpha.fact)==0){
-    logger.info(paste("Cannot find a component linked to",paste(fact,collapse=","),"factor. Min p-value=",min(pv),",while alpha=",alpha.fact))
+    logger.info(paste("Cannot find a component linked to",paste(fact,collapse=","),"factor(s). Min p-value=",min(pv),",while alpha=",alpha.fact))
     return(meth.data)
   }
   
@@ -200,29 +263,46 @@ removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qth
 #' @param thr.sd Threshold for the standard deviation across samples. Only sites with a standard deviation larger than this
 #'                threshold are kept. 0 deactivates filtering.
 #' @param alpha.fact Significance level for the factor
+#' @param type Analysis type to be performed. Can be either \code{"remove"} to remove the effect of the confounding
+#'              factor or \code{"keep"} to export the sites that are linked to the confounding factor. Note that for
+#'              \code{"keep"}, the factor effect is not removed, but only reported.
+#' @param out.folder Folder to store ICA's output and diagnostic plots
 #' @return The modified \code{rnb.set} object with updated methylation values. The effect of the confouding factor is removed
 #'      using independent component analysis (ICA).
 #' @author Michael Scherer. ICA code was generated by Peter Nazarov and Tony Kamoa
 #' @export
-run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntry=1,thr.sd=0,alpha.fact=1e-10,out.folder=NULL){
+run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntry=1,thr.sd=0,
+                        alpha.fact=1e-10,type="remove",ncores=1,out.folder=NULL,save.report=F,alpha.feat=0.01){
   if(!inherits(rnb.set,"RnBSet")){
     logger.error("Invalid value for rnb.set, needs to be RnBSet object")
   }
   if(!is.null(ica.setting)){
     if(!is.na(ica.setting["nmin"])){
-      nmin <- ica.setting["nmin"]
+      nmin <- as.numeric(ica.setting["nmin"])
     }
     if(!is.na(ica.setting["nmax"])){
-      nmax <- ica.setting["nmax"]
+      nmax <- as.numeric(ica.setting["nmax"])
     }
     if(!is.na(ica.setting["ntry"])){
-      nrty <- ica.setting["ntry"]
+      ntry <- as.numeric(ica.setting["ntry"])
     }
     if(!is.na(ica.setting["thr.sd"])){
-      thr.sd <- ica.setting["thr.sd"]
+      thr.sd <- as.numeric(ica.setting["thr.sd"])
     }
     if(!is.na(ica.setting["alpha.fact"])){
-      alpha.fact <- ica.setting["alpha.fact"]
+      alpha.fact <- as.numeric(ica.setting["alpha.fact"])
+    }
+    if(!is.na(ica.setting["save.report"])){
+      save.report <- ica.setting["save.report"]
+    }
+    if(!is.na(ica.setting["ncores"])){
+      ncores <- as.numeric(ica.setting["ncores"])
+    }
+    if(!is.na(ica.setting["type"])){
+      type <- ica.setting["type"]
+    }
+    if(!is.na(ica.setting["alpha.feat"])){
+      alpha.feat <- as.numeric(ica.setting["alpha.feat"])
     }
   }
   if(nmin>nmax){
@@ -238,23 +318,40 @@ run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntr
   }
   source("http://sablab.net/scripts/LibICA.r")
   logger.start("Determining number of components")
-  ncomp <- getComponentNumber(rnb.set,conf.factor,nmin=nmin,nmax=nmax,ntry=ntry,thr.sd=thr.sd)
+  ncomp <- getComponentNumber(rnb.set,conf.factor,nmin=nmin,nmax=nmax,ntry=ntry,thr.sd=thr.sd,ncores = ncores)
   logger.completed()
-  if(!is.null(out.folder)){
-    old.meth <- meth(rnb.set)  
-  }
-  logger.start("Removing factor effect")
-  new.meth <- removeFactor(rnb.set,fact = conf.factor, ncomp = ncomp,ntry = ntry, alpha.fact = alpha.fact)
-  logger.completed()
-  rnb.set <- updateMethylationSites(rnb.set,new.meth)
-  if(!is.null(out.folder)){
-    old.meth <- melt(old.meth)
-    new.meth <- melt(new.meth)
-    to.plot <- data.frame("Before"=old.meth$value,"After"=new.meth$value)
-    to.plot <- melt(to.plot)
-    colnames(to.plot) <- c("Transformation","Beta")
-    plot <- ggplot(to.plot,aes(x=Beta,y=..density..,color=Transformation))+geom_density()+theme_bw()
-    ggsave(file.path(out.folder,"ICA_beta_comparison.pdf"),plot,device = "pdf")
+  if(type=="remove"){
+    if(!is.null(out.folder)){
+      old.meth <- meth(rnb.set)  
+    }
+    logger.start("Removing factor effect")
+    if(save.report){
+      new.meth <- removeFactor(rnb.set,fact = conf.factor, ncomp = ncomp,ntry = ntry, alpha.fact = alpha.fact,save.report=file.path(out.folder,"violin_report_ICA.pdf"))
+    }else{
+      new.meth <- removeFactor(rnb.set,fact = conf.factor, ncomp = ncomp,ntry = ntry, alpha.fact = alpha.fact)
+    }
+    logger.completed()
+    rnb.set <- updateMethylationSites(rnb.set,new.meth)
+    if(!is.null(out.folder)){
+      old.meth <- melt(old.meth)
+      new.meth <- melt(new.meth)
+      to.plot <- data.frame("Before"=old.meth$value,"After"=new.meth$value)
+      to.plot <- melt(to.plot)
+      colnames(to.plot) <- c("Transformation","Beta")
+      plot <- ggplot(to.plot,aes(x=Beta,y=..density..,color=Transformation))+geom_density()+theme_bw()
+      ggsave(file.path(out.folder,"ICA_beta_comparison.pdf"),plot,device = "pdf")
+    }
+  }else{
+    logger.start("Determine CpGs linked to factor")
+    sel.features <- which(getFeatures(rnb.set,fact = conf.factor,ncomp = ncomp, ntry = ntry, alpha.fact = alpha.fact, alpha.feat = alpha.feat))
+    if(is.null(out.folder)){
+      out.folder <- file.path(getwd(),"Decomp_output")
+      if(!dir.exists(out.folder)){
+        dir.create(out.folder)
+      }
+    }
+    write.csv(sel.features,file.path(out.folder,paste("sites_linked_to",paste(conf.factor,collapse = "_"),"data.csv",sep="_")))
+    logger.completed()
   }
   return(rnb.set)
 }

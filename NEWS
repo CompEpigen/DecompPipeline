@@ -1,3 +1,10 @@
+DecompPipeline 0.2.5
+=============
+
+ * Added removal of highly correlated features to preprocessing
+ * Added SNP removal based on differences across the samples
+ * Updated protocol according to updates
+ 
 DecompPipeline 0.2.4
 =============
 
