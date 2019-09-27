@@ -138,8 +138,9 @@ prepare_CG_subsets<-function(
   	    if(any(is.na(to.cor))){
   	      logger.error(paste("Missing values in correlation for chromosome",chr))
   	    }
-    	  cor.mat <- cor(t(to.cor))
-    	  max.cor <- apply(cor.mat,1,max,na.rm=T)
+    	  cor.mat <- abs(cor(t(to.cor)))
+    	  diag(cor.mat) <- NA
+    	  max.cor <- apply(cor.mat,1,mean,na.rm=T)
     	  all.cor[anno.set$Chromosome %in% chr] <- max.cor
   	  }
   	  logger.completed()

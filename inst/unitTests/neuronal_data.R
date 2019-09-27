@@ -14,7 +14,7 @@ library(DecompPipeline)
 library(RnBeads)
 #rnb.options(disk.dump.big.matrices=FALSE)
 #rnb.set<-RnBeadSet(pd, probe.list, as.matrix(data))
-
+PROJECT.DIR = "/TL/deep/projects/work/mscherer/projects/MeDeCom/test/"
 rnb.set <- load.rnb.set("/TL/deep/projects/nobackup/mage/data/publicationData/processed/TCGA_OV___AH/rnbeads_report/rnbSet_unnormalized/")
 
 res<-prepare_data(
@@ -42,6 +42,7 @@ res<-prepare_data(
 		snp.list="/DEEP_fhgfs/projects/mscherer/data/EPIC/Radar_Genetik/commonSNPs137.txt",
 		execute.lump=T,
 		remove.ICA = T,
+		dist.snps = T,  
 		conf.fact.ICA = "vital_status"
 )
 
@@ -55,6 +56,7 @@ cg_subsets<-prepare_CG_subsets(
 		REF_PHENO_COLUMN = "tissue/cell type",
 		N_PRIN_COMP = 2,
 		RANGE_DIFF = 0.1,
+		REMOVE_CORRELATED = T,
 		CUSTOM_MARKER_FILE = "/DEEP_fhgfs/projects/mscherer/data/Aussois/MeDeCom/marker_file_Sophie.txt",
 		K.prior=2
 )

@@ -560,19 +560,17 @@ filter.annotation<-function(
     if(dist.snps){
       require("LaplacesDemon")
       meth.data <- meth(rnb.set)
-      meth.data <- meth(rnb.set)
-      pair.dist.rand <- apply(meth.data,1,function(snp){
-        pair.snp <- c()	
-        for(snp2 in snp){
-          diff <- abs(snp-snp2)
-          pair.snp <- c(pair.snp,diff)
-        }
-        pair.snp
+      logger.start("SNP computation")
+      pair.dist <- apply(meth.data,1,function(snp){
+        this.cpg <- lapply(snp,function(snp2){
+          abs(snp-snp2)
+        })
+        is.trimodal(unlist(this.cpg))
       })
-      modes.rand <- unlist(lapply(pair.dist.rand,function(snp)is.trimodal(unlist(snp))))
-      logger.info(paste("Filtered",length(setdiff(snp.filter,which(!modes.rand))),"CpGs in distribution SNP filtering"))
-      snp.filter <- intersect(snp.filter,which(!modes.rand))
+      logger.info(paste("Filtered",length(setdiff(snp.filter,which(!pair.dist))),"CpGs in distribution SNP filtering"))
+      snp.filter <- intersect(snp.filter,which(!pair.dist))
       rm(meth.data)
+      logger.completed()
     }
     logger.info(paste(length(setdiff(probe.ind.filtered,snp.filter)),"sites removed in SNP filtering"))
     probe.ind.filtered<-intersect(probe.ind.filtered, snp.filter)

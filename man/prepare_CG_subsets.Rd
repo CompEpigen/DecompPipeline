@@ -5,7 +5,8 @@
 \title{prepare_CG_subsets}
 \usage{
 prepare_CG_subsets(meth.data = NULL, rnb.set = NULL, MARKER_SELECTION,
-  N_MARKERS = 5000, WRITE_FILES = FALSE, WD = NA,
+  N_MARKERS = 5000, REMOVE_CORRELATED = FALSE,
+  COR_THRESHOLD = "quantile", WRITE_FILES = FALSE, WD = NA,
   REF_DATA_SET = NULL, REF_PHENO_COLUMN = NULL, N_PRIN_COMP = 10,
   RANGE_DIFF = 0.05, CUSTOM_MARKER_FILE = "", store.heatmaps = F,
   heatmap.sample.col = NULL, K.prior = NULL)
@@ -46,6 +47,11 @@ through \code{rnb.set}}
 }}
 
 \item{N_MARKERS}{The number of sites to be selected. Defaults to 5000.}
+
+\item{REMOVE_CORRELATED}{Flag indicating if highly correlated sites are to be removed}
+
+\item{COR_THRESHOLD}{Numeric indicating a threshold above which sites are not to be considered in the feature selection.
+If \code{"quantile"}, sites correlated higher than the 95th quantile are removed.}
 
 \item{WRITE_FILES}{Flag indicating if the selected sites are to be stored on disk.}
 

@@ -20,14 +20,15 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   ica.setting = NULL, filter.snp = TRUE, filter.somatic = TRUE,
   snp.list = NULL, filter.coverage = hasCovg(rnb.set),
   min.coverage = 5, min.covg.quant = 0.05, max.covg.quant = 0.95,
-  marker.selection = "var", n.markers = 5000, write.files = FALSE,
-  n.prin.comp = 10, range.diff = 0.05, custom.marker.file = "",
-  store.heatmaps = F, heatmap.sample.col = NULL,
-  sample.subset = NULL, k.fixed = NULL, K.prior = NULL,
-  opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
-  folds = 10, cores = 1, itermax = 1000, ninit = 100,
-  cluster.submit = FALSE, cluster.Rdir = NA, cluster.hostlist = "*",
-  cluster.memlimit = "5G", cleanup = FALSE)
+  marker.selection = "var", n.markers = 5000,
+  remove.correlated = FALSE, cor.threshold = "quantile",
+  write.files = FALSE, n.prin.comp = 10, range.diff = 0.05,
+  custom.marker.file = "", store.heatmaps = F,
+  heatmap.sample.col = NULL, sample.subset = NULL, k.fixed = NULL,
+  K.prior = NULL, opt.method = "MeDeCom.cppTAfact", startT = NULL,
+  startA = NULL, folds = 10, cores = 1, itermax = 1000,
+  ninit = 100, cluster.submit = FALSE, cluster.Rdir = NA,
+  cluster.hostlist = "*", cluster.memlimit = "5G", cleanup = FALSE)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
@@ -146,6 +147,11 @@ CG_SUBSET SELECTION}
 }}
 
 \item{n.markers}{The number of sites to be selected. Defaults to 5000.}
+
+\item{remove.correlated}{Flag indicating if highly correlated features are to be removed.}
+
+\item{cor.threshold}{Numeric indicating a threshold above which sites are not to be considered in the feature selection.
+If \code{"quantile"}, sites correlated higher than the 95th quantile are removed.}
 
 \item{write.files}{Flag indicating if the selected sites are to be stored on disk.}
 

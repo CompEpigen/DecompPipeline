@@ -6,12 +6,13 @@
 \usage{
 run.rnb.ICA(rnb.set, conf.factor, ica.setting = NULL, nmin = 10,
   nmax = 30, ntry = 1, thr.sd = 0, alpha.fact = 1e-10,
-  out.folder = NULL)
+  type = "remove", ncores = 1, out.folder = NULL, save.report = F,
+  alpha.feat = 0.01)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation information}
 
-\item{conf.factor}{A column name in the sample annotation sheet of \code{rnb.set} representing the confounding factor to be 
+\item{conf.factor}{A vector of column names in the sample annotation sheet of \code{rnb.set} representing confounding factors to be 
 removed.}
 
 \item{ica.setting}{Optional argument. If specified a named vector of arguments to be used. Can be one of the following.}
@@ -26,6 +27,12 @@ removed.}
 threshold are kept. 0 deactivates filtering.}
 
 \item{alpha.fact}{Significance level for the factor}
+
+\item{type}{Analysis type to be performed. Can be either \code{"remove"} to remove the effect of the confounding
+factor or \code{"keep"} to export the sites that are linked to the confounding factor. Note that for
+\code{"keep"}, the factor effect is not removed, but only reported.}
+
+\item{out.folder}{Folder to store ICA's output and diagnostic plots}
 }
 \value{
 The modified \code{rnb.set} object with updated methylation values. The effect of the confouding factor is removed

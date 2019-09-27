@@ -5,7 +5,7 @@
 \title{filter.annotation}
 \usage{
 filter.annotation(rnb.set, snp = TRUE, snp.list, somatic = TRUE,
-  context = TRUE, qual.filter = NULL)
+  context = TRUE, qual.filter = NULL, dist.snps = FALSE)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.}
@@ -20,6 +20,9 @@ additional file with one SNP identifier per row in \code{snp.list}.}
 \item{context}{Flag indicating if probes in non-CpG context are to be removed.}
 
 \item{qual.filter}{Vector of indices removed during quality filtering.}
+
+\item{dist.snps}{Flag indicating of potential SNPs are to be determined by selecting those sites that have trimodally
+distributed (differences 0, 0.5 and 1.0) pairwise differences across the samples.}
 }
 \value{
 A vector of indices of sites surviving the annotation filter criteria.

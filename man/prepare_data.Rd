@@ -18,7 +18,8 @@ prepare_data(RNB_SET, WORK_DIR = getwd(), analysis.name = "analysis",
   MIN_INT_QUANT = 0.01, MAX_INT_QUANT = 0.99, FILTER_NA = TRUE,
   FILTER_CONTEXT = TRUE, FILTER_SNP = TRUE, FILTER_SOMATIC = TRUE,
   FILTER_CROSS_REACTIVE = T, remove.ICA = F, conf.fact.ICA = NULL,
-  ica.setting = NULL, snp.list = NULL, execute.lump = FALSE)
+  ica.setting = NULL, snp.list = NULL, execute.lump = FALSE,
+  dist.snps = FALSE)
 }
 \arguments{
 \item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.}
@@ -74,8 +75,8 @@ the provided quantile range in either of the channels and in any of the samples.
 
 \item{FILTER_CONTEXT}{Flag indicating if only CG probes are to be kept.}
 
-\item{FILTER_SNP}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. (@TODO: we
-could provide an addititional list of SNPs, similar to RnBeads blacklist for filtering)}
+\item{FILTER_SNP}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. Or as the sites
+specified in \code{snp.list}.}
 
 \item{FILTER_SOMATIC}{Flag indicating if only somatic probes are to be kept.}
 
@@ -84,14 +85,17 @@ could provide an addititional list of SNPs, similar to RnBeads blacklist for fil
 \item{remove.ICA}{Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
 If \code{TRUE},conf.fact.ICA needs to be specified.}
 
-\item{conf.fact.ICA}{Column name in the sample annotation sheet representing a potential confounding factor.}
+\item{conf.fact.ICA}{A vector of column names in the sample annotation sheet representing potential confounding factors.}
 
-\item{ica.setting}{Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact}. See 
+\item{ica.setting}{Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact, save.report, alpha.feat, type, ncores}. See 
 \code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.}
 
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.}
 
 \item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
+
+\item{dist.snps}{Flag indicating if SNPs are to removed by determining if the pairwise differences between the CpGs in the samples are trimodally
+distributed as it is frequently found around SNPs.}
 }
 \value{
 A list with four elements: \itemize{

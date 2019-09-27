@@ -305,13 +305,13 @@ run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntr
       alpha.feat <- as.numeric(ica.setting["alpha.feat"])
     }
   }
-  if(nmin>nmax){
-    logger.warning("nmin cannot be smaller than nmax, set to nmax")
-    nmin <- nmax
-  }
   if(nmax>length(samples(rnb.set))){
     logger.warning(paste("Number of components cannot be larger than number of samples, setting to",length(samples(rnb.set))))
     nmax <- length(samples(rnb.set))
+  }
+  if(nmin>=nmax){
+    logger.warning(paste("nmin cannot be smaller than nmax, set to",nmax-1))
+    nmin <- nmax-1
   }
   if(!isImputed(rnb.set)){
     rnb.set <- rnb.execute.imputation(rnb.set)
