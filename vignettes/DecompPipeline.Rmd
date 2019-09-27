@@ -27,7 +27,7 @@ vignette: >
 
 You can install the *DecompPipeline* through GitHub using *devtools*:
 
-```{r, eval=T}
+```{r, eval=F}
 install.packages("devtools",repos="https://cran.uni-muenster.de/")
 devtools::install_github("lutsik/DecompPipeline")
 ```
@@ -96,13 +96,16 @@ Since performing MeDeCom on complete 450k/EPIC or BS datasets is still computati
 * **hybrid** Selects half of the sites randomly and the other half as the most variable.
 * **range** This options selects the sites that have a difference between the minimum and maximum value across all samples higher than ```RANGE_DIFF```.
 * **custom** The sites to be used are provided by the user with a file containing row indices. The file needs to be provided in ```CUSTOM_MARKER_FILE```.
+* **all** Using all sites available in the input.
+* **pcadapt** Uses principal component analysis as implemented in the *bigstats* R package to determine sites that are significantly linked to the potential cell types. This requires specifying K a priori (argument ```K.prior```). We thank Florian Prive and Sophie Achard for providing the idea and parts of the codes.
+* **edec_stage0** Employs EDec's stage 0 to infer cell-type specific markers. By default EDec's example reference data is provided.
 
 For most of the options (except for **houseman2012**, **jaffe2014**, and **range**) the number of selected sites can be specified using the parameter ```N_MARKERS```. In contrast to CpG filtering, subset selection is independent of the data type (array-based and BS). The function returns a list, with each entry containing row indices of the selected sites:
 
 ```{r, eval=T}
 cg_subsets <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
                                  MARKER_SELECTION = c("houseman2012","var"),
-                                 N_MARKERS = 1000
+                                 N_MARKERS = 500
 )
 lengths(cg_subsets)
 ```
@@ -129,7 +132,7 @@ md.res <- start_decomp_pipeline(rnb.set=rnb.set,
                                 lambda.grid = c(0.01,0.001),
                                 factorviz.outputs = T,
                                 marker.selection = c("houseman2012","var"),
-                                n.markers = 1000,
+                                n.markers = 50,
                                 min.n.beads = 5,
                                 min.int.quant = 0.05,
                                 max.int.quant = 0.95,

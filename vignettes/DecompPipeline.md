@@ -1,7 +1,7 @@
 ---
 title: 'DecompPipeline: Preprocessing of DNA Methylation data for MeDeCom'
 author: "Michael Scherer, Pavlo Lutsik"
-date: '2018-12-05'
+date: '2019-09-27'
 output:
   html_document:
     fig_height: 5
@@ -13,11 +13,15 @@ output:
   pdf_document:
     toc: yes
 bibliography: biblio.bib
+vignette: >
+  %\VignetteIndexEntry{MeDeCom}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
 ---
 
 # Introduction
 
-*DecompPipeline* is an R package created for preprocessing DNA Methylation data for [MeDeCom](http://public.genetik.uni-sb.de/medecom/). Briefly, MeDeCom performs non-negative matrix factorization of complex methylation data sets to discover latent methylation components (LMCs). Those components can, for instance, represent cell types, but are not limited to that. The *DecompPipeline* uses the [RnBeads](https://rnbeads.org) package for handling input DNA methylation data and is able to handle both BeadArray (27k, 450k, EPIC) and bisulfite sequencing (RRBS, WGBS) data. Necessary steps include stringent filtering and selecting the correct subset of CpG sites for downstream MeDeCom analysis. As another MeDeCom helper package, check out [FactorViz](https://github.com/lutsik/FactorViz) for the visualization of MeDeCom results.
+*DecompPipeline* is an R package created for preprocessing DNA Methylation data for deconvolution of complex tissue samples using one of the methods [MeDeCom](http://public.genetik.uni-sb.de/medecom/), [RefFreeEWAS](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) or [EDec](https://github.com/BRL-BCM/EDec). Briefly, non-negative matrix factorization of complex methylation data sets is performed to discover latent methylation components (LMCs). Those components can, for instance, represent cell types, but are not limited to that. The *DecompPipeline* uses the [RnBeads](https://rnbeads.org) package for handling input DNA methylation data and is able to handle both BeadArray (27k, 450k, EPIC) and bisulfite sequencing (RRBS, WGBS) data. Necessary steps include stringent filtering and selecting the correct subset of CpG sites for downstream MeDeCom analysis. Also check out [FactorViz](https://github.com/lutsik/FactorViz) for the visualization of deconvolution results.
 
 # Installation
 
@@ -25,7 +29,7 @@ You can install the *DecompPipeline* through GitHub using *devtools*:
 
 
 ```r
-install.packages("devtools")
+install.packages("devtools",repos="https://cran.uni-muenster.de/")
 devtools::install_github("lutsik/DecompPipeline")
 ```
 
@@ -56,17 +60,6 @@ data.prep <- prepare_data(RNB_SET = rnb.set.example,
                           FILTER_SNP = T,
                           FILTER_CONTEXT = FALSE,
                           FILTER_SOMATIC = FALSE)
-```
-
-```
-## 2018-12-05 22:10:43     1.5    INFO 239 sites removed in bead count filtering.
-## 2018-12-05 22:10:45     1.5    INFO 297 sites removed in intensity filtering.
-## 2018-12-05 22:10:45     1.5    INFO 0 sites removed in NA filtering
-## 2018-12-05 22:10:45     1.5    INFO 161 sites removed in SNP filtering
-## 2018-12-05 22:10:46     1.5    INFO Removing 697 sites, retaining  1039
-```
-
-```r
 names(data.prep)
 ```
 
@@ -92,21 +85,11 @@ data.prep.bs <- prepare_data_BS(RNB_SET = rnb.set,
 ```
 
 ```
-## opening ff /tmp/RtmpLGePOg/ff6f623a453210.ff
+## opening ff /tmp/Rtmpw8TrQZ/ff6f623a453210.ff
 ```
 
 ```
-## 2018-12-05 22:10:48     1.7    INFO 8807 sites removed in absolute coverage filtering.
-## 2018-12-05 22:10:48     1.7    INFO 1130 sites removed in quantile coverage filtering.
-```
-
-```
-## opening ff /tmp/RtmpLGePOg/ff6f627581c0dd.ff
-```
-
-```
-## 2018-12-05 22:10:48     1.7    INFO 0 sites removed in NA filtering
-## 2018-12-05 22:10:48     1.7    INFO Removing 9937 sites, retaining  63
+## opening ff /tmp/Rtmpw8TrQZ/ff6f627581c0dd.ff
 ```
 
 ```r
@@ -133,6 +116,9 @@ Since performing MeDeCom on complete 450k/EPIC or BS datasets is still computati
 * **hybrid** Selects half of the sites randomly and the other half as the most variable.
 * **range** This options selects the sites that have a difference between the minimum and maximum value across all samples higher than ```RANGE_DIFF```.
 * **custom** The sites to be used are provided by the user with a file containing row indices. The file needs to be provided in ```CUSTOM_MARKER_FILE```.
+* **all** Using all sites available in the input.
+* **pcadapt** Uses principal component analysis as implemented in the *bigstats* R package to determine sites that are significantly linked to the potential cell types. This requires specifying K a priori (argument ```K.prior```). We thank Florian Prive and Sophie Achard for providing the idea and parts of the codes.
+* **edec_stage0** Employs EDec's stage 0 to infer cell-type specific markers. By default EDec's example reference data is provided.
 
 For most of the options (except for **houseman2012**, **jaffe2014**, and **range**) the number of selected sites can be specified using the parameter ```N_MARKERS```. In contrast to CpG filtering, subset selection is independent of the data type (array-based and BS). The function returns a list, with each entry containing row indices of the selected sites:
 
@@ -140,14 +126,14 @@ For most of the options (except for **houseman2012**, **jaffe2014**, and **range
 ```r
 cg_subsets <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
                                  MARKER_SELECTION = c("houseman2012","var"),
-                                 N_MARKERS = 1000
+                                 N_MARKERS = 500
 )
 lengths(cg_subsets)
 ```
 
 ```
 ## houseman2012          var 
-##          113         1000
+##          110          500
 ```
 
 ## Starting MeDeCom
@@ -163,6 +149,16 @@ md.res <- start_medecom_analysis(rnb.set=data.prep$rnb.set.filtered,
                                  factorviz.outputs = T)
 ```
 
+```
+## [1] "Did not write the variable dump: should only be executed from an environment with all the variables set"
+## [2019-09-27 14:42:04, Main:] checking inputs
+## [2019-09-27 14:42:04, Main:] preparing data
+## [2019-09-27 14:42:04, Main:] preparing jobs
+## [2019-09-27 14:42:04, Main:] 176 factorization runs in total
+## [2019-09-27 14:48:59, Main:] 100 runs complete
+## [2019-09-27 15:01:21, Main:] finished all jobs. Creating the object
+```
+
 ## Executing DecompPipeline
 
 You can also peform all the steps above, by just calling a single function:
@@ -174,7 +170,7 @@ md.res <- start_decomp_pipeline(rnb.set=rnb.set,
                                 lambda.grid = c(0.01,0.001),
                                 factorviz.outputs = T,
                                 marker.selection = c("houseman2012","var"),
-                                n.markers = 1000,
+                                n.markers = 50,
                                 min.n.beads = 5,
                                 min.int.quant = 0.05,
                                 max.int.quant = 0.95,
@@ -183,6 +179,16 @@ md.res <- start_decomp_pipeline(rnb.set=rnb.set,
                                 filter.context = FALSE,
                                 filter.somatic = FALSE,
                                 normalization="wm.dasen")
+```
+
+```
+## [1] "Did not write the variable dump: should only be executed from an environment with all the variables set"
+## [2019-09-27 15:02:03, Main:] checking inputs
+## [2019-09-27 15:02:03, Main:] preparing data
+## [2019-09-27 15:02:03, Main:] preparing jobs
+## [2019-09-27 15:02:03, Main:] 176 factorization runs in total
+## [2019-09-27 15:02:58, Main:] 100 runs complete
+## [2019-09-27 15:03:30, Main:] finished all jobs. Creating the object
 ```
 
 # Data Import through RnBeads
@@ -200,7 +206,7 @@ rnb.set <- rnb.execute.import(data.source = c(idat.dir,sample.annotation),data.t
 Here is the output of `sessionInfo()` on the system on which this document was compiled:
 
 ```
-## R version 3.5.1 (2018-07-02)
+## R version 3.5.3 (2019-03-11)
 ## Platform: x86_64-pc-linux-gnu (64-bit)
 ## Running under: Debian GNU/Linux 8 (jessie)
 ## 
@@ -222,12 +228,12 @@ Here is the output of `sessionInfo()` on the system on which this document was c
 ## 
 ## other attached packages:
 ##  [1] RnBeads.hg19_1.14.0                    
-##  [2] DecompPipeline_0.2.1                   
+##  [2] DecompPipeline_0.2.5                   
 ##  [3] R.utils_2.7.0                          
 ##  [4] R.oo_1.22.0                            
 ##  [5] R.methodsS3_1.7.1                      
-##  [6] MeDeCom_0.2.1                          
-##  [7] RnBeads_2.0.0                          
+##  [6] MeDeCom_0.2.2                          
+##  [7] RnBeads_2.3.1                          
 ##  [8] plyr_1.8.4                             
 ##  [9] methylumi_2.28.0                       
 ## [10] minfi_1.28.0                           
@@ -260,7 +266,7 @@ Here is the output of `sessionInfo()` on the system on which this document was c
 ## [37] ff_2.2-14                              
 ## [38] bit_1.1-14                             
 ## [39] cluster_2.0.7-1                        
-## [40] MASS_7.3-50                            
+## [40] MASS_7.3-51.1                          
 ## [41] GenomicRanges_1.34.0                   
 ## [42] GenomeInfoDb_1.18.1                    
 ## [43] IRanges_2.16.0                         
@@ -273,56 +279,56 @@ Here is the output of `sessionInfo()` on the system on which this document was c
 ## [50] Rcpp_1.0.0                             
 ## [51] usethis_1.4.0                          
 ## [52] devtools_2.0.1                         
-## [53] knitr_1.20                             
+## [53] knitr_1.21                             
 ## 
 ## loaded via a namespace (and not attached):
 ##  [1] backports_1.1.2          lazyeval_0.2.1          
-##  [3] splines_3.5.1            digest_0.6.18           
+##  [3] splines_3.5.3            digest_0.6.18           
 ##  [5] gdata_2.18.0             magrittr_1.5            
 ##  [7] memoise_1.1.0            remotes_2.0.2           
 ##  [9] readr_1.2.1              annotate_1.60.0         
 ## [11] siggenes_1.56.0          prettyunits_1.0.2       
 ## [13] colorspace_1.3-2         blob_1.1.1              
-## [15] dplyr_0.7.8              callr_3.0.0             
-## [17] crayon_1.3.4             RCurl_1.95-4.11         
-## [19] genefilter_1.64.0        bindr_0.1.1             
-## [21] GEOquery_2.50.0          survival_2.42-3         
-## [23] glue_1.3.0               registry_0.5            
-## [25] gtable_0.2.0             zlibbioc_1.28.0         
-## [27] pkgbuild_1.0.2           Rhdf5lib_1.4.1          
-## [29] HDF5Array_1.10.0         DBI_1.0.0               
-## [31] rngtools_1.3.1           bibtex_0.4.2            
-## [33] xtable_1.8-3             progress_1.2.0          
-## [35] mclust_5.4.2             preprocessCore_1.44.0   
-## [37] httr_1.3.1               RColorBrewer_1.1-2      
-## [39] pkgconfig_2.0.2          reshape_0.8.8           
-## [41] XML_3.98-1.16            tidyselect_0.2.5        
-## [43] rlang_0.3.0.1            munsell_0.5.0           
-## [45] tools_3.5.1              cli_1.0.1               
-## [47] RSQLite_2.1.1            evaluate_0.12           
-## [49] stringr_1.3.1            processx_3.2.0          
-## [51] bit64_0.9-7              fs_1.2.6                
-## [53] beanplot_1.2             caTools_1.17.1.1        
-## [55] purrr_0.2.5              bindrcpp_0.2.2          
-## [57] nlme_3.1-137             doRNG_1.7.1             
-## [59] nor1mix_1.2-3            xml2_1.2.0              
-## [61] biomaRt_2.38.0           compiler_3.5.1          
-## [63] tibble_1.4.2             stringi_1.2.4           
-## [65] ps_1.2.1                 desc_1.2.0              
-## [67] lattice_0.20-35          Matrix_1.2-14           
-## [69] multtest_2.38.0          pillar_1.3.0            
-## [71] data.table_1.11.8        bitops_1.0-6            
-## [73] rtracklayer_1.42.1       R6_2.3.0                
-## [75] KernSmooth_2.23-15       sessioninfo_1.1.1       
-## [77] codetools_0.2-15         assertthat_0.2.0        
-## [79] pkgload_1.0.2            rhdf5_2.26.0            
-## [81] openssl_1.1              pkgmaker_0.27           
-## [83] rprojroot_1.3-2          withr_2.1.2             
-## [85] GenomicAlignments_1.18.0 Rsamtools_1.34.0        
-## [87] GenomeInfoDbData_1.2.0   hms_0.4.2               
-## [89] quadprog_1.5-5           tidyr_0.8.2             
-## [91] base64_2.0               DelayedMatrixStats_1.4.0
-## [93] base64enc_0.1-3
+## [15] xfun_0.4                 dplyr_0.7.8             
+## [17] callr_3.0.0              crayon_1.3.4            
+## [19] RCurl_1.95-4.11          genefilter_1.64.0       
+## [21] bindr_0.1.1              GEOquery_2.50.0         
+## [23] survival_2.43-3          glue_1.3.0              
+## [25] registry_0.5             gtable_0.2.0            
+## [27] zlibbioc_1.28.0          pkgbuild_1.0.2          
+## [29] Rhdf5lib_1.4.1           HDF5Array_1.10.0        
+## [31] DBI_1.0.0                rngtools_1.3.1          
+## [33] bibtex_0.4.2             xtable_1.8-3            
+## [35] progress_1.2.0           mclust_5.4.2            
+## [37] preprocessCore_1.44.0    httr_1.3.1              
+## [39] RColorBrewer_1.1-2       pkgconfig_2.0.2         
+## [41] reshape_0.8.8            XML_3.98-1.16           
+## [43] tidyselect_0.2.5         rlang_0.3.1             
+## [45] munsell_0.5.0            tools_3.5.3             
+## [47] cli_1.0.1                RSQLite_2.1.1           
+## [49] evaluate_0.12            stringr_1.3.1           
+## [51] processx_3.2.0           bit64_0.9-7             
+## [53] fs_1.2.6                 beanplot_1.2            
+## [55] caTools_1.17.1.1         purrr_0.2.5             
+## [57] bindrcpp_0.2.2           nlme_3.1-137            
+## [59] doRNG_1.7.1              nor1mix_1.2-3           
+## [61] xml2_1.2.0               biomaRt_2.38.0          
+## [63] compiler_3.5.3           tibble_1.4.2            
+## [65] stringi_1.2.4            ps_1.2.1                
+## [67] desc_1.2.0               lattice_0.20-38         
+## [69] Matrix_1.2-16            multtest_2.38.0         
+## [71] pillar_1.3.0             data.table_1.11.8       
+## [73] bitops_1.0-6             rtracklayer_1.42.1      
+## [75] R6_2.3.0                 KernSmooth_2.23-15      
+## [77] sessioninfo_1.1.1        codetools_0.2-15        
+## [79] assertthat_0.2.0         pkgload_1.0.2           
+## [81] rhdf5_2.26.0             openssl_1.1             
+## [83] pkgmaker_0.27            rprojroot_1.3-2         
+## [85] withr_2.1.2              GenomicAlignments_1.18.0
+## [87] Rsamtools_1.34.0         GenomeInfoDbData_1.2.0  
+## [89] hms_0.4.2                quadprog_1.5-5          
+## [91] tidyr_0.8.2              base64_2.0              
+## [93] DelayedMatrixStats_1.4.0 base64enc_0.1-3
 ```
 
 # References
