@@ -14,7 +14,7 @@ start_decomp_pipeline(rnb.set, Ks, lambda.grid, work.dir = getwd(),
   estimate.houseman.prop = F,
   filter.beads = !is.null(rnb.set@covg.sites), min.n.beads = 3,
   filter.intensity = inherits(rnb.set, "RnBeadRawSet"),
-  min.int.quant = 0.1, max.int.quant = 0.95, filter.na = TRUE,
+  min.int.quant = 0.01, max.int.quant = 0.99, filter.na = TRUE,
   filter.context = TRUE, filter.cross.reactive = TRUE,
   execute.lump = FALSE, remove.ICA = FALSE, conf.fact.ICA = FALSE,
   ica.setting = NULL, filter.snp = TRUE, filter.somatic = TRUE,
@@ -200,7 +200,8 @@ The files are then stored in the 'heatmaps' folder in WD.}
 An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 }
 \description{
-CPG FILTERING (BeadChip)
+Main workhorse of the DecompPipeline R-package. Performs preprocessing (\code{\link{prepare_data}} or \code{\link{prepare_data_BS}}),
+CpG subset selection (\code{\link{prepare_CG_subsets}}) and deconvolution (\code{\link{start_medecom_analysis}}, \code{\link{start.refreeewas.analysis}}, \code{\link{start.edec.analysis}})
 }
 \author{
 Michael Scherer

@@ -576,7 +576,9 @@ start_medecom_analysis<-function(
 
 #' start_decomp_pipeline
 #' 
-#' CPG FILTERING (BeadChip)
+#' Main workhorse of the DecompPipeline R-package. Performs preprocessing (\code{\link{prepare_data}} or \code{\link{prepare_data_BS}}),
+#' CpG subset selection (\code{\link{prepare_CG_subsets}}) and deconvolution (\code{\link{start_medecom_analysis}}, \code{\link{start.refreeewas.analysis}}, \code{\link{start.edec.analysis}})
+#' 
 #' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
 #' @param Ks Vector of integers used as components in MeDeCom.
 #' @param lambda.grid Vector of doubles representing the regularization parameter in MeDeCom.
@@ -705,8 +707,8 @@ start_decomp_pipeline <- function(rnb.set,
                                   filter.beads=!is.null(rnb.set@covg.sites),
                                   min.n.beads=3,
                                   filter.intensity=inherits(rnb.set, "RnBeadRawSet"),
-                                  min.int.quant = 0.1,
-                                  max.int.quant = 0.95, 
+                                  min.int.quant = 0.01,
+                                  max.int.quant = 0.99, 
                                   filter.na=TRUE,
                                   filter.context=TRUE,
                                   filter.cross.reactive=TRUE,
