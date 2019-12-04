@@ -670,6 +670,7 @@ filter.annotation.biseq<-function(
 #'             provided in the same genome assembly as RNB_SET. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
 #'             the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome
 #' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
+#' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
@@ -693,7 +694,8 @@ prepare_data_BS <- function(
 		FILTER_NA=TRUE,
 		FILTER_SNP=TRUE,
 		snp.list=NULL,
-		FILTER_SOMATIC=TRUE
+		FILTER_SOMATIC=TRUE,
+		execute.lump=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
@@ -800,6 +802,10 @@ prepare_data_BS <- function(
 	
 		}else{
 		annot.filter<-1:nrow(rnb.set@meth.sites)
+	}
+	if(execute.lump){
+	  lump.est <- rnb.execute.lump(rnb.set)
+	  rnb.set <- addPheno(rnb.set,as.vector(lump.est),"LUMP_estimate")
 	}
 	
 	total.filter<-intersect(qual.filter, annot.filter)

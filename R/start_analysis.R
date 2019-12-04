@@ -800,7 +800,8 @@ start_decomp_pipeline <- function(rnb.set,
                                 FILTER_NA=filter.na,
                                 FILTER_SNP=filter.snp,
                                 snp.list=snp.list,
-                                FILTER_SOMATIC=filter.somatic
+                                FILTER_SOMATIC=filter.somatic,
+                                execute.lump=execute.lump
       
     )
   }

@@ -12,7 +12,6 @@ Date: 2019-10-10
 Version: 0.2.5
 Depends:
     R (>= 3.2.0),
-    MeDeCom,
     RnBeads,
     knitr,
 	  R.utils

@@ -60,6 +60,8 @@ provided in the same genome assembly as RNB_SET. The file must be a tab-separate
 the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome}
 
 \item{FILTER_SOMATIC}{Flag indicating if only somatic probes are to be kept.}
+
+\item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
 }
 \value{
 A list with four elements: \itemize{
