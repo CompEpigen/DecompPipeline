@@ -29,7 +29,7 @@ To execute the protocol described here, several R-packages (*RnBeads*, *DecompPi
 
 ```{r install, eval=F}
 install.packages(c("devtools","BiocManager"))
-BiocManager::install(c("RnBeads","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
+BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
 devtools::install_github(c("lutsik/MeDeCom","CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
 ```

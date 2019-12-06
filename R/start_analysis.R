@@ -267,7 +267,7 @@ start_medecom_analysis<-function(
 		LAMBDA_GRID_TYPE="standard",
 		ANALYSIS_TOKEN="customAnalysis"
 ){
-	library(MeDeCom)
+	require(MeDeCom)
 	library(R.utils)
 	
 	#RDIR="/TL/deep-share/archive00/software/bin"
