@@ -12,7 +12,8 @@ prepare_data_BS(RNB_SET, WORK_DIR = getwd(),
   ID_COLUMN = rnb.getOption("identifiers.column"),
   FILTER_COVERAGE = hasCovg(RNB_SET), MIN_COVERAGE = 5,
   MIN_COVG_QUANT = 0.05, MAX_COVG_QUANT = 0.95, FILTER_NA = TRUE,
-  FILTER_SNP = TRUE, snp.list = NULL, FILTER_SOMATIC = TRUE)
+  FILTER_SNP = TRUE, snp.list = NULL, FILTER_SOMATIC = TRUE,
+  execute.lump = FALSE)
 }
 \arguments{
 \item{RNB_SET}{An object of type \code{\link[RnBeads]{RnBiseqSet-class}} for which analysis is to be performed.}
