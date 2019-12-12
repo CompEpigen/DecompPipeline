@@ -1,21 +1,14 @@
 ---
 title: "DNA Methylation Deconvolution Protocol"
-author: "Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik"
+author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
+  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
 date: "December 05, 2019"
-output:
-  pdf_document: default
-    toc: true
-    toc_depth: 3
-    df_print: kable
-    highlight: tango
-    documentclass: scrartcl
-    mainfont: ebgaramond
 bibliography: bibliography.bib
 ---
 
 ```{r setup, include=FALSE, cache=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir="")
+knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/")
 ```
 
 # Introduction
@@ -99,7 +92,7 @@ options(fftempdir=temp.dir)
 rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
 ```
 
-**BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from ()[] or directly loaded via:
+**BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from (http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html)[http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html] or directly loaded via:
 
 ```{r breakoint_1, eval=F}
 rnb.set <- load.rnb.set("URL")
@@ -114,7 +107,7 @@ Accounting for potential confounding factor is crucial in epigenomic studies. Es
 ```{r data_preparation}
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare_data(RNB_SET = rnb.set,
-                          analysis.name = "TCGA_LUAD",
+                          analysis.name = "TCGA_LUAD4",
                           NORMALIZATION = "bmiq",
                           FILTER_BEADS = T,
                           MIN_N_BEADS = 3,
@@ -129,11 +122,11 @@ data.prep <- prepare_data(RNB_SET = rnb.set,
                           execute.lump=T,
                           remove.ICA=T,
                           conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
-                          ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"ntry"=10,"nmax"=50,"ncores"=10))
+                          ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"nmin"=30,"nmax"=50,"ncores"=10))
 names(data.prep)
 ```
 
-**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis. You can directly select those sites from you RnBSet object.
+**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at (http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv)[http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv]. You can directly select those sites from you RnBSet object.
 
 ```{breakpoint_2, eval=F}
 rem.sites <- rep(TRUE,nrow(rnb.set))
@@ -167,12 +160,12 @@ md.res <- start_medecom_analysis(
   Ks=2:15,
   LAMBDA_GRID = c(0,10^-(2:5)),
   factorviz.outputs = T,
-  analysis.name = "TCGA_LUAD",
+  analysis.name = "TCGA_LUAD4",
   cores = 15
 )
 ```
 
-**BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from ()[]. It can be directly loaded into your R session and further explored.
+**BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from (http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz)[http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz]. It can be directly loaded into your R session and further explored.
 
 ```{r breakpoint_3, eval=F}
 download.file("URL")
