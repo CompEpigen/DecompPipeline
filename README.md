@@ -11,7 +11,7 @@ devtools::install_github("CompEpigen/DecompPipeline")
 ```
 
 # Using Decomp
-*DecompPipeline* includes three major steps, all of them are extensively documented. A more detailed introduction into *DecompPipeline* can be found in the package [vignette](https://github.com/lutsik/DecompPipeline/blob/master/vignettes/DecompPipeline.md) and in the [protocol](https://github.com/lutsik/DecompPipeline/blob/master/vignettes/DeconvolutionProtocol.md) .
+*DecompPipeline* includes three major steps, all of them are extensively documented. A more detailed introduction into *DecompPipeline* can be found in the package [vignette](vignettes/DecompPipeline.md) and in the [protocol](vignettes/DeconvolutionProtocol.Rmd) .
 
 ## 1. CpG filtering
 There are dedicated preprocessing steps for both array-based data sets (```prepare_data```) and sequencing-based data sets (```prepare_data_BS```).
