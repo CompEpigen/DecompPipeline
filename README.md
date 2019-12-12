@@ -1,5 +1,5 @@
 # DecompPipeline
-*DecompPipeline* provides a comprehensive list of preprocessing functions for performing reference-free deconvolution of complex DNA methylation data. It is an integral part of a recently published protocol (doi:10.1101/853150 )[https://doi.org/10.1101/853150 ] for reference-free deconvolution and is independent of the deconvolution tool used. 
+*DecompPipeline* provides a comprehensive list of preprocessing functions for performing reference-free deconvolution of complex DNA methylation data. It is an integral part of a recently published protocol [doi:10.1101/853150](https://doi.org/10.1101/853150) for reference-free deconvolution and is independent of the deconvolution tool used. 
 
 ![Overview of the reference-free deconvolution tool](pictures/protocol_overview.png)
 
