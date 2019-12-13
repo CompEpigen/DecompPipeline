@@ -1,9 +1,15 @@
 <h1 id="introduction">Introduction</h1>
-<p>This protocol aims at guiding reasearcher how to employ deconvolution of methylomes obtained from complex tissue. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing that provides single base pair resolution. Deconvolution here refers to creating two matrices (proportion matrix A and methylation pattern matrix T) from a single matrix of input DNA methylation data (dimension CpGs x samples). Non-negative matrix factorization can be employed for this task, and we will discuss some of the advantages and caveats of the methods.</p>
+<p>This protocol aims at guiding reasearcher how to employ deconvolution of methylomes obtained from complex tissues. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing, or any technology yielding single base pair resolution. Deconvolution here refers to creating two matrices (proportion matrix A and methylation pattern matrix T) from a single matrix of input DNA methylation data (dimension CpGs x samples). Non-negative matrix factorization is employed for this task, and we will discuss some of the advantages and caveats of the methods.</p>
+<h1 id="installation-duration-up-to-2-h">Installation (duration up to 2 h)</h1>
+<p>To execute the protocol described here, several R-packages (<em>RnBeads</em>, <em>DecompPipeline</em>, <em>MeDeCom</em>, and <em>FactorViz</em>) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most <em>Linux distributions</em> directly through R, while for <em>MacOS</em> the binary release of <em>MeDeCom</em> (https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz)[https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz] should be used. The protocol is also available as a Docker container (https://hub.docker.com/r/mscherer/medecom)[https://hub.docker.com/r/mscherer/medecom], which is the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">install.packages</span>(<span class="kw">c</span>(<span class="st">&quot;devtools&quot;</span>,<span class="st">&quot;BiocManager&quot;</span>))
+BiocManager::<span class="kw">install</span>(<span class="kw">c</span>(<span class="st">&quot;RnBeads&quot;</span>,<span class="st">&quot;RnBeads.gh19&quot;</span>,<span class="st">&quot;RnBeads.mm10&quot;</span>,<span class="st">&quot;RnBeads.hg38&quot;</span>),<span class="dt">dependencies=</span><span class="ot">TRUE</span>)
+devtools::<span class="kw">install_github</span>(<span class="kw">c</span>(<span class="st">&quot;lutsik/MeDeCom&quot;</span>,<span class="st">&quot;CompEpigen/DecompPipeline&quot;</span>,<span class="st">&quot;CompEpigen/FactorViz&quot;</span>))
+<span class="kw">library</span>(DecompPipeline)</code></pre>
 <h1 id="protocol">Protocol</h1>
 <h2 id="data-retrival">Data Retrival</h2>
 <h3 id="obtaining-data-from-a-public-resource-duration-5h">Obtaining data from a public resource (duration ~5h)</h3>
-<p>We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinum 450k BeadChip and comprises 461 samples. The clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples. The discrepancy between the number comes from recent progress within TCGA. We used the Genomic Data Commons (GDC) data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the intensity data (IDAT) files listed in the manifest file and its associated metadata. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for downstream analysis, the following code was employed.</p>
+<p>We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinium 450k BeadChip and comprises 461 samples. The clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples, and is stored in the folder <em>anntotation</em>. The discrepancy between the number comes from recent progress within TCGA. We used the Genomic Data Commons (GDC) data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the intensity data (IDAT) files listed in the manifest file and its associated metadata into a new folder <em>idat</em>. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for downstream analysis, the following code was employed.</p>
 <pre class="sourceCode r"><code class="sourceCode r">clinical.data &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;annotation/clinical.tsv&quot;</span>,<span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>,<span class="dt">header=</span>T)
 idat.files &lt;-<span class="st"> </span><span class="kw">list.files</span>(<span class="st">&quot;idat&quot;</span>,<span class="dt">full.names =</span> T)
 meta.files &lt;-<span class="st"> </span><span class="kw">list.files</span>(idat.files[<span class="dv">1</span>],<span class="dt">full.names =</span> T)
@@ -49,57 +55,51 @@ anno.frame &lt;-<span class="st"> </span><span class="kw">read.table</span>(<spa
 sample.anno &lt;-<span class="st"> &quot;annotation/sample_annotation.tsv&quot;</span>
 idat.folder &lt;-<span class="st"> &quot;idat/&quot;</span>
 dir.report &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;report&quot;</span>,<span class="kw">Sys.Date</span>(),<span class="st">&quot;/&quot;</span>)
-temp.dir &lt;-<span class="st"> &quot;/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp&quot;</span>
+temp.dir &lt;-<span class="st"> &quot;/tmp&quot;</span>
 <span class="kw">options</span>(<span class="dt">fftempdir=</span>temp.dir)
 rnb.set &lt;-<span class="st"> </span><span class="kw">rnb.run.analysis</span>(<span class="dt">dir.reports =</span> dir.report, <span class="dt">sample.sheet =</span> sample.anno, <span class="dt">data.dir =</span> idat.folder)</code></pre>
-<pre><code>## 2019-06-25 17:44:15     1.1  STATUS STARTED RnBeads Pipeline
-## 2019-06-25 17:44:15     1.1    INFO     Initialized report index and saved to index.html
-## 2019-06-25 17:44:15     1.1  STATUS     STARTED Loading Data
-## 2019-06-25 17:44:15     1.1    INFO         Number of cores: 1
-## 2019-06-25 17:44:16     1.1    INFO         Loading data of type &quot;idat.dir&quot;
-## 2019-06-25 17:44:16     1.1  STATUS         STARTED Loading Data from IDAT Files
-## 2019-06-25 17:44:17     1.1    INFO             Detected platform: HumanMethylation450
-## 2019-06-25 18:04:40     1.5  STATUS         COMPLETED Loading Data from IDAT Files
-## 2019-06-25 18:48:47     2.0  STATUS         Loaded data from idat/
-## 2019-06-25 18:49:41     7.7  STATUS         Predicted sex for the loaded samples
-## 2019-06-25 18:50:09     7.1  STATUS         Added data loading section to the report
-## 2019-06-25 18:50:09     7.1  STATUS         Loaded 461 samples and 485577 sites
-## 2019-06-25 18:50:09     7.1    INFO         Output object is of type RnBeadRawSet
-## 2019-06-25 18:50:09     7.1  STATUS     COMPLETED Loading Data
-## 2019-06-25 19:03:57     7.1    INFO     Initialized report index and saved to index.html
-## 2019-06-25 19:03:58     7.1  STATUS     STARTED Quality Control
-## 2019-06-25 19:03:58     7.1    INFO         Number of cores: 1
-## 2019-06-25 19:03:58     7.1  STATUS         STARTED Quality Control Section</code></pre>
-<pre><code>## 2019-06-25 19:04:30     2.0  STATUS             Added quality control box plots</code></pre>
-<pre><code>## 2019-06-25 19:09:19     2.0  STATUS             Added quality control bar plots</code></pre>
-<pre><code>## 2019-06-25 19:09:44     2.0  STATUS             Added negative control boxplots
-## 2019-06-25 19:09:44     2.0  STATUS         COMPLETED Quality Control Section
-## 2019-06-25 19:09:44     2.0  STATUS         STARTED Visualizing SNP Probe Data
-## 2019-06-25 19:09:44     2.0  STATUS             STARTED Mixups Visualization Section</code></pre>
-<pre><code>## 2019-06-25 19:10:19     5.4  STATUS                 Added SNP Heatmap</code></pre>
-<pre><code>## Found more than one class &quot;dist&quot; in cache; using the first, from namespace &#39;BiocGenerics&#39;</code></pre>
-<pre><code>## Also defined by &#39;spam&#39;</code></pre>
-<pre><code>## Found more than one class &quot;dist&quot; in cache; using the first, from namespace &#39;BiocGenerics&#39;</code></pre>
-<pre><code>## Also defined by &#39;spam&#39;</code></pre>
-<pre><code>## Found more than one class &quot;dist&quot; in cache; using the first, from namespace &#39;BiocGenerics&#39;</code></pre>
-<pre><code>## Also defined by &#39;spam&#39;</code></pre>
-<pre><code>## 2019-06-25 19:10:20     5.4  STATUS                 Calculated Manhattan distances between samples based on SNP probes</code></pre>
-<pre><code>## 2019-06-25 19:10:23     5.4  STATUS                 Added SNP-based Distances
-## 2019-06-25 19:10:23     5.4  STATUS             COMPLETED Mixups Visualization Section
-## 2019-06-25 19:10:23     5.4  STATUS         COMPLETED Visualizing SNP Probe Data</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b33eb3301.ff</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b77a0b0ce.ff</code></pre>
-<pre><code>## 2019-06-25 19:11:24     7.7  STATUS     COMPLETED Quality Control
-## 2019-06-25 19:11:24     7.7    INFO     Initialized report index and saved to index.html
-## 2019-06-25 19:11:25     7.7  STATUS     STARTED Saving RData
-## 2019-06-25 19:11:25     7.7  STATUS     COMPLETED Saving RData
-## 2019-06-25 19:11:25     7.7  STATUS COMPLETED RnBeads Pipeline</code></pre>
-<p>RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that is can be used for further analysis. (Include two screenshots from the RnBeads report)</p>
+<pre><code>## 2019-12-11 09:56:43     1.1  STATUS STARTED RnBeads Pipeline
+## 2019-12-11 09:56:43     1.1    INFO     Initialized report index and saved to index.html
+## 2019-12-11 09:56:43     1.1  STATUS     STARTED Loading Data
+## 2019-12-11 09:56:43     1.1    INFO         Number of cores: 1
+## 2019-12-11 09:56:43     1.1    INFO         Loading data of type &quot;idat.dir&quot;
+## 2019-12-11 09:56:43     1.1  STATUS         STARTED Loading Data from IDAT Files
+## 2019-12-11 09:56:45     1.1    INFO             Detected platform: HumanMethylation450
+## 2019-12-11 10:02:22     1.5  STATUS         COMPLETED Loading Data from IDAT Files
+## 2019-12-11 10:37:38     2.0  STATUS         Loaded data from idat/
+## 2019-12-11 10:37:55     7.6  STATUS         Predicted sex for the loaded samples
+## 2019-12-11 10:38:03     7.1  STATUS         Added data loading section to the report
+## 2019-12-11 10:38:03     7.1  STATUS         Loaded 461 samples and 485577 sites
+## 2019-12-11 10:38:03     7.1    INFO         Output object is of type RnBeadRawSet
+## 2019-12-11 10:38:03     7.1  STATUS     COMPLETED Loading Data
+## 2019-12-11 10:51:21     7.1    INFO     Initialized report index and saved to index.html
+## 2019-12-11 10:51:21     7.1  STATUS     STARTED Quality Control
+## 2019-12-11 10:51:21     7.1    INFO         Number of cores: 1
+## 2019-12-11 10:51:22     7.1  STATUS         STARTED Quality Control Section
+## 2019-12-11 10:51:45     2.0  STATUS             Added quality control box plots
+## 2019-12-11 10:55:46     2.0  STATUS             Added quality control bar plots
+## 2019-12-11 10:56:10     2.0  STATUS             Added negative control boxplots
+## 2019-12-11 10:56:10     2.0  STATUS         COMPLETED Quality Control Section
+## 2019-12-11 10:56:10     2.0  STATUS         STARTED Visualizing SNP Probe Data
+## 2019-12-11 10:56:10     2.0  STATUS             STARTED Mixups Visualization Section
+## 2019-12-11 10:56:28     5.4  STATUS                 Added SNP Heatmap
+## 2019-12-11 10:56:28     5.4  STATUS                 Calculated Manhattan distances between samples based on SNP probes
+## 2019-12-11 10:56:31     5.4  STATUS                 Added SNP-based Distances
+## 2019-12-11 10:56:31     5.4  STATUS             COMPLETED Mixups Visualization Section
+## 2019-12-11 10:56:31     5.4  STATUS         COMPLETED Visualizing SNP Probe Data
+## 2019-12-11 10:56:49     7.6  STATUS     COMPLETED Quality Control
+## 2019-12-11 10:56:49     7.6    INFO     Initialized report index and saved to index.html
+## 2019-12-11 10:56:49     7.6  STATUS     STARTED Saving RData
+## 2019-12-11 10:56:49     7.6  STATUS     COMPLETED Saving RData
+## 2019-12-11 10:56:49     7.6  STATUS COMPLETED RnBeads Pipeline</code></pre>
+<p><strong>BREAKPOINT</strong> We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from (http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html)[http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html] or directly loaded via:</p>
+<pre class="sourceCode r"><code class="sourceCode r">rnb.set &lt;-<span class="st"> </span><span class="kw">load.rnb.set</span>(<span class="st">&quot;URL&quot;</span>)</code></pre>
+<p>RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that it can be used for further analysis.</p>
 <h3 id="preprocessing-and-filtering">Preprocessing and Filtering</h3>
-<p>For further analysis, we use the DecompPipeline package (https://github.com/lutsik/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individual function parameters. We follow a stringent filtering strategy. First, all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles, respectively. We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. Then, BMIQ normalization <span class="citation">[@bmiq]</span> is employed to account for the chip's design bias. Accounting for potential confounding factor is crucial in epigenomic studies. Especially, the influence of donor sex and age on the DNA methylation pattern is well-studied and strong. Furthermore, genetic differences between groups of individuals due to different origins may influence the DNA methylation paterrn. We used Independent Component Analysis (ICA) to account for DNA methylation differences that are due to these confounding factors. ICA detects components in the data accounting for most of the variance similar to PCA, but does not require orthogonality of the components but statistical independence. We used an external library (http://sablab.net/scripts/LibICA.r) for performing ICA to adjust for sex, age, race and ethnicity.</p>
+<p>For further analysis, we use the <em>DecompPipeline</em> package (https://github.com/CompEpigen/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individual function parameters. We follow a stringent filtering strategy: (i) all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles, respectively. (ii) We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. (iii) Then, BMIQ normalization <span class="citation">[@bmiq]</span> is employed to account for the chip's design bias. Accounting for potential confounding factor is crucial in epigenomic studies. Especially, the influence of donor sex and age on the DNA methylation pattern is well-studied and strong. Furthermore, genetic differences between groups of individuals may influence the DNA methylation paterrn. We used Independent Component Analysis (ICA) to account for DNA methylation differences that are due to these confounding factors. ICA detects components in the data accounting for most of the variance similar to PCA, but does not require orthogonality of the components but statistical independence. We used an external library (http://sablab.net/scripts/LibICA.r)[http://sablab.net/scripts/LibICA.r] for performing ICA to adjust for sex, age, race and ethnicity.</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(DecompPipeline))
 data.prep &lt;-<span class="st"> </span><span class="kw">prepare_data</span>(<span class="dt">RNB_SET =</span> rnb.set,
-                          <span class="dt">analysis.name =</span> <span class="st">&quot;TCGA_LUAD&quot;</span>,
+                          <span class="dt">analysis.name =</span> <span class="st">&quot;TCGA_LUAD4&quot;</span>,
                           <span class="dt">NORMALIZATION =</span> <span class="st">&quot;bmiq&quot;</span>,
                           <span class="dt">FILTER_BEADS =</span> T,
                           <span class="dt">MIN_N_BEADS =</span> <span class="dv">3</span>,
@@ -114,450 +114,261 @@ data.prep &lt;-<span class="st"> </span><span class="kw">prepare_data</span>(<sp
                           <span class="dt">execute.lump=</span>T,
                           <span class="dt">remove.ICA=</span>T,
                           <span class="dt">conf.fact.ICA=</span><span class="kw">c</span>(<span class="st">&quot;age_at_diagnosis&quot;</span>,<span class="st">&quot;race&quot;</span>,<span class="st">&quot;gender&quot;</span>,<span class="st">&quot;ethnicity&quot;</span>),
-                          <span class="dt">ica.setting=</span><span class="kw">c</span>(<span class="st">&quot;alpha.fact&quot;</span>=<span class="fl">1e-5</span>))</code></pre>
-<pre><code>## 2019-06-25 19:22:19    17.9    INFO 163614 sites removed in bead count filtering.
-## 2019-06-25 19:23:28    21.7    INFO 27623 sites removed in intensity filtering.
-## 2019-06-25 19:23:54    22.2    INFO 0 sites removed in NA filtering
-## 2019-06-25 19:23:54    22.2    INFO 44274 sites removed in SNP filtering
-## 2019-06-25 19:23:54    22.2    INFO 6269 sites removed in somatic sites filtering
-## 2019-06-25 19:23:55    22.2    INFO 1147 sites removed in CG context filtering
-## 2019-06-25 19:23:55    22.2    INFO Removing 242927 sites, retaining  242650</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b75dc6533.ff</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b4f959343.ff</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500be127689.ff</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b3e452644.ff</code></pre>
-<pre><code>## opening ff /DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/ff500b3395e5e8.ff</code></pre>
-<pre><code>## 2019-06-25 20:28:48    11.6    INFO 12427 sites removed in cross-reactive filtering
-## 2019-06-25 20:28:48    11.6  STATUS STARTED Removing confounding factors using ICA
-## 2019-06-25 20:28:48    11.6    INFO     No imputation method selected, &#39;knn&#39; method used.
-## 2019-06-25 20:28:48    11.6  STATUS     STARTED Imputation procedure knn 
-## 2019-06-25 20:57:25    22.4  STATUS     COMPLETED Imputation procedure knn 
-## 2019-06-25 20:57:26    22.4  STATUS     STARTED Determining number of components
-## 2019-06-25 20:57:59    21.7    INFO         Only sites with SD &gt; 0 were kept: 230223 of 230223</code></pre>
-<pre><code>## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 20:57:59    21.7    INFO         Assuming numeric data for pheno column ` age_at_diagnosis</code></pre>
-<pre><code>## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 20:57:59    21.7    INFO         Assuming numeric data for pheno column ` days_to_death</code></pre>
-<pre><code>## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 20:57:59    21.7    INFO         Assuming numeric data for pheno column ` days_to_birth</code></pre>
-<pre><code>## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 20:57:59    21.7    INFO         Assuming numeric data for pheno column ` days_to_last_follow_up</code></pre>
-<pre><code>## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion
-
-## Warning in getComponentNumber(rnb.set, conf.factor, nmin = nmin, nmax =
-## nmax, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 20:57:59    21.7    INFO         getMinCompNumber: working with 10 components</code></pre>
-<pre><code>## Loading required package: fastICA</code></pre>
-<pre><code>## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 10 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 20:58:02 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 20:59:15 
-## Time difference of 1.215448 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 20:59:17    26.1    INFO         0.102315904066909; 0.0640267167857304; 3.91484502835008e-06; 1.24057577891139e-05
-## 2019-06-25 20:59:17    26.1    INFO         getMinCompNumber: working with 11 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 11 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 20:59:17 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:00:27 
-## Time difference of 1.165935 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:00:29    26.2    INFO         0.00900900821212266; 0.0431124129468957; 4.61821400824774e-07; 4.7500395463565e-06
-## 2019-06-25 21:00:29    26.2    INFO         getMinCompNumber: working with 12 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 12 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:00:29 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:01:49 
-## Time difference of 1.330911 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:01:51    26.2    INFO         0.00596406508227194; 0.062667236618924; 8.07912958126813e-05; 0.0013933513451293
-## 2019-06-25 21:01:51    26.2    INFO         getMinCompNumber: working with 13 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 13 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:01:51 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:03:13 
-## Time difference of 1.360138 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:03:16    27.0    INFO         2.60157559255724e-05; 0.0178307618458239; 8.25354209689007e-05; 1.93259656494812e-06
-## 2019-06-25 21:03:16    27.0    INFO         getMinCompNumber: working with 14 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 14 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:03:16 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:04:41 
-## Time difference of 1.418273 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:04:43    26.2    INFO         0.0110307903871836; 0.0208455388292142; 4.79799078744186e-06; 7.49408503990506e-07
-## 2019-06-25 21:04:43    26.2    INFO         getMinCompNumber: working with 15 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 15 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:04:43 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:06:18 
-## Time difference of 1.57415 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:06:20    26.2    INFO         0.0129006790513419; 0.0174850449594158; 9.29401082165957e-07; 6.69769773042926e-06
-## 2019-06-25 21:06:20    26.2    INFO         getMinCompNumber: working with 16 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 16 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:06:20 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:08:06 
-## Time difference of 1.751105 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:08:08    25.5    INFO         0.000112649794832954; 0.0047641304482537; 0.000452983199343934; 0.000570041013487689
-## 2019-06-25 21:08:08    25.5    INFO         getMinCompNumber: working with 17 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 17 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:08:08 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:10:06 
-## Time difference of 1.967924 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:10:09    26.2    INFO         0.00533438349913006; 0.000922447247656091; 4.98963267157192e-06; 2.49055290892029e-05
-## 2019-06-25 21:10:09    26.2    INFO         getMinCompNumber: working with 18 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 18 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:10:09 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:12:12 
-## Time difference of 2.048571 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:12:16    26.2    INFO         0.00227287128313991; 0.000404422856278843; 2.36329658539248e-07; 2.58281648330508e-05
-## 2019-06-25 21:12:16    26.2    INFO         getMinCompNumber: working with 19 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 19 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:12:16 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:14:24 
-## Time difference of 2.133444 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:14:27    27.0    INFO         0.00033098648617749; 5.33313959678689e-06; 9.88558595566767e-06; 7.06713384334847e-06
-## 2019-06-25 21:14:27    27.0    INFO         getMinCompNumber: working with 20 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 20 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:14:27 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:16:47 
-## Time difference of 2.330915 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:16:50    29.3    INFO         0.0276182355878157; 2.05690715209953e-05; 2.20040278322253e-05; 7.57329715954361e-06
-## 2019-06-25 21:16:50    29.3    INFO         getMinCompNumber: working with 21 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 21 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:16:50 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:19:42 
-## Time difference of 2.854681 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:19:45    26.8    INFO         0.00950085058058992; 2.97202018270671e-05; 1.35476794433124e-05; 5.3505510035154e-06
-## 2019-06-25 21:19:45    26.8    INFO         getMinCompNumber: working with 22 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 22 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:19:45 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:22:32 
-## Time difference of 2.775942 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:22:35    26.8    INFO         0.000499604904914473; 7.43158627623381e-05; 9.7869369190396e-08; 1.08721905822616e-06
-## 2019-06-25 21:22:35    26.8    INFO         getMinCompNumber: working with 23 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 23 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:22:35 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:25:52 
-## Time difference of 3.272885 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:25:56    29.1    INFO         0.000642506120713836; 9.35379398466788e-05; 3.35545523903678e-08; 1.06412753646153e-05
-## 2019-06-25 21:25:56    29.1    INFO         getMinCompNumber: working with 24 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 24 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:25:56 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:29:43 
-## Time difference of 3.797569 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:29:47    27.5    INFO         0.000238400412644002; 0.000929232807364356; 5.45087856946364e-07; 4.89481824231061e-05
-## 2019-06-25 21:29:47    27.5    INFO         getMinCompNumber: working with 25 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 25 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:29:47 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:32:32 
-## Time difference of 2.736203 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:32:36    29.1    INFO         0.000129157488119915; 0.00127641671101029; 2.17395693379296e-08; 7.70968132512405e-06
-## 2019-06-25 21:32:36    29.1    INFO         getMinCompNumber: working with 26 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 26 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:32:36 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:36:17 
-## Time difference of 3.682293 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:36:21    28.3    INFO         0.00103250914566519; 0.000287092199625268; 9.05792527227759e-09; 1.02436120250617e-05
-## 2019-06-25 21:36:21    28.3    INFO         getMinCompNumber: working with 27 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 27 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:36:21 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:40:25 
-## Time difference of 4.068034 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:40:29    29.1    INFO         0.0061677677459012; 0.000770210460797161; 1.15883782658368e-07; 2.11667835324528e-05
-## 2019-06-25 21:40:29    29.1    INFO         getMinCompNumber: working with 28 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 28 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:40:29 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:45:18 
-## Time difference of 4.815393 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:45:22    29.9    INFO         0.000719051040292291; 0.00060566100595299; 1.89400446099546e-08; 7.45157056868728e-05
-## 2019-06-25 21:45:22    29.9    INFO         getMinCompNumber: working with 29 components
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 29 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:45:22 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-06-25 21:49:37 
-## Time difference of 4.235621 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:49:41    26.1    INFO         0.000100764215522075; 0.00174598516800233; 5.40924539585349e-09; 0.000235872276071741
-## 2019-06-25 21:49:41    26.1    INFO         getMinCompNumber: working with 30 components
+                          <span class="dt">ica.setting=</span><span class="kw">c</span>(<span class="st">&quot;alpha.fact&quot;</span>=<span class="fl">1e-5</span>,<span class="st">&quot;save.report&quot;</span>=T,<span class="st">&quot;nmin&quot;</span>=<span class="dv">30</span>,<span class="st">&quot;nmax&quot;</span>=<span class="dv">50</span>,<span class="st">&quot;ncores&quot;</span>=<span class="dv">10</span>))
 ## *** Starting  calculation on 1 core(s)...
 ## *** System: unix 
 ## *** 30 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:49:41 
+## *** Start time: 2019-12-11 12:26:17 
 ## Execute one-core analysis, showing progress every 1 run(s)
 ## try # 1 of 1 
 ## *** Done! 
-## *** End time: 2019-06-25 21:54:04 
-## Time difference of 4.385208 mins
+## *** End time: 2019-12-11 12:31:46 
+## Time difference of 5.477402 mins
 ## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:54:09    26.2    INFO         0.00160717186944378; 0.00267991924115455; 3.56197216613105e-07; 3.7718455822209e-05
-## 2019-06-25 21:54:09    26.2  STATUS     COMPLETED Determining number of components
-## 2019-06-25 21:54:18    27.7  STATUS     STARTED Removing factor effect</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 21:54:27    26.9    INFO         Assuming numeric data for pheno column ` age_at_diagnosis</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 21:54:27    26.9    INFO         Assuming numeric data for pheno column ` days_to_death</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 21:54:27    26.9    INFO         Assuming numeric data for pheno column ` days_to_birth</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## 2019-06-25 21:54:27    26.9    INFO         Assuming numeric data for pheno column ` days_to_last_follow_up</code></pre>
-<pre><code>## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion
-
-## Warning in removeFactor(rnb.set, fact = conf.factor, ncomp = ncomp, ntry =
-## ntry, : NAs introduced by coercion</code></pre>
-<pre><code>## Warning in if (!fact %in% names(Var)) {: the condition has length &gt; 1 and
-## only the first element will be used</code></pre>
-<pre><code>## *** Starting  calculation on 1 core(s)...
+## *** Starting  calculation on 1 core(s)...
 ## *** System: unix 
-## *** 19 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-06-25 21:54:27 
+## *** 31 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 12:31:50 
 ## Execute one-core analysis, showing progress every 1 run(s)
 ## try # 1 of 1 
 ## *** Done! 
-## *** End time: 2019-06-25 21:56:34 
-## Time difference of 2.110113 mins
+## *** End time: 2019-12-11 12:36:32 
+## Time difference of 4.692923 mins
 ## Calculate ||X-SxM|| and r2 between component weights
-## 2019-06-25 21:56:37    26.9    INFO         Component 6 is linked to gender factor, p-value= 7.51017181829129e-07
-## 2019-06-25 21:56:37    26.9    INFO         Component 16 is linked to ethnicity factor, p-value= 2.62386825580626e-06
-## 2019-06-25 21:56:55    28.5  STATUS     COMPLETED Removing factor effect</code></pre>
-<pre><code>## No id variables; using all as measure variables</code></pre>
-<pre><code>## Saving 7 x 7 in image</code></pre>
-<pre><code>## 2019-06-25 22:27:34    36.0  STATUS COMPLETED Removing confounding factors using ICA</code></pre>
-<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">names</span>(data.prep)</code></pre>
-<pre><code>## [1] &quot;quality.filter&quot;   &quot;annot.filter&quot;     &quot;total.filter&quot;    
-## [4] &quot;rnb.set.filtered&quot; &quot;info&quot;</code></pre>
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 32 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 12:36:37 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 12:42:15 
+## Time difference of 5.629724 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 33 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 12:42:20 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 12:47:38 
+## Time difference of 5.301141 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 34 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 12:47:43 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 12:53:56 
+## Time difference of 6.217387 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 35 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 12:54:02 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:00:08 
+## Time difference of 6.110375 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 36 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:00:14 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:07:19 
+## Time difference of 7.086401 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 37 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:07:25 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:14:35 
+## Time difference of 7.181232 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 38 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:14:41 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:22:31 
+## Time difference of 7.828324 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 39 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:22:37 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:31:11 
+## Time difference of 8.578227 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 40 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:31:18 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:40:55 
+## Time difference of 9.616655 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 41 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:41:01 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:50:26 
+## Time difference of 9.419989 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 42 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 13:50:32 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 13:59:56 
+## Time difference of 9.391567 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 43 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:00:02 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 14:11:14 
+## Time difference of 11.20148 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 44 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:11:21 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 14:20:46 
+## Time difference of 9.415461 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 45 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:20:52 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 14:31:01 
+## Time difference of 10.13918 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 46 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:31:07 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 14:42:34 
+## Time difference of 11.44213 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 47 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:42:41 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 14:56:22 
+## Time difference of 13.68558 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 48 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 14:56:29 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 15:12:16 
+## Time difference of 15.7844 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 49 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 15:12:23 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 15:24:37 
+## Time difference of 12.23424 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 50 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 15:24:45 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 15:38:18 
+## Time difference of 13.55522 mins
+## Calculate ||X-SxM|| and r2 between component weights
+## *** Starting  calculation on 1 core(s)...
+## *** System: unix 
+## *** 46 components, 1 runs, 230223 features, 461 samples.
+## *** Start time: 2019-12-11 15:38:33 
+## Execute one-core analysis, showing progress every 1 run(s)
+## try # 1 of 1 
+## *** Done! 
+## *** End time: 2019-12-11 15:51:05 
+## Time difference of 12.53453 mins</code></pre>
+<p><strong>BREAKPOINT</strong> We provide a list of CpGs that are selected for the downstream analysis at (http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv)[http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv]. You can directly select those sites from you RnBSet object.</p>
+<pre class="breakpoint_2"><code>rem.sites &lt;- rep(TRUE,nrow(rnb.set))
+sel.sites &lt;- read.csv(&quot;URL&quot;)
+rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] &lt;- FALSE
+rnb.set &lt;- remove.sites(rnb.set,remove.sites)
+data.prep &lt;- list(rnb.set.filtered=rnb.set)</code></pre>
 <h3 id="selecting-informative-features-cpgs">Selecting informative features (CpGs)</h3>
-<p>The next, crucial, step is selecting a subset of sites that are informative about the cell type composition of your sample. This can be done in various ways, and DecompPipeline provides a list of them through the <code>prepare_CG_subsets</code> function. However, we focus on a single option, which is typically employed in epigenomic studies: selecting the most variable sites across the samples. Since many sites are constant for all samples, focusing on the ones that show the highest variablity across the samples is sensible. We assume that we do not lose information by not considering those sites that do not vary at all. Here, we focus on the 5,000 most variable sites.</p>
+<p>The next step is selecting a subset of sites that are informative about the cell type composition of your sample. This can be done in various ways, and <em>DecompPipeline</em> provides a list of them through the <code>prepare_CG_subsets</code> function. However, we focus on selecting the most variable sites across the samples, which is a common strategy in epigenomic studies. Since many sites are constant for all samples, focusing on the ones that show the highest variablity across the samples reduces running time substantially. Lowly variable sites tend not to contribute to pattern discovery. Here, we focus on the 5,000 most variable sites.</p>
 <pre class="sourceCode r"><code class="sourceCode r">cg_subset &lt;-<span class="st"> </span><span class="kw">prepare_CG_subsets</span>(<span class="dt">rnb.set=</span>data.prep$rnb.set.filtered,
                                 <span class="dt">MARKER_SELECTION =</span> <span class="st">&quot;var&quot;</span>,
                                 <span class="dt">N_MARKERS =</span> <span class="dv">5000</span>)
 <span class="kw">names</span>(cg_subset)</code></pre>
-<pre><code>## [1] &quot;var&quot;</code></pre>
 <h2 id="methylome-deconvolution">Methylome Deconvolution</h2>
 <h3 id="performing-deconvolution">Performing Deconvolution</h3>
-<p>In this step, the actual deconvolution experiment is performed. There are different approaches, which are conceptually similar, yet different in their performance, running time and robustness. Among others, EDec, RefFreeCellMix from the RefFreeEWAS package and MeDeCom can be used to execute non-negative matrix factorization on your data. This will lead to two matrices, the proportions matrix of potential cell types (here referred to as LMCs) and the matrix of those pure profiles. We here focus on MeDeCom as the Deconvolution tool, although DecompPipeline also supports RefFreeCellMix and EDec.</p>
+<p>In this step, the actual deconvolution experiment is performed. There are different approaches, which are conceptually similar, yet different in their performance, running time and robustness. Among others, <em>EDec</em>, <em>RefFreeCellMix</em> from the <em>RefFreeEWAS</em> package and <em>MeDeCom</em> can be used to execute non-negative matrix factorization on your data. This will lead to two matrices, the proportions matrix of potential cell types (here referred to as LMCs) and the matrix of the latent methylation components (LMCs). We here focus on <em>MeDeCom</em> as the Deconvolution tool, although <em>DecompPipeline</em> also supports <em>RefFreeCellMix</em> and <em>EDec</em>.</p>
 <pre class="sourceCode r"><code class="sourceCode r">md.res &lt;-<span class="st"> </span><span class="kw">start_medecom_analysis</span>(
   <span class="dt">rnb.set=</span>data.prep$rnb.set.filtered,
   <span class="dt">cg_groups =</span> cg_subset,
   <span class="dt">Ks=</span><span class="dv">2</span>:<span class="dv">15</span>,
   <span class="dt">LAMBDA_GRID =</span> <span class="kw">c</span>(<span class="dv">0</span>,<span class="dv">10</span>^-(<span class="dv">2</span>:<span class="dv">5</span>)),
   <span class="dt">factorviz.outputs =</span> T,
-  <span class="dt">analysis.name =</span> <span class="st">&quot;TCGA_LUAD&quot;</span>,
+  <span class="dt">analysis.name =</span> <span class="st">&quot;TCGA_LUAD4&quot;</span>,
   <span class="dt">cores =</span> <span class="dv">15</span>
-)</code></pre>
-<pre><code>## Loading required package: Rcpp</code></pre>
-<pre><code>## Loading required package: pracma</code></pre>
-<pre><code>## 
-## Attaching package: &#39;pracma&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:ff&#39;:
-## 
-##     quad</code></pre>
-<pre><code>## The following object is masked from &#39;package:bit&#39;:
-## 
-##     is.sorted</code></pre>
-<pre><code>## Loading required package: gtools</code></pre>
-<pre><code>## 
-## Attaching package: &#39;gtools&#39;</code></pre>
-<pre><code>## The following object is masked from &#39;package:pracma&#39;:
-## 
-##     logit</code></pre>
-<pre><code>## The following object is masked from &#39;package:R.utils&#39;:
-## 
-##     capture</code></pre>
-<pre><code>## Loading required package: RUnit</code></pre>
-<pre><code>## Warning: replacing previous import &#39;gtools::logit&#39; by &#39;pracma::logit&#39; when
-## loading &#39;MeDeCom&#39;</code></pre>
-<pre><code>## [1] &quot;Did not write the variable dump: should only be executed from an environment with all the variables set&quot;
-## [2019-06-25 22:28:18, Main:] checking inputs
-## [2019-06-25 22:28:18, Main:] preparing data
-## [2019-06-25 22:28:18, Main:] preparing jobs
-## [2019-06-25 22:28:18, Main:] 3570 factorization runs in total
-## [2019-06-27 13:54:19, Main:] finished all jobs. Creating the object</code></pre>
+)
+## [1] &quot;Did not write the variable dump: should only be executed from an environment with all the variables set&quot;
+## [2019-12-11 16:22:58, Main:] checking inputs
+## [2019-12-11 16:22:58, Main:] preparing data
+## [2019-12-11 16:22:58, Main:] preparing jobs
+## [2019-12-11 16:22:58, Main:] 3570 factorization runs in total
+## [2019-12-13 04:21:09, Main:] finished all jobs. Creating the object</code></pre>
+<p><strong>BREAKPOINT</strong> In case the analysis does not finish successfully, we provide the resulting <code>FactorViz_outputs</code> from (http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz)[http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz]. It can be directly loaded into your R session and further explored.</p>
+<pre class="sourceCode r"><code class="sourceCode r"><span class="kw">download.file</span>(<span class="st">&quot;URL&quot;</span>)
+<span class="kw">untar</span>(<span class="st">&quot;FactorViz_outputs.tar.gz&quot;</span>)</code></pre>
 <h2 id="downstream-analysis">Downstream analysis</h2>
-<p>After performing deconvolution, results need to be visualized and interpreted. Most notably, the contribution matrix can be linked to phenotypic information about the samples to indicate different cellular compositions of the groups and the LMC matrix can be used to determine what the components represent. For visualization and downstream analysis, we use FactorViz. LOLA or GO enrichment analysis can be employed on sites that are specifically methylated/unmethylated in one of the LMCs.</p>
+<p>After performing deconvolution, results need to be visualized and interpreted. Most notably, the contribution matrix can be linked to phenotypic information about the samples to indicate different cellular compositions of the groups and the LMC matrix can be used for enrichment analysis and biological interpretation. For visualization and downstream analysis, we use <em>FactorViz</em>. <em>LOLA</em> and <em>GO</em> enrichment analysis can be employed on sites that are specifically methylated/unmethylated in one of the LMCs. The LMC proportions can also be linked to expression of marker genes/methylation of marker CpGs.</p>
 <pre class="sourceCode r"><code class="sourceCode r"><span class="kw">suppressPackageStartupMessages</span>(<span class="kw">library</span>(FactorViz))
 <span class="kw">startFactorViz</span>(<span class="kw">file.path</span>(<span class="kw">getwd</span>(),<span class="st">&quot;TCGA_LUAD&quot;</span>,<span class="st">&quot;FactorViz_outputs&quot;</span>))</code></pre>
 <h1 id="references">References</h1>
