@@ -92,10 +92,10 @@ options(fftempdir=temp.dir)
 rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
 ```
 
-**BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from (http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html)[http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html] or directly loaded via:
+**BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
 
 ```{r breakoint_1, eval=F}
-rnb.set <- load.rnb.set("URL")
+rnb.set <- load.rnb.set("http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip")
 ```
 
 RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that it can be used for further analysis. 
@@ -126,13 +126,13 @@ data.prep <- prepare_data(RNB_SET = rnb.set,
 names(data.prep)
 ```
 
-**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at (http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv)[http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv]. You can directly select those sites from you RnBSet object.
+**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at [http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv](http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv). You can directly select those sites from you RnBSet object.
 
 ```{breakpoint_2, eval=F}
-rem.sites <- rep(TRUE,nrow(rnb.set))
-sel.sites <- read.csv("URL")
+rem.sites <- rep(TRUE,nrow(meth(rnb.set)))
+sel.sites <- read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv")
 rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] <- FALSE
-rnb.set <- remove.sites(rnb.set,remove.sites)
+rnb.set <- remove.sites(rnb.set,rem.sites)
 data.prep <- list(rnb.set.filtered=rnb.set)
 ```
 
@@ -165,10 +165,10 @@ md.res <- start_medecom_analysis(
 )
 ```
 
-**BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from (http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz)[http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz]. It can be directly loaded into your R session and further explored.
+**BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from [http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz](http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz). It can be directly loaded into your R session and further explored.
 
 ```{r breakpoint_3, eval=F}
-download.file("URL")
+download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz")
 untar("FactorViz_outputs.tar.gz")
 ```
 
