@@ -95,7 +95,8 @@ rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno
 **BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
 
 ```{r breakoint_1, eval=F}
-rnb.set <- load.rnb.set("http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip")
+download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip", destfile=paste0(tempdir(),"/RnBSet"))
+rnb.set <- load.rnb.set(paste0(tempdir(),"/RnBSet"))
 ```
 
 RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that it can be used for further analysis. 
@@ -168,8 +169,8 @@ md.res <- start_medecom_analysis(
 **BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from [http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz](http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz). It can be directly loaded into your R session and further explored.
 
 ```{r breakpoint_3, eval=F}
-download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz")
-untar("FactorViz_outputs.tar.gz")
+download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz",destfile=paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
+untar(paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
 ```
 
 ## Downstream analysis
