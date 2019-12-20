@@ -9,6 +9,24 @@
 install.packages("devtools")
 devtools::install_github("CompEpigen/DecompPipeline")
 ```
+Installation has been tested on the following operating systems:
+
+ Type |   Distribution |   Version |   R-version |   Installation successful |   Protocol tested |   Comments 
+Linux 						|  Debian 	|  Wheezy (7)  	|  R-3.5.2 |  Yes |  Yes |   
+Linux						| 	 Debian |  Wheezy (7)					 	|  									  	|  R-3.6.0 |  Yes |  Yes |  
+Linux						| 	Debian					  	|  Jessie (8)	|  R-3.5.3	  |  Yes |  Yes (reduced)  |   
+Linux						| 	Debian						| Jessie (8)									|  R-3.6.1 |  Yes | 	No	|  
+Linux						| 	Debian						| 	Jessie (8)									|  R-4.0	  | 		Yes	| 	No	|  
+Linux						| 	Debian						| 	Buster (10)					|  R-3.5.2 |  Yes |  Yes (reduced) |  	
+Linux						| 	Fedora	|  	28									|  R-3.5.3 | 	Yes |  No |  
+Linux						| 		Fedora					| 	31									|  R-3.6.1 | 	No  |  Yes (reduced) |  `igraph' dependency fails to install
+Linux						| 	CentOS	| 	8.0				|  R-3.5.2 |  Yes	|  Yes (reduced) |  	
+Linux						| 	CentOS						| 	8.0									|  R-3.6.1 |  Yes |  Yes (reduced) | 	
+Linux						| 	Ubuntu					| 	19									|  R-3.6.1 | 		Yes	|  Yes (reduced) |  
+MacOS		| 							| 	Mojave								|  R-3.5.1 | 		Yes	|  Yes (reduced)	| 	binary release used	
+MacOS					| 							| 	Catalina							|  R-3.6.0 | 		Yes	|  Yes (reduced)	| 	
+Windows						| 	10						| 	Pro									|  R-3.6.1 |  No |  Yes (reduced)	| 	Use docker image https://hub.docker.com/r/mscherer/medecom	
+Windows					| 	7						| 	Pro									|  R-3.6.1 | 		No	| 	No |  Docker is not available for Windows 7																	
 
 # Using Decomp
 *DecompPipeline* includes three major steps, all of them are extensively documented. A more detailed introduction into *DecompPipeline* can be found in the package [vignette](vignettes/DecompPipeline.md) and in the [protocol](vignettes/DeconvolutionProtocol.md) .
