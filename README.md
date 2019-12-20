@@ -11,7 +11,8 @@ devtools::install_github("CompEpigen/DecompPipeline")
 ```
 Installation has been tested on the following operating systems:
 
- Type |   Distribution |   Version |   R-version |   Installation successful |   Protocol tested |   Comments 
+Type |   Distribution |   Version |   R-version |   Installation successful |   Protocol tested |   Comments
+---- |	 ---- | ---- | ---- | ---- | ---- | ---- 
 Linux 						|  Debian 	|  Wheezy (7)  	|  R-3.5.2 |  Yes |  Yes |   
 Linux						| 	 Debian |  Wheezy (7)					 	|  									  	|  R-3.6.0 |  Yes |  Yes |  
 Linux						| 	Debian					  	|  Jessie (8)	|  R-3.5.3	  |  Yes |  Yes (reduced)  |   
