@@ -3,6 +3,7 @@ title: "DNA Methylation Deconvolution Protocol"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
   Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
 date: "December 05, 2019"
+output: pdf_document
 bibliography: bibliography.bib
 ---
 
@@ -15,7 +16,9 @@ Deconvolution here refers to creating two matrices (proportion matrix A and meth
 
 # Installation (duration up to 2 h)
 
-To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R, while for *MacOS* the binary release of *MeDeCom* (https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz)[https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz] should be used. The protocol is also available as a Docker container (https://hub.docker.com/r/mscherer/medecom)[https://hub.docker.com/r/mscherer/medecom], which is the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
+1. If R is not yet installed, follow the instructions at https://cran.r-project.org/. Create a working directory on a filesystem partition with sufficient storage capacity. Throughout the analysis, ~20-30 Gb of free storage will be required. Be sure that all the files are downloaded into this working directory and that the code is executed within the directory.
+
+2. To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R, while for *MacOS* the binary release of *MeDeCom* https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz should be used. The protocol is also available as a Docker container https://hub.docker.com/r/mscherer/medecom, which is the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
 
 
 ```r
@@ -31,7 +34,16 @@ library(DecompPipeline)
 
 ### Obtaining data from a public resource (duration ~5h)
 
-We focus on DNA methylation data from cancer patients that has been generated in The Cancer Genome Atlas (TCGA) project. Since lung cancer has been shown to be a premier candidate for DNA methylation based deconvolution, we selected the lung adenocarcinoma dataset from the TCGA website (dataset TCGA-LUAD, https://portal.gdc.cancer.gov/legacy-archive/search/f). The dataset was generated using the Illumina Infinium 450k BeadChip and comprises 461 samples. The clinical metadata of the samples is available at https://portal.gdc.cancer.gov/projects/TCGA-LUAD and lists 585 samples, and is stored in the folder *anntotation*. The discrepancy between the number comes from recent progress within TCGA. We used the Genomic Data Commons (GDC) data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the intensity data (IDAT) files listed in the manifest file and its associated metadata into a new folder *idat*. This metadata also includes the mapping between each of the samples and the IDAT files. To create a final mapping and to prepare the files for downstream analysis, the following code was employed.
+3. Use the Genomic Data Commons (GDC) data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the IDAT files with the TCGA-LUAD manifest file (http://epigenomics.dkfz.de/DecompProtocol/data/gdc_manifest.2019-01-23.txt) and its associated metadata by running the download tool in a terminal session initiated in the working directory:
+
+
+```bash
+gdc-client download –m gdc_manifest.2019-01-23.txt
+```
+
+Store the resulting files in a new directory *idat*.
+
+4. Retrieve the clinical metadata from https://portal.gdc.cancer.gov/projects/TCGA-LUAD by clicking on the “Clinical” button and unpacking the downloaded *.tar.gz* file into a new subdirectory annotation within your working directory. The remaining parsing is performed through an R session initiated in the same directory:
 
 
 ```r
@@ -50,7 +62,12 @@ anno.frame$Sentrix_Position <- unlist(lapply(lapply(as.character(anno.frame$Arra
 anno.frame$healthy_cancer <- ifelse(grepl("11A",anno.frame$Comment..TCGA.Barcode.),"healthy","cancer")
 write.table(anno.frame,"annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
 anno.frame <- read.table("annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
+```
 
+5. Copy the IDAT files into a single directory idat for downstream analysis.
+
+
+```r
 #' write idat files to parent directory
 lapply(idat.files,function(x){
   is.idat <- list.files(x,pattern = ".idat",full.names = T)
@@ -61,9 +78,9 @@ lapply(idat.files,function(x){
 
 ## Data Processing
 
-### Data Import and Quality Control in RnBeads (~3h)
+### Data import (~2h)
 
-After downloading the data, it has to be processed into a format that can be used by downstream software. We used RnBeads to convert the files into a data object and performed basic quality control steps on the dataset. Most notably, analysis options need to be specified for RnBeads, either through an XML file or in the command line. We will follow the latter strategy here, and deactivate the preprocessing, exploratory, covariate inference and differential methylation modules. In the next step, we specify the input to RnBeads: the created sample annotation sheet, the folder in which the IDAT files are stored and a folder to which the HTML report is to be saved. We additionally recommend to specify a temporary directory for the analysis. Then we start the RnBeads analysis.
+6. *RnBeads* converts the files into a data object and performs basic quality control. Analysis options have to be specified for *RnBeads*, either through an XML file, or through the command line. Deactivate the preprocessing, exploratory, covariate inference, export and differential methylation modules, such that *RnBeads* only performs data import and quality control.
 
 
 ```r
@@ -84,6 +101,14 @@ rnb.options(
   export.to.trackhub=NULL,
   export.to.csv=F
 )
+```
+
+7. Specify the input to *RnBeads*: the sample annotation sheet created at the data retrieval step, the
+directory in which the IDAT files are stored and a directory to which the HTML report is to be saved.
+Additionally, specify a temporary directory and start the RnBeads analysis.
+
+
+```r
 sample.anno <- "annotation/sample_annotation.tsv"
 idat.folder <- "idat/"
 dir.report <- paste0("report",Sys.Date(),"/")
@@ -92,61 +117,48 @@ options(fftempdir=temp.dir)
 rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
 ```
 
-```
-## 2019-12-11 09:56:43     1.1  STATUS STARTED RnBeads Pipeline
-## 2019-12-11 09:56:43     1.1    INFO     Initialized report index and saved to index.html
-## 2019-12-11 09:56:43     1.1  STATUS     STARTED Loading Data
-## 2019-12-11 09:56:43     1.1    INFO         Number of cores: 1
-## 2019-12-11 09:56:43     1.1    INFO         Loading data of type "idat.dir"
-## 2019-12-11 09:56:43     1.1  STATUS         STARTED Loading Data from IDAT Files
-## 2019-12-11 09:56:45     1.1    INFO             Detected platform: HumanMethylation450
-## 2019-12-11 10:02:22     1.5  STATUS         COMPLETED Loading Data from IDAT Files
-## 2019-12-11 10:37:38     2.0  STATUS         Loaded data from idat/
-## 2019-12-11 10:37:55     7.6  STATUS         Predicted sex for the loaded samples
-## 2019-12-11 10:38:03     7.1  STATUS         Added data loading section to the report
-## 2019-12-11 10:38:03     7.1  STATUS         Loaded 461 samples and 485577 sites
-## 2019-12-11 10:38:03     7.1    INFO         Output object is of type RnBeadRawSet
-## 2019-12-11 10:38:03     7.1  STATUS     COMPLETED Loading Data
-## 2019-12-11 10:51:21     7.1    INFO     Initialized report index and saved to index.html
-## 2019-12-11 10:51:21     7.1  STATUS     STARTED Quality Control
-## 2019-12-11 10:51:21     7.1    INFO         Number of cores: 1
-## 2019-12-11 10:51:22     7.1  STATUS         STARTED Quality Control Section
-## 2019-12-11 10:51:45     2.0  STATUS             Added quality control box plots
-## 2019-12-11 10:55:46     2.0  STATUS             Added quality control bar plots
-## 2019-12-11 10:56:10     2.0  STATUS             Added negative control boxplots
-## 2019-12-11 10:56:10     2.0  STATUS         COMPLETED Quality Control Section
-## 2019-12-11 10:56:10     2.0  STATUS         STARTED Visualizing SNP Probe Data
-## 2019-12-11 10:56:10     2.0  STATUS             STARTED Mixups Visualization Section
-## 2019-12-11 10:56:28     5.4  STATUS                 Added SNP Heatmap
-## 2019-12-11 10:56:28     5.4  STATUS                 Calculated Manhattan distances between samples based on SNP probes
-## 2019-12-11 10:56:31     5.4  STATUS                 Added SNP-based Distances
-## 2019-12-11 10:56:31     5.4  STATUS             COMPLETED Mixups Visualization Section
-## 2019-12-11 10:56:31     5.4  STATUS         COMPLETED Visualizing SNP Probe Data
-## 2019-12-11 10:56:49     7.6  STATUS     COMPLETED Quality Control
-## 2019-12-11 10:56:49     7.6    INFO     Initialized report index and saved to index.html
-## 2019-12-11 10:56:49     7.6  STATUS     STARTED Saving RData
-## 2019-12-11 10:56:49     7.6  STATUS     COMPLETED Saving RData
-## 2019-12-11 10:56:49     7.6  STATUS COMPLETED RnBeads Pipeline
-```
-
-**BREAKPOINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from (http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html)[http://www.computational-epigenomics.com/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html] or directly loaded via:
+**PAUSE POINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
 
 
 ```r
-rnb.set <- load.rnb.set("URL")
+download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip", destfile=paste0(tempdir(),"/RnBSet"))
+rnb.set <- load.rnb.set(paste0(tempdir(),"/RnBSet"))
 ```
 
-RnBeads creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that it can be used for further analysis. 
+8. *RnBeads* creates an interactive HTML report, specifying the steps performed and the associated results. Data was of good quality such that it can be used for further analysis. 
 
-### Preprocessing and Filtering
+**PAUSE POINT** For reference, we provide a complete RnBeads report on the supplementary website
+http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 
-For further analysis, we use the *DecompPipeline* package (https://github.com/CompEpigen/DecompPipeline), which provides a comprehensive workflow including crucial data preparation steps for methylome deconvolution experiments. The options are provided through the individual function parameters. We follow a stringent filtering strategy: (i) all samples having fewer than 3 beads covered are filtered, as well as those probes that are in the 0.05 and 0.95 overall intensity quantiles, respectively. (ii) We then remove all probes containing missing values, outside of CpG context, that overlap with annotated SNPs, on the sex chromosomes and probes that have been shown to be cross-reactive on the chip. (iii) Then, BMIQ normalization [@bmiq] is employed to account for the chip's design bias.
-Accounting for potential confounding factor is crucial in epigenomic studies. Especially, the influence of donor sex and age on the DNA methylation pattern is well-studied and strong. Furthermore, genetic differences between groups of individuals may influence the DNA methylation paterrn. We used Independent Component Analysis (ICA) to account for DNA methylation differences that are due to these confounding factors. ICA detects components in the data accounting for most of the variance similar to PCA, but does not require orthogonality of the components but statistical independence. We used an external library (http://sablab.net/scripts/LibICA.r)[http://sablab.net/scripts/LibICA.r] for performing ICA to adjust for sex, age, race and ethnicity.
+### Preprocessing and Filtering (22h)
+
+9. For further data preparation and analysis steps use the *DecompPipeline* package. Processing options are provided through individual function parameters. Follow a stringent filtering strategy: (i) Filter CpGs covered by less than 3 beads, and probes that are in the 0.001 and 0.999 overall intensity quantiles (low and high intensity outliers). (ii) Remove all probes containing missing values in any of the samples. (iii) Discard sites outside of CpG context, overlapping annotated SNPs, located on the sex chromosomes and potentially cross-reactive probes. Finally, apply BMIQ normalization to account for the bias introduced by the two Infinium probe designs.
+
+**PAUSE POINT** We provide a list of selected CpGs as an intermediate result
+http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv.
+
+
+```r
+rem.sites <- rep(TRUE,nrow(meth(rnb.set)))
+sel.sites <-
+read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_co
+mplete_filtering.csv")
+rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] <-
+FALSE
+rnb.set <- remove.sites(rnb.set,rem.sites)
+data.prep <- list(rnb.set.filtered=rnb.set)
+```
+
+10. Adjustment for potential confounding factors is crucial in epigenomic studies and the influences
+of, for instance, donor sex, age, and genotype on the DNA methylation pattern are well-studied 28,29 .
+Use Independent Component Analysis (ICA, see Materials) to account for DNA methylation differences
+that are due to sex, age, race, and ethnicity.
+
 
 ```r
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare_data(RNB_SET = rnb.set,
-                          analysis.name = "TCGA_LUAD4",
+                          analysis.name = "TCGA_LUAD",
                           NORMALIZATION = "bmiq",
                           FILTER_BEADS = T,
                           MIN_N_BEADS = 3,
@@ -162,241 +174,22 @@ data.prep <- prepare_data(RNB_SET = rnb.set,
                           remove.ICA=T,
                           conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
                           ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"nmin"=30,"nmax"=50,"ncores"=10))
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 30 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:26:17 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 12:31:46 
-## Time difference of 5.477402 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 31 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:31:50 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 12:36:32 
-## Time difference of 4.692923 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 32 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:36:37 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 12:42:15 
-## Time difference of 5.629724 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 33 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:42:20 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 12:47:38 
-## Time difference of 5.301141 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 34 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:47:43 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 12:53:56 
-## Time difference of 6.217387 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 35 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 12:54:02 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:00:08 
-## Time difference of 6.110375 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 36 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:00:14 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:07:19 
-## Time difference of 7.086401 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 37 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:07:25 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:14:35 
-## Time difference of 7.181232 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 38 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:14:41 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:22:31 
-## Time difference of 7.828324 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 39 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:22:37 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:31:11 
-## Time difference of 8.578227 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 40 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:31:18 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:40:55 
-## Time difference of 9.616655 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 41 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:41:01 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:50:26 
-## Time difference of 9.419989 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 42 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 13:50:32 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 13:59:56 
-## Time difference of 9.391567 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 43 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:00:02 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 14:11:14 
-## Time difference of 11.20148 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 44 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:11:21 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 14:20:46 
-## Time difference of 9.415461 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 45 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:20:52 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 14:31:01 
-## Time difference of 10.13918 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 46 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:31:07 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 14:42:34 
-## Time difference of 11.44213 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 47 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:42:41 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 14:56:22 
-## Time difference of 13.68558 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 48 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 14:56:29 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 15:12:16 
-## Time difference of 15.7844 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 49 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 15:12:23 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 15:24:37 
-## Time difference of 12.23424 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 50 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 15:24:45 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 15:38:18 
-## Time difference of 13.55522 mins
-## Calculate ||X-SxM|| and r2 between component weights
-## *** Starting  calculation on 1 core(s)...
-## *** System: unix 
-## *** 46 components, 1 runs, 230223 features, 461 samples.
-## *** Start time: 2019-12-11 15:38:33 
-## Execute one-core analysis, showing progress every 1 run(s)
-## try # 1 of 1 
-## *** Done! 
-## *** End time: 2019-12-11 15:51:05 
-## Time difference of 12.53453 mins
 ```
 
-**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at (http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv)[http://www.computational-epigenomics.com/downloads/DecompProtocol/sites_passing_complete_filtering.csv]. You can directly select those sites from you RnBSet object.
+**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at [http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv](http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv). You can directly select those sites from you RnBSet object.
 
 
 ```breakpoint_2
-rem.sites <- rep(TRUE,nrow(rnb.set))
-sel.sites <- read.csv("URL")
+rem.sites <- rep(TRUE,nrow(meth(rnb.set)))
+sel.sites <- read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv")
 rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] <- FALSE
-rnb.set <- remove.sites(rnb.set,remove.sites)
+rnb.set <- remove.sites(rnb.set,rem.sites)
 data.prep <- list(rnb.set.filtered=rnb.set)
 ```
 
 ### Selecting informative features (CpGs)
 
-The next step is selecting a subset of sites that are informative about the cell type composition of your sample. This can be done in various ways, and *DecompPipeline* provides a list of them through the ```prepare_CG_subsets``` function. However, we focus on selecting the most variable sites across the samples, which is a common strategy in epigenomic studies. Since many sites are constant for all samples, focusing on the ones that show the highest variablity across the samples reduces running time substantially. Lowly variable sites tend not to contribute to pattern discovery. Here, we focus on the 5,000 most variable sites.
+11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
 
 ```r
@@ -410,7 +203,7 @@ names(cg_subset)
 
 ### Performing Deconvolution
 
-In this step, the actual deconvolution experiment is performed. There are different approaches, which are conceptually similar, yet different in their performance, running time and robustness. Among others, *EDec*, *RefFreeCellMix* from the *RefFreeEWAS* package and *MeDeCom* can be used to execute non-negative matrix factorization on your data. This will lead to two matrices, the proportions matrix of potential cell types (here referred to as LMCs) and the matrix of the latent methylation components (LMCs). We here focus on *MeDeCom* as the Deconvolution tool, although *DecompPipeline* also supports *RefFreeCellMix* and *EDec*.
+12. Perform the deconvolution experiment. Use MeDeCom with a grid of values for the number of components (K) ranging from 2 to 15, which covers homogeneous to heterogeneous samples. Also, specify a grid for the regularization parameter (λ) from strong (0.01) to no regularization (0). We here focus on *MeDeCom* as the Deconvolution tool, although *DecompPipeline* also supports *RefFreeCellMix* and *EDec*.
 
 
 ```r
@@ -420,28 +213,22 @@ md.res <- start_medecom_analysis(
   Ks=2:15,
   LAMBDA_GRID = c(0,10^-(2:5)),
   factorviz.outputs = T,
-  analysis.name = "TCGA_LUAD4",
+  analysis.name = "TCGA_LUAD",
   cores = 15
 )
-## [1] "Did not write the variable dump: should only be executed from an environment with all the variables set"
-## [2019-12-11 16:22:58, Main:] checking inputs
-## [2019-12-11 16:22:58, Main:] preparing data
-## [2019-12-11 16:22:58, Main:] preparing jobs
-## [2019-12-11 16:22:58, Main:] 3570 factorization runs in total
-## [2019-12-13 04:21:09, Main:] finished all jobs. Creating the object
 ```
 
-**BREAKPOINT** In case the analysis does not finish successfully, we provide the resulting ```FactorViz_outputs``` from (http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz)[http://www.computational-epigenomics.com/downloads/DecompProtocol/FactorViz_outputs.tar.gz]. It can be directly loaded into your R session and further explored.
+**PAUSE POINT** The final MeDeCom result is stored in a format that can be directly imported with FactorViz. We provide the final result for exploration at http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz.
 
 
 ```r
-download.file("URL")
-untar("FactorViz_outputs.tar.gz")
+download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz",destfile=paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
+untar(paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
 ```
 
 ## Downstream analysis
 
-After performing deconvolution, results need to be visualized and interpreted. Most notably, the contribution matrix can be linked to phenotypic information about the samples to indicate different cellular compositions of the groups and the LMC matrix can be used for enrichment analysis and biological interpretation. For visualization and downstream analysis, we use *FactorViz*. *LOLA* and *GO* enrichment analysis can be employed on sites that are specifically methylated/unmethylated in one of the LMCs. The LMC proportions can also be linked to expression of marker genes/methylation of marker CpGs.
+13. Start the *FactorViz* application to visualize and interactively explore the deconvolution results.
 
 
 ```r
@@ -449,4 +236,25 @@ suppressPackageStartupMessages(library(FactorViz))
 startFactorViz(file.path(getwd(),"TCGA_LUAD","FactorViz_outputs"))
 ```
 
+14. Determine the number of LMCs (K) and the regularization parameter (λ) based on the cross-validation error. First, go to panel “K selection” to plot cross-validation error for the range of Ks specified earlier. We recommend selecting K values as a trade-off between too high complexity, i.e. fitting the noise in the data (higher K values) and insufficient degrees of freedom (lower K values). This typically corresponds to the saddle point where cross-validation error starts to level out.
+
+15. For a fixed K, select a value for the regularization parameter (λ) by proceeding to panel “Lambda selection”. An optimal value for λ will often correspond to a local minimum of the cross-validation error. On the other hand, noticeable changes in other statistics, such as objective value or root mean squared error (RMSE), can point at a different λ value.
+
+16. In the “Proportions” panel of FactorViz, visualize LMC proportions using heatmaps. Proportion heatmaps can be visually annotated with available qualitative and quantitative traits (see dropdown “Color samples by”). Further visualization options include stacked barplot and lineplots.
+
+17. In the “Meta-analysis” panel, associate LMC proportions with quantitative and qualitative traits using correlation- and t-tests. Further sample annotations, such as mutational load (https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018) and tumor purity scores can be obtained from public repositories and related publications (https://static-content.springer.com/esm/art%3A10.1038%2Fncomms3612/MediaObjects/41467_2013_BFncomms3612_MOESM489_ESM.xlsx). In addition, scripts to conduct such analysis are available on the Supplementary Website (http://epigenomics.dkfz.de/DecompProtocol/).
+
+18. Explore the LMCs in the panel “LMCs”. Several visualization options are available such as Multidimensional Scaling and histograms. Reference profiles can be used for joint visualization in case those are available.
+
+19. Determine DNA methylation sites that are specifically hypo- and hypermethylated in an LMC by comparing the methylation values in the LMC matrix for each LMC to the median of the remaining LMCs in the “Meta-analysis” panel. LMC-specific sites can be used for either a gene-centric Gene Ontology analysis (select ”Enrichments” and “GO Enrichments” in dropdown ”Analysis” and “Output type”) or for region-based enrichment analysis with the LOLA package (select “LOLA Enrichments” in dropdown ”Output type”). The differential sites can be exported for further analysis, and the resulting plots can be stored by clicking on the “PDF” button.
+
+**PAUSE POINT** Additional built-in options for visualization of LMCs and proportions are available via the *MeDeCom* functions ```plotLMCs``` and ```plotProportions``` in R. Finally, the LMC and proportions matrix can be extracted from the MeDeComSet object, and the genomic annotation of CpGs (```ann.C```) can be obtained from the *FactorViz* output for a custom downstream analysis:
+
+
+```r
+LMCs <- getLMCs(medecom.set, K=7, lambda=0.001)
+LMC.proportions <- getProportions(medecom.set, K=7, lambda=0.001)
+load("FactorViz_outputs/ann_C.RData")
+head(ann.C)
+```
 # References
