@@ -319,8 +319,8 @@ devtools::install_github(c(<span class="hljs-string">"lutsik/MeDeCom"</span>,<sp
 <h1>Protocol</h1>
 <div id="data-retrival" class="section level2">
 <h2>Data Retrival</h2>
-<div id="obtaining-data-from-a-public-resource-duration-5h" class="section level3">
-<h3>Obtaining data from a public resource (duration ~5h)</h3>
+<div id="obtaining-data-from-a-public-resource-duration-5-h" class="section level3">
+<h3>Obtaining data from a public resource (duration ~5 h)</h3>
 <ol start="3" style="list-style-type: decimal">
 <li>Use the Genomic Data Commons (GDC) data download tool (<a href="https://gdc.cancer.gov/access-data/gdc-data-transfer-tool" class="uri">https://gdc.cancer.gov/access-data/gdc-data-transfer-tool</a>) to download the IDAT files with the TCGA-LUAD manifest file (<a href="http://epigenomics.dkfz.de/DecompProtocol/data/gdc_manifest.2019-01-23.txt" class="uri">http://epigenomics.dkfz.de/DecompProtocol/data/gdc_manifest.2019-01-23.txt</a>) and its associated metadata by running the download tool in a terminal session initiated in the working directory:</li>
 </ol>
@@ -360,8 +360,8 @@ lapply(idat.files,<span class="hljs-keyword">function</span>(x){
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data Processing</h2>
-<div id="data-import-2h" class="section level3">
-<h3>Data import (~2h)</h3>
+<div id="data-import-2-h" class="section level3">
+<h3>Data import (~2 h)</h3>
 <ol start="6" style="list-style-type: decimal">
 <li><em>RnBeads</em> converts the files into a data object and performs basic quality control. Analysis options have to be specified for <em>RnBeads</em>,
  either through an XML file, or through the command line. Deactivate the
@@ -408,8 +408,8 @@ such that it can be used for further analysis.</li>
 </ol>
 <p><strong>PAUSE POINT</strong> For reference, we provide a complete RnBeads report on the supplementary website <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/</a>.</p>
 </div>
-<div id="preprocessing-and-filtering-22h" class="section level3">
-<h3>Preprocessing and Filtering (22h)</h3>
+<div id="preprocessing-and-filtering-22-h" class="section level3">
+<h3>Preprocessing and Filtering (22 h)</h3>
 <ol start="9" style="list-style-type: decimal">
 <li>For further data preparation and analysis steps use the <em>DecompPipeline</em>
  package. Processing options are provided through individual function 
@@ -456,15 +456,15 @@ data.prep &lt;- prepare_data(RNB_SET = rnb.set,
                           remove.ICA=<span class="hljs-literal">T</span>,
                           conf.fact.ICA=c(<span class="hljs-string">"age_at_diagnosis"</span>,<span class="hljs-string">"race"</span>,<span class="hljs-string">"gender"</span>,<span class="hljs-string">"ethnicity"</span>),
                           ica.setting=c(<span class="hljs-string">"alpha.fact"</span>=<span class="hljs-number">1e-5</span>,<span class="hljs-string">"save.report"</span>=<span class="hljs-literal">T</span>,<span class="hljs-string">"nmin"</span>=<span class="hljs-number">30</span>,<span class="hljs-string">"nmax"</span>=<span class="hljs-number">50</span>,<span class="hljs-string">"ncores"</span>=<span class="hljs-number">10</span>))</code></pre>
-<p><strong>BREAKPOINT</strong> We provide a list of CpGs that are selected for the downstream analysis at <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv</a>. You can directly select those sites from you RnBSet object.</p>
-<pre class="breakpoint_2"><code class="hljs">rem.sites &lt;- rep(TRUE,nrow(meth(rnb.set)))
-sel.sites &lt;- read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv")
-rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] &lt;- FALSE
+<p><strong>PAUSE POINT</strong> We provide a list of CpGs that are selected for the downstream analysis at <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv</a>. You can directly select those sites from you RnBSet object.</p>
+<pre class="r"><code class="hljs">rem.sites &lt;- rep(<span class="hljs-literal">TRUE</span>,nrow(meth(rnb.set)))
+sel.sites &lt;- read.csv(<span class="hljs-string">"http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv"</span>)
+rem.sites[row.names(annotation(rnb.set))%<span class="hljs-keyword">in</span>%as.character(sel.sites[,<span class="hljs-number">1</span>])] &lt;- <span class="hljs-literal">FALSE</span>
 rnb.set &lt;- remove.sites(rnb.set,rem.sites)
 data.prep &lt;- list(rnb.set.filtered=rnb.set)</code></pre>
 </div>
-<div id="selecting-informative-features-cpgs" class="section level3">
-<h3>Selecting informative features (CpGs)</h3>
+<div id="selection-of-cpg-subsets-1-min" class="section level3">
+<h3>Selection of CpG subsets (1 min)</h3>
 <ol start="11" style="list-style-type: decimal">
 <li>Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of <em>prepare_CG_subsets</em>) through the <em>prepare_CG_subsets</em> function. Select the 5,000 most highly variable CpGs across the samples.</li>
 </ol>
@@ -476,8 +476,8 @@ names(cg_subset)</code></pre>
 </div>
 <div id="methylome-deconvolution" class="section level2">
 <h2>Methylome Deconvolution</h2>
-<div id="performing-deconvolution" class="section level3">
-<h3>Performing Deconvolution</h3>
+<div id="performing-deconvolution-54-h" class="section level3">
+<h3>Performing Deconvolution (54 h)</h3>
 <ol start="12" style="list-style-type: decimal">
 <li>Perform the deconvolution experiment. Use MeDeCom with a grid of 
 values for the number of components (K) ranging from 2 to 15, which 
@@ -501,8 +501,8 @@ final result for exploration at <a href="http://epigenomics.dkfz.de/downloads/De
 untar(paste0(tempdir(),<span class="hljs-string">"/FactorViz_outputs.tar.gz"</span>))</code></pre>
 </div>
 </div>
-<div id="downstream-analysis" class="section level2">
-<h2>Downstream analysis</h2>
+<div id="downstream-analysis-3-h" class="section level2">
+<h2>Downstream analysis (3 h)</h2>
 <ol start="13" style="list-style-type: decimal">
 <li>Start the <em>FactorViz</em> application to visualize and interactively explore the deconvolution results.</li>
 </ol>

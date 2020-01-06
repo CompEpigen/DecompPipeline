@@ -3,7 +3,9 @@ title: "DNA Methylation Deconvolution Protocol"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
   Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
 date: "December 05, 2019"
-output: pdf_document
+output:
+  html_document: default
+  pdf_document: default
 bibliography: bibliography.bib
 ---
 
@@ -32,7 +34,7 @@ library(DecompPipeline)
 
 ## Data Retrival
 
-### Obtaining data from a public resource (duration ~5h)
+### Obtaining data from a public resource (duration ~5 h)
 
 3. Use the Genomic Data Commons (GDC) data download tool (https://gdc.cancer.gov/access-data/gdc-data-transfer-tool) to download the IDAT files with the TCGA-LUAD manifest file (http://epigenomics.dkfz.de/DecompProtocol/data/gdc_manifest.2019-01-23.txt) and its associated metadata by running the download tool in a terminal session initiated in the working directory:
 
@@ -78,7 +80,7 @@ lapply(idat.files,function(x){
 
 ## Data Processing
 
-### Data import (~2h)
+### Data import (~2 h)
 
 6. *RnBeads* converts the files into a data object and performs basic quality control. Analysis options have to be specified for *RnBeads*, either through an XML file, or through the command line. Deactivate the preprocessing, exploratory, covariate inference, export and differential methylation modules, such that *RnBeads* only performs data import and quality control.
 
@@ -130,7 +132,7 @@ rnb.set <- load.rnb.set(paste0(tempdir(),"/RnBSet"))
 **PAUSE POINT** For reference, we provide a complete RnBeads report on the supplementary website
 http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 
-### Preprocessing and Filtering (22h)
+### Preprocessing and Filtering (22 h)
 
 9. For further data preparation and analysis steps use the *DecompPipeline* package. Processing options are provided through individual function parameters. Follow a stringent filtering strategy: (i) Filter CpGs covered by less than 3 beads, and probes that are in the 0.001 and 0.999 overall intensity quantiles (low and high intensity outliers). (ii) Remove all probes containing missing values in any of the samples. (iii) Discard sites outside of CpG context, overlapping annotated SNPs, located on the sex chromosomes and potentially cross-reactive probes. Finally, apply BMIQ normalization to account for the bias introduced by the two Infinium probe designs.
 
@@ -176,10 +178,10 @@ data.prep <- prepare_data(RNB_SET = rnb.set,
                           ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"nmin"=30,"nmax"=50,"ncores"=10))
 ```
 
-**BREAKPOINT** We provide a list of CpGs that are selected for the downstream analysis at [http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv](http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv). You can directly select those sites from you RnBSet object.
+**PAUSE POINT** We provide a list of CpGs that are selected for the downstream analysis at http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv. You can directly select those sites from you RnBSet object.
 
 
-```breakpoint_2
+```r
 rem.sites <- rep(TRUE,nrow(meth(rnb.set)))
 sel.sites <- read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv")
 rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] <- FALSE
@@ -187,7 +189,7 @@ rnb.set <- remove.sites(rnb.set,rem.sites)
 data.prep <- list(rnb.set.filtered=rnb.set)
 ```
 
-### Selecting informative features (CpGs)
+### Selection of CpG subsets (1 min)
 
 11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
@@ -201,7 +203,7 @@ names(cg_subset)
 
 ## Methylome Deconvolution
 
-### Performing Deconvolution
+### Performing Deconvolution (54 h)
 
 12. Perform the deconvolution experiment. Use MeDeCom with a grid of values for the number of components (K) ranging from 2 to 15, which covers homogeneous to heterogeneous samples. Also, specify a grid for the regularization parameter (λ) from strong (0.01) to no regularization (0). We here focus on *MeDeCom* as the Deconvolution tool, although *DecompPipeline* also supports *RefFreeCellMix* and *EDec*.
 
@@ -226,7 +228,7 @@ download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_out
 untar(paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
 ```
 
-## Downstream analysis
+## Downstream analysis (3 h)
 
 13. Start the *FactorViz* application to visualize and interactively explore the deconvolution results.
 
