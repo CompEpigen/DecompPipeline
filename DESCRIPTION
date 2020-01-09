@@ -14,7 +14,10 @@ Depends:
     R (>= 3.2.0),
     RnBeads,
     knitr,
-	  R.utils
+	R.utils,
+	sm,
+	pheatmap,
+	vioplot
 Suggests:
     bigstatsr,
     RefFreeEWAS,
