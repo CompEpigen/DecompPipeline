@@ -326,6 +326,9 @@ run.rnb.ICA <- function(rnb.set,conf.factor,ica.setting=NULL,nmin=10,nmax=30,ntr
     }
     logger.start("Removing factor effect")
     if(save.report){
+      if(!requireNamespace("sm")) install.packages("sm",repos="https://cloud.r-project.org/")
+      if(!requireNamespace("vioplot")) install.packages("vioplot",repos="https://cloud.r-project.org/")
+      if(!requireNamespace("pheatmap")) install.packages("pheatmap",repos="https://cloud.r-project.org/")
       new.meth <- removeFactor(rnb.set,fact = conf.factor, ncomp = ncomp,ntry = ntry, alpha.fact = alpha.fact,save.report=file.path(out.folder,"violin_report_ICA.pdf"))
     }else{
       new.meth <- removeFactor(rnb.set,fact = conf.factor, ncomp = ncomp,ntry = ntry, alpha.fact = alpha.fact)
