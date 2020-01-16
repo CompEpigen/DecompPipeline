@@ -18,10 +18,7 @@ Depends:
 Suggests:
     bigstatsr,
     RefFreeEWAS,
-    EDec,
-    sm,
-	  pheatmap,
-	  vioplot
+    EDec
 VignetteBuilder: knitr    
 License: GPL-3
 RoxygenNote: 6.1.1
