@@ -4,8 +4,13 @@
 \alias{filter.annotation.biseq}
 \title{filter.annotation.biseq}
 \usage{
-filter.annotation.biseq(rnb.set, snp = TRUE, snp.list, somatic = TRUE,
-  qual.filter = NULL)
+filter.annotation.biseq(
+  rnb.set,
+  snp = TRUE,
+  snp.list,
+  somatic = TRUE,
+  qual.filter = NULL
+)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.}

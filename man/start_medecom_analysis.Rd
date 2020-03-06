@@ -4,15 +4,36 @@
 \alias{start_medecom_analysis}
 \title{start_medecom_analysis}
 \usage{
-start_medecom_analysis(meth.data = NULL, rnb.set = NULL,
-  WORK_DIR = getwd(), cg_groups, Ks, LAMBDA_GRID, SAMPLE_SUBSET = NULL,
-  K_FIXED = NULL, WRITE_FILES = TRUE, factorviz.outputs = F,
-  opt.method = "MeDeCom.cppTAfact", startT = NULL, startA = NULL,
-  trueT = NULL, trueA = NULL, analysis.name = "MeDeComRun",
-  folds = 10, cores = 1, itermax = 1000, ninit = 100,
-  CLUSTER_SUBMIT = FALSE, CLUSTER_RDIR = NA, CLUSTER_HOSTLIST = "*",
-  CLUSTER_MEMLIMIT = "5G", CLEANUP = FALSE, analysis_info = NULL,
-  LAMBDA_GRID_TYPE = "standard", ANALYSIS_TOKEN = "customAnalysis")
+start_medecom_analysis(
+  meth.data = NULL,
+  rnb.set = NULL,
+  WORK_DIR = getwd(),
+  cg_groups,
+  Ks,
+  LAMBDA_GRID,
+  SAMPLE_SUBSET = NULL,
+  K_FIXED = NULL,
+  WRITE_FILES = TRUE,
+  factorviz.outputs = F,
+  opt.method = "MeDeCom.cppTAfact",
+  startT = NULL,
+  startA = NULL,
+  trueT = NULL,
+  trueA = NULL,
+  analysis.name = "MeDeComRun",
+  folds = 10,
+  cores = 1,
+  itermax = 1000,
+  ninit = 100,
+  CLUSTER_SUBMIT = FALSE,
+  CLUSTER_RDIR = NA,
+  CLUSTER_HOSTLIST = "*",
+  CLUSTER_MEMLIMIT = "5G",
+  CLEANUP = FALSE,
+  analysis_info = NULL,
+  LAMBDA_GRID_TYPE = "standard",
+  ANALYSIS_TOKEN = "customAnalysis"
+)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided

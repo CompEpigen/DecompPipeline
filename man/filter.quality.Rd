@@ -4,8 +4,15 @@
 \alias{filter.quality}
 \title{filter.quality}
 \usage{
-filter.quality(rnb.set, beads = TRUE, min.beads, intensity = TRUE,
-  min.int.quant = 0.1, max.int.quant = 0.95, subs)
+filter.quality(
+  rnb.set,
+  beads = TRUE,
+  min.beads,
+  intensity = TRUE,
+  min.int.quant = 0.1,
+  max.int.quant = 0.95,
+  subs
+)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containing the CpG sites used for filtering, all well as intensity and

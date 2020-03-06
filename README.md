@@ -4,7 +4,8 @@
 ![Overview of the reference-free deconvolution tool](pictures/protocol_overview.png)
 
 # Installing DecompPipeline
-*DecompPipeline* can be directly installed from GitHub within an R session:
+*DecompPipeline* can be directly installed from GitHub within an R session on Linux systems. For macOS, we provide a binary version of [MeDeCom](https://github.com/lutsik/MeDeCom/releases/download/v1.0.0/MeDeCom_1.0.0.tgz), which needs to be installed prior to installing *DecompPipeline*. However, for **Windows** operating systems, a *MeDeCom* and thus *DecompPipeline* cannot be directly installed through R, but we provide a [Docker image](https://hub.docker.com/r/mscherer/medecom) with all packages installed.
+
 ```
 install.packages("devtools")
 devtools::install_github("CompEpigen/DecompPipeline")

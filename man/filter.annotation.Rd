@@ -4,8 +4,15 @@
 \alias{filter.annotation}
 \title{filter.annotation}
 \usage{
-filter.annotation(rnb.set, snp = TRUE, snp.list, somatic = TRUE,
-  context = TRUE, qual.filter = NULL, dist.snps = FALSE)
+filter.annotation(
+  rnb.set,
+  snp = TRUE,
+  snp.list,
+  somatic = TRUE,
+  context = TRUE,
+  qual.filter = NULL,
+  dist.snps = FALSE
+)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link[RnBeads]{RnBSet-class}} containg annotation information.}

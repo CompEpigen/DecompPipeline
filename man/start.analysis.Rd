@@ -4,8 +4,16 @@
 \alias{start.analysis}
 \title{start.analysis}
 \usage{
-start.analysis(meth.data = NULL, rnb.set = NULL, cg_groups, Ks,
-  work.dir, factorviz.outputs = FALSE, method = "MeDeCom", ...)
+start.analysis(
+  meth.data = NULL,
+  rnb.set = NULL,
+  cg_groups,
+  Ks,
+  work.dir,
+  factorviz.outputs = FALSE,
+  method = "MeDeCom",
+  ...
+)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided

@@ -4,8 +4,14 @@
 \alias{start.edec.analysis}
 \title{start.edec.analysis}
 \usage{
-start.edec.analysis(meth.data = NULL, rnb.set = NULL, cg_groups, Ks,
-  work.dir = getwd(), factorviz.outputs = FALSE)
+start.edec.analysis(
+  meth.data = NULL,
+  rnb.set = NULL,
+  cg_groups,
+  Ks,
+  work.dir = getwd(),
+  factorviz.outputs = FALSE
+)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided

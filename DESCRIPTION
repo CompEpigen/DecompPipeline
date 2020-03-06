@@ -8,17 +8,18 @@ Authors@R: c(
    person ( "Tony", "Kamoa", email="Tony.Kaoma@lih.lu", role = c("aut")),
    person ( "Petr", "Nazarov", email="Petr.Nazarov@lih.lu", role = c("aut"))
  )
-Date: 2019-12-16
-Version: 1.0.0
+Date: 2020-03-06
+Version: 1.0.1
 Depends:
     R (>= 3.2.0),
     RnBeads,
     knitr,
-	  R.utils
+	R.utils,
+	MeDeCom
 Suggests:
     bigstatsr,
     RefFreeEWAS,
     EDec
 VignetteBuilder: knitr    
 License: GPL-3
-RoxygenNote: 6.1.1
+RoxygenNote: 7.0.2

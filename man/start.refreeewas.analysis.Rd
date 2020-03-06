@@ -4,8 +4,14 @@
 \alias{start.refreeewas.analysis}
 \title{start.refreeewas.analysis}
 \usage{
-start.refreeewas.analysis(meth.data = NULL, rnb.set = NULL, cg_groups,
-  Ks, work.dir = getwd(), factorviz.outputs = FALSE)
+start.refreeewas.analysis(
+  meth.data = NULL,
+  rnb.set = NULL,
+  cg_groups,
+  Ks,
+  work.dir = getwd(),
+  factorviz.outputs = FALSE
+)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided

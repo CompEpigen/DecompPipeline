@@ -1,0 +1,98 @@
+---
+title: "DNA Methylation Deconvolution Protocol - RefFreeEWAS"
+author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
+  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
+date: "March 05, 2020"
+output:
+  html_document: default
+  pdf_document: default
+bibliography: bibliography.bib
+---
+
+# Installation and Data Retrieval
+Pleas follow the instructions provided in the [protocol](protocol.html) using MeDeCom.
+
+# Data import
+Analogously to the general protocol, we use [RnBeads](https://rnbeads.org) for data import.
+
+```{r import, eval=FALSE}
+suppressPackageStartupMessages(library(RnBeads))
+rnb.options(
+  assembly="hg19",
+  identifiers.column="submitter_id",
+  import=T,
+  import.default.data.type="idat.dir",
+  import.table.separator="\t",
+  import.sex.prediction=T,
+  qc=T,
+  preprocessing=F,
+  exploratory=F,
+  inference=F,
+  differential=F,
+  export.to.bed=F,
+  export.to.trackhub=NULL,
+  export.to.csv=F
+)
+sample.anno <- "annotation/sample_annotation.tsv"
+idat.folder <- "idat/"
+dir.report <- paste0("report",Sys.Date(),"/")
+temp.dir <- "/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/"
+options(fftempdir=temp.dir)
+rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
+```
+
+# Preprocessing and Filtering
+The preprocessing and filtering is also performed in line with the general [protocol](protocol.html) using [*DecompPipeline*](https://github.com/CompEpigen/DecompPipeline).
+
+```{r processing, eval=FALSE}
+suppressPackageStartupMessages(library(DecompPipeline))
+data.prep <- prepare_data(RNB_SET = rnb.set,
+                          analysis.name = "TCGA_RefFree",
+                          NORMALIZATION = "bmiq",
+                          FILTER_BEADS = T,
+                          MIN_N_BEADS = 3,
+                          FILTER_INTENSITY = T,
+                          MIN_INT_QUANT = 0.001,
+                          MAX_INT_QUANT = 0.999,
+                          FILTER_NA = T,
+                          FILTER_CONTEXT = T,
+                          FILTER_SNP = T,
+                          FILTER_SOMATIC = T,
+                          FILTER_CROSS_REACTIVE = T,
+                          execute.lump=T,
+                          remove.ICA=T,
+                          conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
+                          ica.setting=c("alpha.fact"=1e-5))
+```
+
+# Feature selection
+We select the 5,000 most variable CpGs across the samples for downstream analysis.
+
+```{r feature_selection, eval=FALSE}
+cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
+                                MARKER_SELECTION = "var",
+                                N_MARKERS = 5000)
+```
+
+# Deconvolution using RefFreeCellMix
+
+We use the *RefFreeCellMix* function from the [RefFreeEWAS](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) package for deconvolution analysis. In contrast to *MeDeCom*, *RefFreeCellMix* does not use a regularization for the entries of the matrix to be at the extreme values 0 or 1. Thus, we just specify the number of components to be tested and the preprocessed object, along with the selected features.
+
+```{r deconvolution, eval=FALSE}
+md.res <- start.refreeewas.analysis(
+  rnb.set=data.prep$rnb.set.filtered,
+  cg_groups = cg_subset,
+  Ks=2:15,
+  factorviz.outputs=TRUE,
+  work.dir = "TCGA_RefFree"
+)
+```
+
+# Downstream analysis
+
+The resulting object is an object of type *MeDeComSet*, since the output from *RefFreeCellMix* has internally been transformed to the *MeDeCom* infrastructure. This enables loading the data set directly into the visualization tool [*FactorViz*](https://github.com/CompEpigen/FactorViz)
+
+```{r visualization, eval=FALSE}
+suppressPackageStartupMessages(library(FactorViz))
+startFactorViz(file.path(getwd(),"TCGA_RefFree","FactorViz_outputs"))
+```
