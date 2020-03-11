@@ -34,11 +34,13 @@ through \code{rnb.set}}
          \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
                 groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
                 selected by employing limma on the methylation matrix.
-         \item{"\code{houseman2012}"} The 50k sites reported as cell-type specific in the Houseman's reference-
-                based deconvolution. See Houseman et.al. 2012.
+         \item{"\code{houseman2012}"} 50k sites determined to be cell-type specific for blood cell types using the Houseman's reference-
+                based deconvolution and the Reinius et al. reference data set. See Houseman et.al. 2012 and Reinis et.al. 2012.
+                NOTE: This option should only be used for whole blood data generated using the 450k array.
          \item{"\code{houseman2014}"} Selects the sites said to be linked to cell type composition by \code{RefFreeEWAS},
                 which is similar to surrogate variable analysis. See Houseman et.al. 2014.
-         \item{"\code{jaffe2014}"} The sites stated as related to cell-type composition Jaffe et.al. 2014.
+         \item{"\code{jaffe2014}"} The 600 sites stated as related to cell-type composition Jaffe et.al. 2014.
+                NOTE: This option should only be used for whole blood data generated using the 450k array.
          \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
                 types with F-statistics. If this option is selected, \code{REF_DATA_SET} and \code{REF_PHENO_COLUMN}
                 need to be specified.
@@ -46,8 +48,8 @@ through \code{rnb.set}}
          \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
          \item{"\code{var}"} Selects the most variable sites.
          \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
-         \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
-              across samples.
+         \item{"\code{range}"} Selects the sites with the a higher difference between minimum and maximum
+              across samples than \code{RANGE_DIFF}.
          \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
               R package to determine sites that are significantly linked to the potential cell types. This
               requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
@@ -77,7 +79,7 @@ the reference cell type.}
 
 \item{N_PRIN_COMP}{Optional argument deteriming the number of prinicipal components used for selecting the most important sites.}
 
-\item{RANGE_DIFF}{Optional argument specifying the difference between maximum and minimum required.}
+\item{RANGE_DIFF}{If \code{MARKER_SELECTION="range"}, and argument specifying the difference between maximum and minimum required for considering the CpG.}
 
 \item{CUSTOM_MARKER_FILE}{Optional argument containing an absolute path to a file that specifies the indices used for employing MeDeCom. Can be provided
 either as an \code{RDS} file containing a vector of indices to select or as a \code{txt, csv, tsv} file containing each index
@@ -106,9 +108,13 @@ For methods "\code{houseman2012}" and "\code{jaffe2014}", a predefined set of ma
 \itemize{
             \item{1.} Houseman, E. A., Accomando, W. P., Koestler, D. C., Christensen, B. C., Marsit, C. J., Nelson, H. H., ..., Kelsey, K.
                 T. (2012). DNA methylation arrays as surrogate measures of cell mixture distribution. BMC Bioinformatics, 13. 
-            \item{2.} Houseman, E. A., Molitor, J., & Marsit, C. J. (2014). Reference-free cell mixture adjustments in analysis of 
+            \item{2.} Reinius, L. E., Acevedo, N., Joerink, M., Pershagen, G., Dahlen, S. E., Greco, D., ..., A., & Kere, J.
+                   (2012). Differential DNA methylation in purified human blood cells: Implications for cell lineage and studies on disease susceptibility.
+                   PLoS ONE, 7(7). https://doi.org/10.1371/journal.pone.0041361
+            \item{3.} Houseman, E. A., Molitor, J., & Marsit, C. J. (2014). Reference-free cell mixture adjustments in analysis of 
                 DNA methylation data. Bioinformatics, 30(10), 1431-1439. https://doi.org/10.1093/bioinformatics/btu029
-            \item{3.} Jaffe, A. E., & Irizarry, R. A. (2014). Accounting for cellular heterogeneity is critical in epigenome-wide 
+            \item{4.} Jaffe, A. E., & Irizarry, R. A. (2014). Accounting for cellular heterogeneity is critical in epigenome-wide 
                 association studies. Genome Biology, 15(2), R31. https://doi.org/10.1186/gb-2014-15-2-r31
+                 
 }
 }
