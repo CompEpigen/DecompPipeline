@@ -22,8 +22,8 @@
 #'                                  \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
 #'                                  \item{"\code{var}"} Selects the most variable sites.
 #'                                  \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
-#'                                  \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
-#'                                       across samples.
+#'                                  \item{"\code{range}"} Selects the sites with the a higher difference between minimum and maximum
+#'                                       across samples than \code{RANGE_DIFF}.
 #'                                  \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
 #'                                       R package to determine sites that are significantly linked to the potential cell types. This
 #'                                       requires specifying K a priori (argument \code{K.prior}). We thank Florian Prive and Sophie
@@ -44,7 +44,7 @@
 #' @param REF_PHENO_COLUMN Optional argument stating the column name of the phenotypic table of \code{REF_DATA_SET} with
 #'                      the reference cell type.
 #' @param N_PRIN_COMP Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
-#' @param RANGE_DIFF Optional argument specifying the difference between maximum and minimum required.
+#' @param RANGE_DIFF If \code{MARKER_SELECTION="range"}, and argument specifying the difference between maximum and minimum required for considering the CpG.
 #' @param CUSTOM_MARKER_FILE Optional argument containing an absolute path to a file that specifies the indices used for employing MeDeCom. Can be provided
 #'                   either as an \code{RDS} file containing a vector of indices to select or as a \code{txt, csv, tsv} file containing each index
 #'                   to be selected as a single row.
