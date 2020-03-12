@@ -2,7 +2,7 @@
 title: "DNA Methylation Deconvolution Protocol - RefFreeEWAS"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
   Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "March 05, 2020"
+date: "March 12, 2020"
 output:
   html_document: default
   pdf_document: default

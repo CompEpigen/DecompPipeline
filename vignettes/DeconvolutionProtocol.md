@@ -2,7 +2,7 @@
 title: "DNA Methylation Deconvolution Protocol"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
   Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "December 05, 2019"
+date: "March 12, 2020"
 output:
   html_document: default
   pdf_document: default
@@ -20,7 +20,7 @@ Deconvolution here refers to creating two matrices (proportion matrix A and meth
 
 1. If R is not yet installed, follow the instructions at https://cran.r-project.org/. Create a working directory on a filesystem partition with sufficient storage capacity. Throughout the analysis, ~20-30 Gb of free storage will be required. Be sure that all the files are downloaded into this working directory and that the code is executed within the directory.
 
-2. To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R, while for *MacOS* the binary release of *MeDeCom* https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz should be used. The protocol is also available as a Docker container https://hub.docker.com/r/mscherer/medecom, which is the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
+2a. **Linux** To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R, while for *MacOS* the binary release of *MeDeCom* https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz should be used. The protocol is also available as a Docker container https://hub.docker.com/r/mscherer/medecom, which is currently the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
 
 
 ```r
@@ -29,6 +29,48 @@ BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),d
 devtools::install_github(c("lutsik/MeDeCom","CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
 ```
+
+2b. **macOS** In a first step, you will have to retrieve the binary version of *MeDeCom* from GitHub. Afterwards, you can install the remaining packages similar to the *Linux* case.
+
+
+```r
+install.packages(c("devtools","BiocManager"))
+BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
+install.packages("https://github.com/lutsik/MeDeCom/releases/download/v1.0.0/MeDeCom_1.0.0.tgz",repos=NULL,type="binary")
+devtools::install_github(c("CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
+library(DecompPipeline)
+```
+
+2c. **Windows** A dedicated branch in the GitHub repository handling installation on Windows machines is available and can be installed similar to the *Linux* case. 
+
+
+```r
+BiocManager::install(c("RnBeads",
+        "RnBeads.hg19",
+        "RnBeads.mm10",
+        "RnBeads.hg38"),
+   dependencies=TRUE)
+library(devtools)
+devtools::install_github("lutsik/MeDeCom",ref="windows")
+devtools::install_github(
+    c("CompEpigen/DecompPipeline","CompEpigen/FactorViz")
+)
+library(DecompPipeline)
+```
+
+2 d. **Cross-platform using Docker** If not yet available, install Docker on your machine. The [Docker website](https://docs.docker.com) provides detailed installation instructions for all major operating systems and computational environments, including Linux, Windows and MacOS. Specifically, on Windows follow [these](https://docs.docker.com/docker-for-windows/install/) instructions. After successful installation, start Docker desktop, be sure that a X Server is running, open a new PowerShell window and type:
+
+
+```bash
+# Windows
+docker run  -e DISPLAY=<YOUR_IP>:0.0 -it mscherer/medecom
+
+# Linux
+xhost +"local:docker@"
+docker run --env DISPLAY=$DISPLAY --privileged --volume $XAUTH:/root/.Xauthority --network=host --volume /tmp/.X11-unix:/tmp/.X11-unix --rm --rm -it mscherer/medecom
+```
+
+An interactive R-session will start which can be used to run this protocol.
 
 # Protocol
 

@@ -2,7 +2,7 @@
 title: "DNA Methylation Deconvolution Protocol - Ewing RRBS cohort"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
   Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "March 05, 2020"
+date: "March 12, 2020"
 output:
   html_document: default
   pdf_document: default
@@ -78,7 +78,7 @@ cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
 ```
 
 # Deconvolution
-Deconvolutiom is applied analogously to the [general protocol](protocol.html). [*RefFreeCellMix*](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) and [*EDec*](https://github.com/BRL-BCM/EDec) can be used as alternative deconvolution methods.
+Deconvolution is applied analogously to the [general protocol](protocol.html). [*RefFreeCellMix*](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) and [*EDec*](https://github.com/BRL-BCM/EDec) can be used as alternative deconvolution methods.
 
 ```{r deconvolution, eval=FALSE}
 md.res <- start_medecom_analysis(
