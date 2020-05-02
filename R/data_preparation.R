@@ -24,7 +24,7 @@
 #' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
 #'                 exploration.
 #' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
-#' @param NORMALIZATION Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob"}.
+#' @param NORMALIZATION Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob","bmiq"}.
 #' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
 #' @param REF_RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information on reference cell types.
 #' @param REF_RNB_CT_COLUMN Column name in \code{REF_RNB_SET} used to extract methylation information on the reference cell types.
@@ -143,6 +143,10 @@ prepare_data<-function(
 			rnb.set<-rnb.execute.normalization(rnb.set, method="wm.dasen", bgcorr.method="none")
 		}else if(NORMALIZATION=="noob"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="methylumi.noob")
+		}else if(NORMALIZATION=="bmiq"){
+			rnb.set<-rnb.execute.normalization(rnb.set, method="bmiq", bgcorr.method="none")
+		}else{
+			logger.warning("No valid normalization method specified (illumina, dasen, noob, bmiq allowed), skipping normalization")	
 		}
 	}
 	############################### PREPARATION OF THE REFERENCE DATA
