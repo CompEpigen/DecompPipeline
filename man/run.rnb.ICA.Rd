@@ -4,10 +4,21 @@
 \alias{run.rnb.ICA}
 \title{run.rnb.ICA}
 \usage{
-run.rnb.ICA(rnb.set, conf.factor, ica.setting = NULL, nmin = 10,
-  nmax = 30, ntry = 1, thr.sd = 0, alpha.fact = 1e-10,
-  type = "remove", ncores = 1, out.folder = NULL, save.report = F,
-  alpha.feat = 0.01)
+run.rnb.ICA(
+  rnb.set,
+  conf.factor,
+  ica.setting = NULL,
+  nmin = 10,
+  nmax = 30,
+  ntry = 1,
+  thr.sd = 0,
+  alpha.fact = 1e-10,
+  type = "remove",
+  ncores = 1,
+  out.folder = NULL,
+  save.report = F,
+  alpha.feat = 0.01
+)
 }
 \arguments{
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation information}

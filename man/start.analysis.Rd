@@ -4,8 +4,16 @@
 \alias{start.analysis}
 \title{start.analysis}
 \usage{
-start.analysis(meth.data = NULL, rnb.set = NULL, cg_groups, Ks,
-  work.dir, factorviz.outputs = FALSE, method = "MeDeCom", ...)
+start.analysis(
+  meth.data = NULL,
+  rnb.set = NULL,
+  cg.groups,
+  Ks,
+  work.dir,
+  factorviz.outputs = FALSE,
+  method = "MeDeCom",
+  ...
+)
 }
 \arguments{
 \item{meth.data}{A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
@@ -13,7 +21,7 @@ through \code{rnb.set}}
 
 \item{rnb.set}{An object of type \code{\link{RnBSet-class}} containing methylation and sample meta information.}
 
-\item{cg_groups}{List of CpG indices used for the analysis. Can be computed by \code{\link{prepare_CG_subsets}}.}
+\item{cg.groups}{List of CpG indices used for the analysis. Can be computed by \code{\link{prepare.CG.subsets}}.}
 
 \item{Ks}{Vector of integers used as components in MeDeCom.}
 

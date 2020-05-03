@@ -1,57 +1,54 @@
 #
-# Data preparation script for the parameter tuning run
+# Data preparation functions for Illumina BeadArray and Bisulfite sequencing data
+# Authors: Pavlo Lutsik and Michael Scherer
 #
-
-#################################################################################################################################
-#' GLOBALS
-#################################################################################################################################
 
 #################################################################################################################################
 #' FUNCTIONS
 #################################################################################################################################
 
-#' prepare_data
+#' prepare.data
 #' 
-#' This functions prepares Illumina BeadChip data for a MeDeCom run.
+#' This functions prepares Illumina BeadChip data for a MeDeCom/EDec/RefFreeCellMix run.
 #' 
-#' @param RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
-#' @param WORK_DIR A path to a existing directory, in which the results are to be stored
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} for which analysis is to be performed.
+#' @param work.dir A path to a existing directory, in which the results are to be stored
 #' @param analysis.name A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
 #'                 descriptive name of the analysis.
-#' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
-#'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
-#' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
-#' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
+#' @param sample.selection.col A column name in the phenotypic table of \code{rnb.set} used to selected a subset of samples for
+#'                 analysis that contain the string given in \code{sample.selection.col}.
+#' @param sample.selection.grep A string used for selecting samples in the column \code{sample.selection.grep}.
+#' @param pheno.columns Vector of column names in the phenotypic table of \code{rnb.set} that is kept and exported for further 
 #'                 exploration.
-#' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
-#' @param NORMALIZATION Normalization method to be performed before employing MeDeCom. Can be one of \code{"none","dasen","illumina","noob"}.
-#' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
-#' @param REF_RNB_SET An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information on reference cell types.
-#' @param REF_RNB_CT_COLUMN Column name in \code{REF_RNB_SET} used to extract methylation information on the reference cell types.
-#' @param PREPARE_TRUE_PROPORTIONS Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+#' @param id.column Sample-specific ID column name in \code{rnb.set}
+#' @param normalization Normalization method to be performed before employing MeDeCom. Can be one of \code{"none", "dasen", "illumina", "noob", "bmiq"}.
+#' @param ref.ct.column Column name in \code{rnb.set} used to extract methylation information on the reference cell types.
+#' @param ref.rnb.set An object of type \code{\link[RnBeads]{RnBSet-class}} containing methylation information on reference cell types.
+#' @param ref.rnb.ct.column Column name in \code{ref.rnb.set} used to extract methylation information on the reference cell types.
+#' @param prepare.true.proportions Flag indicating if true proportions are either available in \code{rnb.set} or to be estimated 
 #'                          with Houseman's reference-based deconvolution approach.
-#' @param TRUE_A_TOKEN String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+#' @param true.A.token String present in the column names of \code{rnb.set} used for selecting the true proportions of the corresponding
 #'                      cell types.
-#' @param HOUSEMAN_A_TOKEN Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+#' @param houseman.A.token Similar to \code{true.A.token}, but not containing the true proportions, rather the estimated proportions
 #'                      by Houseman's method.
-#' @param ESTIMATE_HOUSEMAN_PROP If neither \code{TRUE_A_TOKEN} nor \code{HOUSEMAN_A_TOKEN} are given, the proportions of the reference
+#' @param estimate.houseman.prop If neither \code{true.A.token} nor \code{houseman.A.token} are given, the proportions of the reference
 #'                      cell type are estimated with Houseman's approach.
-#' @param FILTER_BEADS Flag indicating, if site-filtering based on the number of beads available is to be conducted.
-#' @param MIN_N_BEADS Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.
-#' @param FILTER_INTENSITY  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
-#'                      given by \code{MIN_INT_QUANT} and \code{MAX_INT_QUANT}). Note that all sites are removed that have a value outside of
+#' @param filter.beads Flag indicating, if site-filtering based on the number of beads available is to be conducted.
+#' @param min.n.beads Minimum number of beads required in each sample for the site to be considered for adding to MeDeCom.
+#' @param filter.intensity  Flag indicating if sites should be removed according to the signal intensities (the lowest and highest quantiles
+#'                      given by \code{min.int.quant} and \code{max.int.quant}). Note that all sites are removed that have a value outside of
 #'                      the provided quantile range in either of the channels and in any of the samples. 
-#' @param MIN_INT_QUANT Lower quantile of intensities which is to be removed.
-#' @param MAX_INT_QUANT Upper quantile of intensities which is to be removed.
-#' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
-#' @param FILTER_CONTEXT Flag indicating if only CG probes are to be kept.
-#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. Or as the sites
+#' @param min.int.quant Lower quantile of intensities which is to be removed.
+#' @param max.int.quant Upper quantile of intensities which is to be removed.
+#' @param filter.na Flag indicating if sites with any missing values are to be removed or not.
+#' @param filter.context Flag indicating if only CG probes are to be kept.
+#' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. Or as the sites
 #'                  specified in \code{snp.list}.
 #' @param dist.snps Flag indicating if SNPs are to removed by determining if the pairwise differences between the CpGs in the samples are trimodally
 #'                  distributed as it is frequently found around SNPs.                  
-#' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}.
-#' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
-#' @param FILTER_CROSS_REACTIVE Flag indicating if sites showing cross reactivity on the array are to be removed.
+#' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}.
+#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
+#' @param filter.cross.reactive Flag indicating if sites showing cross reactivity on the array are to be removed.
 #' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
 #'             If \code{TRUE},conf.fact.ICA needs to be specified.
 #' @param conf.fact.ICA A vector of column names in the sample annotation sheet representing potential confounding factors.
@@ -62,32 +59,33 @@
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
 #' @export
-prepare_data<-function(
-		RNB_SET, 
-		WORK_DIR=getwd(),
+#' @author Michael Scherer, Pavlo Lutsik
+prepare.data<-function(
+		rnb.set, 
+		work.dir=getwd(),
 		analysis.name="analysis",
-		SAMPLE_SELECTION_COL=NA,
-		SAMPLE_SELECTION_GREP=NA,
-		PHENO_COLUMNS=NA,
-		ID_COLUMN=rnb.getOption("identifiers.column"),
-		NORMALIZATION="none",
-		REF_CT_COLUMN=NA,
-		REF_RNB_SET=NULL,
-		REF_RNB_CT_COLUMN=NA,
-		PREPARE_TRUE_PROPORTIONS=FALSE,
-		TRUE_A_TOKEN=NA,
-		HOUSEMAN_A_TOKEN=NA,
-		ESTIMATE_HOUSEMAN_PROP=FALSE,
-		FILTER_BEADS=!is.null(RNB_SET@covg.sites),
-		MIN_N_BEADS=3,
-		FILTER_INTENSITY=inherits(RNB_SET, "RnBeadRawSet"),
-		MIN_INT_QUANT = 0.001,
-		MAX_INT_QUANT = 0.999, 
-		FILTER_NA=TRUE,
-		FILTER_CONTEXT=TRUE,
-		FILTER_SNP=TRUE,
-		FILTER_SOMATIC=TRUE,
-		FILTER_CROSS_REACTIVE=T,
+		sample.selection.col=NA,
+		sample.selection.grep=NA,
+		pheno.columns=NA,
+		id.column=rnb.getOption("identifiers.column"),
+		normalization="none",
+		ref.ct.column=NA,
+		ref.rnb.set=NULL,
+		ref.rnb.ct.column=NA,
+		prepare.true.proportions=FALSE,
+		true.A.token=NA,
+		houseman.A.token=NA,
+		estimate.houseman.prop=FALSE,
+		filter.beads=!is.null(rnb.set@covg.sites),
+		min.n.beads=3,
+		filter.intensity=inherits(rnb.set, "RnBeadRawSet"),
+		min.int.quant = 0.001,
+		max.int.quant = 0.999, 
+		filter.na=TRUE,
+		filter.context=TRUE,
+		filter.snp=TRUE,
+		filter.somatic=TRUE,
+		filter.cross.reactive=T,
 		remove.ICA=F,
 		conf.fact.ICA=NULL,
 		ica.setting=NULL,
@@ -97,7 +95,7 @@ prepare_data<-function(
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
-	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
+	OUTPUTDIR <- file.path(work.dir, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
 	  dir.create(OUTPUTDIR)
 	}
@@ -113,10 +111,10 @@ prepare_data<-function(
 	
 	################################# PREPARE THE PARAMETER TUNING RUN ############################################
 	
-	if(is.character(RNB_SET)){
-		rnb.set<-load.rnb.set(RNB_SET)
-	}else if(inherits(RNB_SET,"RnBSet")){
-		rnb.set<-RNB_SET
+	if(is.character(rnb.set)){
+		rnb.set<-load.rnb.set(rnb.set)
+	}else if(inherits(rnb.set,"RnBSet")){
+		rnb.set<-rnb.set
 	}
 	
 	############################### SELECTION OF SAMPLES
@@ -126,51 +124,55 @@ prepare_data<-function(
 	#pd.ref<-pheno(rnb.set.comb)[is.na(rnb.set.comb@pheno$diseaseState),]
 	
 	
-	if(!is.na(SAMPLE_SELECTION_COL)){
+	if(!is.na(sample.selection.col)){
 		
-		SAMP_SUBS<-grep(SAMPLE_SELECTION_GREP, pheno(rnb.set)[[SAMPLE_SELECTION_COL]])
+		SAMP_SUBS<-grep(sample.selection.grep, pheno(rnb.set)[[sample.selection.col]])
 		
 		rms<-setdiff(1:length(samples(rnb.set)), SAMP_SUBS)
 		
 		rnb.set<-remove.samples(rnb.set, rms)
 	}
 	
-	############################### NORMALIZATION
-	if(!(NORMALIZATION %in% c("none"))){
-		if(NORMALIZATION=="illumina"){
+	############################### normalization
+	if(!(normalization %in% c("none"))){
+		if(normalization=="illumina"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="illumina", bgcorr.method="none")
-		}else if(NORMALIZATION=="dasen"){
+		}else if(normalization=="dasen"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="wm.dasen", bgcorr.method="none")
-		}else if(NORMALIZATION=="noob"){
+		}else if(normalization=="noob"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="methylumi.noob")
+		}else if(normalization=="bmiq"){
+			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="bmiq")
+		}else{
+			logger.warning("Invalid normalization method specified, normalization skipped. It should be one of 'illumina', 'dasen', 'noob', or 'bmiq'")
 		}
 	}
 	############################### PREPARATION OF THE REFERENCE DATA
 	
 	meth.rnb<-meth(rnb.set)
 	pd<-pheno(rnb.set)
-	if(!is.na(REF_CT_COLUMN)){
-		subs<-is.na(pd[[REF_CT_COLUMN]])
+	if(!is.na(ref.ct.column)){
+		subs<-is.na(pd[[ref.ct.column]])
 	}else{
 		subs<-1:nrow(pd)
 	}
-	if(!is.na(PHENO_COLUMNS)){
-		pheno.data<-pd[subs,PHENO_COLUMNS,drop=FALSE]
+	if(!is.na(pheno.columns)){
+		pheno.data<-pd[subs,pheno.columns,drop=FALSE]
 		save(pheno.data, file=sprintf("%s/pheno.RData", OUTPUTDIR))
 	}
 	
-	if(!is.null(ID_COLUMN)){
-		sample_ids<-pd[subs,ID_COLUMN]
+	if(!is.null(id.column)){
+		sample_ids<-pd[subs,id.column]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
 	
-	if(!is.null(REF_RNB_SET) && !is.na(REF_RNB_CT_COLUMN)){
+	if(!is.null(ref.rnb.set) && !is.na(ref.rnb.ct.column)){
 		
-		rnb.set.ref<-load.rnb.set(REF_RNB_SET)
+		rnb.set.ref<-load.rnb.set(ref.rnb.set)
 		meth.rnb.ref<-meth(rnb.set.ref)
 		pd.ref<-pheno(rnb.set.ref)
 		
-		ct<-pd.ref[[REF_RNB_CT_COLUMN]]
+		ct<-pd.ref[[ref.rnb.ct.column]]
 		nnas<-!is.na(ct)
 		ct<-ct[nnas]
 		
@@ -183,9 +185,9 @@ prepare_data<-function(
 		save(trueT, file=sprintf("%s/data.set.RData", ref.set.save))
 		save(pd.ref, file=sprintf("%s/pheno.RData", ref.set.save))
 		
-	}else if(!is.na(REF_CT_COLUMN)){
+	}else if(!is.na(ref.ct.column)){
 		
-		ct<-pd[[REF_CT_COLUMN]]
+		ct<-pd[[ref.ct.column]]
 		nnas<-!is.na(ct)
 		ct<-ct[nnas]
 		
@@ -197,34 +199,34 @@ prepare_data<-function(
 	}
 	
 	############################### TRUE PROPORTIONS 
-	if(PREPARE_TRUE_PROPORTIONS){
-		if(!is.na(TRUE_A_TOKEN)){
+	if(prepare.true.proportions){
+		if(!is.na(true.A.token)){
 			
-			trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
+			trueA<-t(na.omit(pd[subs,grep(true.A.token, colnames(pd))]))
 			trueA <- apply(trueA,c(1,2),as.numeric)
-			rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
+			rownames(trueA)<-gsub(true.A.token, "", colnames(pd)[grep(true.A.token, colnames(pd))])
 			
 			save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 			
 		}
 		
-		if(!is.na(HOUSEMAN_A_TOKEN)){
+		if(!is.na(houseman.A.token)){
 			
-			trueA<-t(na.omit(pd[,grep(HOUSEMAN_A_TOKEN, colnames(pd))]))
+			trueA<-t(na.omit(pd[,grep(houseman.A.token, colnames(pd))]))
 			trueA <- apply(trueA,c(1,2),as.numeric)
-			rownames(trueA)<-gsub(HOUSEMAN_A_TOKEN, "", colnames(pd)[grep(HOUSEMAN_A_TOKEN, colnames(pd))])
+			rownames(trueA)<-gsub(houseman.A.token, "", colnames(pd)[grep(houseman.A.token, colnames(pd))])
 			
 			save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 			
-		}else if(ESTIMATE_HOUSEMAN_PROP){
+		}else if(estimate.houseman.prop){
 			
-			if(!is.na(REF_RNB_CT_COLUMN)){
-				rnb.set.ref<-remove.samples(rnb.set.ref, which(is.na(pheno(rnb.set.ref)[,REF_RNB_CT_COLUMN])))
+			if(!is.na(ref.rnb.ct.column)){
+				rnb.set.ref<-remove.samples(rnb.set.ref, which(is.na(pheno(rnb.set.ref)[,ref.rnb.ct.column])))
 				rnb.set<-combine(rnb.set, rnb.set.ref)
-				REF_CT_COLUMN<-REF_RNB_CT_COLUMN
+				ref.ct.column<-ref.rnb.ct.column
 			}
 			print("Estimating proportions using the Houseman et al, 2012 method")
-			res<-estimateProportionsCP(rnb.set, REF_CT_COLUMN, NA, 2000, full.output = TRUE)
+			res<-estimateProportionsCP(rnb.set, ref.ct.column, NA, 2000, full.output = TRUE)
 			
 			trueA<-t(res$contributions.nonneg)
 			trueA[trueA<1e-5]<-0
@@ -235,7 +237,7 @@ prepare_data<-function(
 		}
 	}
 	
-	if(!is.na(REF_CT_COLUMN)){
+	if(!is.na(ref.ct.column)){
 		meth.data<-meth.rnb[,subs]
 	}else{
 		meth.data<-meth.rnb
@@ -251,14 +253,14 @@ prepare_data<-function(
 	
 	####################### FILTERING
 	################################# QUALITY FILTERING ######################################
-	FILTER_QUALITY<- FILTER_BEADS || FILTER_INTENSITY
+	FILTER_QUALITY<- filter.beads || filter.intensity
 	
 	if(FILTER_QUALITY){
 		M.raw<-RnBeads:::M(rnb.set, row.names=TRUE)
 		U.raw<-RnBeads:::U(rnb.set, row.names=TRUE)
 		b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
 		
-		if(!is.na(REF_CT_COLUMN)){
+		if(!is.na(ref.ct.column)){
 			
 			M.raw<-M.raw[,subs,drop=FALSE]
 			U.raw<-U.raw[,subs,drop=FALSE]
@@ -270,24 +272,24 @@ prepare_data<-function(
 		saveRDS(U.raw, file.path(OUTPUTDIR, "Uint.RDS"))
 		saveRDS(b.raw, file.path(OUTPUTDIR, "Nbeads.RDS"))
 		
-		qual.filter<-filter.quality(rnb.set,beads=FILTER_BEADS, min.beads=MIN_N_BEADS, intensity = FILTER_INTENSITY, 
-		                            min.int.quant=MIN_INT_QUANT, max.int.quant=MAX_INT_QUANT,subs = subs)
+		qual.filter<-filter.quality(rnb.set,beads=filter.beads, min.beads=min.n.beads, intensity = filter.intensity, 
+		                            min.int.quant=min.int.quant, max.int.quant=max.int.quant,subs = subs)
 		
 		save(qual.filter, file=sprintf("%s/quality.filter.RData", OUTPUTDIR))
 		
 	}else{
 		qual.filter<-1:nrow(rnb.set@meth.sites)
 	}
-	if(FILTER_NA){
+	if(filter.na){
 	  qual.filter <- filter.nas(rnb.set,subs=subs,qual.filter)
 	}
 	########################################## ANNOTATION FILTERING ###################################################
-	FILTER_ANNOTATION<-FILTER_CONTEXT || FILTER_SNP || FILTER_SOMATIC
+	FILTER_ANNOTATION<-filter.context || filter.snp || filter.somatic
 	
 	if(FILTER_ANNOTATION){
 		
-		annot.filter<-filter.annotation(rnb.set, context = FILTER_CONTEXT, snp = FILTER_SNP, snp.list = snp.list,
-		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter, dist.snps = dist.snps)
+		annot.filter<-filter.annotation(rnb.set, context = filter.context, snp = filter.snp, snp.list = snp.list,
+		                                somatic = filter.somatic, qual.filter = qual.filter, dist.snps = dist.snps)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
@@ -299,7 +301,7 @@ prepare_data<-function(
 	logger.info(paste("Removing",nsites(rnb.set)-length(total.filter),"sites, retaining ",length(total.filter)))
 	rnb.set.f<-remove.sites(rnb.set, setdiff(1:nrow(rnb.set@meth.sites), total.filter))
 	
-	if(FILTER_CROSS_REACTIVE && inherits(rnb.set.f, "RnBeadSet")){
+	if(filter.cross.reactive && inherits(rnb.set.f, "RnBeadSet")){
 	  cross.reactive.filter <- rnb.execute.cross.reactive.removal(rnb.set.f)
 	  logger.info(paste(length(cross.reactive.filter$filtered),"sites removed in cross-reactive filtering"))
 	  rnb.set.f <- cross.reactive.filter$dataset
@@ -317,15 +319,15 @@ prepare_data<-function(
 	analysis_info<-list()
 	
 	analysis_info$QUALITY_FILTERING <- sprintf("%s%s%s%s%s%s",
-	                                           ifelse(FILTER_BEADS, "Beads", ""),
-	                                           ifelse(FILTER_INTENSITY, "Intensity", ""),
-	                                           ifelse(FILTER_NA, "Missing", ""),
-	                                           ifelse(FILTER_CONTEXT, "Context", ""),
-	                                           ifelse(FILTER_SNP, "SNP", ""),
-	                                           ifelse(FILTER_SOMATIC, "Somatic", "")
+	                                           ifelse(filter.beads, "Beads", ""),
+	                                           ifelse(filter.intensity, "Intensity", ""),
+	                                           ifelse(filter.na, "Missing", ""),
+	                                           ifelse(filter.context, "Context", ""),
+	                                           ifelse(filter.snp, "SNP", ""),
+	                                           ifelse(filter.somatic, "Somatic", "")
 	)
 	
-	analysis_info$NORMALIZATION <- NORMALIZATION
+	analysis_info$NORMALIZATION <- normalization
 	
 	res <- list(quality.filter=qual.filter, annot.filter=annot.filter, total.filter=total.filter, rnb.set.filtered=rnb.set.f, info=analysis_info)
 	if(exists("trueT")){
@@ -352,6 +354,8 @@ prepare_data<-function(
 #' @return The indices of the sites that are to be kept.
 #' @details If \code{intensity} is set, those probes with lower/higher intensity in one of the channels than \code{min.int.quant}/
 #'            \code{max.int.quant} are removed.
+#' @noRd
+#' @author Michael Scherer, Pavlo Lutsik
 filter.quality<-function(
   rnb.set,
   beads=TRUE,
@@ -411,36 +415,6 @@ filter.quality<-function(
   return(qf)
 }
 
-#' bigFF.row.apply
-#' 
-#' This routine applies a function to chunks of the dataset that is stored in disk
-#' either with `ff` or `BigFfMat`.
-#' 
-#' @param mat A disk-based matrix of type \code{\link{ff}} or \code{\link{BigFfMat}}.
-#' @param FUN The function to be applied to each chunk of the matrix. Should be a function
-#'             that computes matrix statistics, such as \code{rowMeans}.
-#' @param iter.count Number of chunks to be created. The larger this number, the slower
-#'             the computation, but the lower the disk usage.
-#' @param ... Further arguments passed to FUN.
-#' @return A vector summarizing the results of the function. Final structure is determined
-#'          by FUN.
-#' @author Michael Scherer
-#' @noRd
-bigFF.row.apply <- function(mat,FUN,iter.count=1000,...){
-  chunk.size <- floor(nrow(mat)/iter.count)
-  iter <- 1
-  res <- c()
-  while(iter+chunk.size < nrow(mat)){
-    chunk <- mat[iter:(iter+chunk.size-1),]
-    res <- c(res,FUN(chunk,...))
-    iter <- iter+chunk.size
-#    print(paste(round((iter/nrow(mat))*100,2)," percent completed"))
-  }
-  chunk <- mat[iter:nrow(mat),]
-  res <- c(res,FUN(chunk,...))
-  return(res)
-}
-
 #' filter.quality.covg
 #' 
 #' This functions filters the CpG sites in the given rnb.set for quality criteria specified in the arguments.
@@ -453,6 +427,8 @@ bigFF.row.apply <- function(mat,FUN,iter.count=1000,...){
 #' @return The indices of the sites that are to be kept.
 #' @details The probes with lower/higher coverage than \code{min.int.quant}/
 #'            \code{max.int.quant} are removed.
+#' @noRd
+#' @author Michael Scherer, Pavlo Lutsik
 filter.quality.covg <- function(
   rnb.set,
   min.covg,
@@ -487,6 +463,8 @@ filter.quality.covg <- function(
 #' @param qf.qual Vector of indices that survided quality filtering
 #' @param subs Optional argument specifying the subset of samples to be used
 #' @return Vector of indices that survived NA filtering.
+#' @noRd
+#' @author Pavlo Lutsik, Michael Scherer
 filter.nas <- function(rnb.set,
                        subs,
                        qf.qual){
@@ -505,6 +483,8 @@ filter.nas <- function(rnb.set,
 #' @param qf.qual Vector of indices that survided quality filtering
 #' @param subs Optional argument specifying the subset of samples to be used
 #' @return Vector of indices that survived NA filtering.
+#' @noRd
+#' @author Pavlo Lutsik, Michael Scherer
 filter.nas.biseq <- function(rnb.set,
                        subs,
                        qf.qual){
@@ -532,6 +512,8 @@ filter.nas.biseq <- function(rnb.set,
 #' @param dist.snps Flag indicating of potential SNPs are to be determined by selecting those sites that have trimodally
 #'           distributed (differences 0, 0.5 and 1.0) pairwise differences across the samples.
 #' @return A vector of indices of sites surviving the annotation filter criteria.
+#' @noRd
+#' @author Michael Scherer, Pavlo Lutsik
 filter.annotation<-function(
   rnb.set,
   snp=TRUE,
@@ -602,6 +584,8 @@ filter.annotation<-function(
 #' @param qual.filter Vector of indices removed during quality filtering.
 #' @return A vector of indices of sites surviving the annotation filter criteria.
 #' @details This functions uses information on the sites on the chip and transfers this knowledge to BS data sets.
+#' @noRd
+#' @author Michael Scherer, Pavlo Lutsik
 filter.annotation.biseq<-function(
   rnb.set,
   snp=TRUE,
@@ -639,67 +623,68 @@ filter.annotation.biseq<-function(
   return(probe.ind.filtered)
 }
 
-#' prepare_data_BS
+#' prepare.data.BS
 #' 
 #' This functions prepares sequencing data sets for a MeDeCom run.
 #' 
-#' @param RNB_SET An object of type \code{\link[RnBeads]{RnBiseqSet-class}} for which analysis is to be performed.
-#' @param WORK_DIR A path to a existing directory, in which the results are to be stored
+#' @param rnb.set An object of type \code{\link[RnBeads]{RnBiseqSet-class}} for which analysis is to be performed.
+#' @param work.dir A path to a existing directory, in which the results are to be stored
 #' @param analysis.name A string representing the dataset for which analysis is to be performed. Only used to create a folder with a 
 #'                 descriptive name of the analysis.
-#' @param SAMPLE_SELECTION_COL A column name in the phenotypic table of \code{RNB_SET} used to selected a subset of samples for
-#'                 analysis that contain the string given in \code{SAMPLE_SELECTION_GREP}.
-#' @param SAMPLE_SELECTION_GREP A string used for selecting samples in the column \code{SAMPLE_SELECTION_COL}.
-#' @param REF_CT_COLUMN Column name in \code{RNB_SET} used to extract methylation information on the reference cell types.
-#' @param PHENO_COLUMNS Vector of column names in the phenotypic table of \code{RNB_SET} that is kept and exported for further 
+#' @param sample.selection.col A column name in the phenotypic table of \code{rnb.set} used to selected a subset of samples for
+#'                 analysis that contain the string given in \code{sample.selection.col}.
+#' @param sample.selection.grep A string used for selecting samples in the column \code{sample.selection.grep}.
+#' @param ref.ct.column Column name in \code{rnb.set} used to extract methylation information on the reference cell types.
+#' @param pheno.columns Vector of column names in the phenotypic table of \code{rnb.set} that is kept and exported for further 
 #'                 exploration.
-#' @param PREPARE_TRUE_PROPORTIONS Flag indicating if true proportions are either available in \code{RNB_SET} or to be estimated 
+#' @param prepare.true.proportions Flag indicating if true proportions are either available in \code{rnb.set} or to be estimated 
 #'                          with Houseman's reference-based deconvolution approach.
-#' @param TRUE_A_TOKEN String present in the column names of \code{RNB_SET} used for selecting the true proportions of the corresponding
+#' @param true.A.token String present in the column names of \code{rnb.set} used for selecting the true proportions of the corresponding
 #'                      cell types.
-#' @param HOUSEMAN_A_TOKEN Similar to \code{TRUE_A_TOKEN}, but not containing the true proportions, rather the estimated proportions
+#' @param houseman.A.token Similar to \code{true.A.token}, but not containing the true proportions, rather the estimated proportions
 #'                      by Houseman's method.
-#' @param ID_COLUMN Sample-specific ID column name in \code{RNB_SET}
-#' @param FILTER_COVERAGE Flag indicating, if site-filtering based on coverage is to be conducted.
-#' @param MIN_COVERAGE Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom.
-#' @param MIN_COVG_QUANT Lower quantile of coverages. Values lower than this value will be ignored for analysis.
-#' @param MAX_COVG_QUANT Upper quantile of coverages. Values higher than this value will be ignored for analysis.
-#' @param FILTER_NA Flag indicating if sites with any missing values are to be removed or not.
-#' @param FILTER_SNP Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list.
-#' @param snp.list Path to a file containing positions of known SNPs to be removed from the analysis, if \code{FILTER_SNP} is \code{TRUE}. The coordinates must be the 
-#'             provided in the same genome assembly as RNB_SET. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
+#' @param id.column Sample-specific ID column name in \code{rnb.set}
+#' @param filter.coverage Flag indicating, if site-filtering based on coverage is to be conducted.
+#' @param min.coverage Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom.
+#' @param min.covg.quant Lower quantile of coverages. Values lower than this value will be ignored for analysis.
+#' @param max.covg.quant Upper quantile of coverages. Values higher than this value will be ignored for analysis.
+#' @param filter.na Flag indicating if sites with any missing values are to be removed or not.
+#' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list.
+#' @param snp.list Path to a file containing positions of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}. The coordinates must be the 
+#'             provided in the same genome assembly as rnb.set. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
 #'             the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome
-#' @param FILTER_SOMATIC Flag indicating if only somatic probes are to be kept.
+#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
 #' @export
-prepare_data_BS <- function(
-		RNB_SET, 
-		WORK_DIR=getwd(),
+#' @author Michael Scherer, Pavlo Lutsik
+prepare.data.BS <- function(
+		rnb.set, 
+		work.dir=getwd(),
 		analysis.name="analysis",
-		SAMPLE_SELECTION_COL=NA,
-		SAMPLE_SELECTION_GREP=NA,
-		REF_CT_COLUMN=NA,
-		PHENO_COLUMNS=NA,
-		PREPARE_TRUE_PROPORTIONS=FALSE,
-		TRUE_A_TOKEN=NA,
-		HOUSEMAN_A_TOKEN=NA,
-		ID_COLUMN=rnb.getOption("identifiers.column"),
-		FILTER_COVERAGE = hasCovg(RNB_SET),
-		MIN_COVERAGE=5,
-		MIN_COVG_QUANT=0.05,
-		MAX_COVG_QUANT=0.95,
-		FILTER_NA=TRUE,
-		FILTER_SNP=TRUE,
+		sample.selection.col=NA,
+		sample.selection.grep=NA,
+		ref.ct.column=NA,
+		pheno.columns=NA,
+		prepare.true.proportions=FALSE,
+		true.A.token=NA,
+		houseman.A.token=NA,
+		id.column=rnb.getOption("identifiers.column"),
+		filter.coverage = hasCovg(rnb.set),
+		min.coverage=5,
+		min.covg.quant=0.05,
+		max.covg.quant=0.95,
+		filter.na=TRUE,
+		filter.snp=TRUE,
 		snp.list=NULL,
-		FILTER_SOMATIC=TRUE,
+		filter.somatic=TRUE,
 		execute.lump=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
 
-	OUTPUTDIR <- file.path(WORK_DIR, analysis.name)
+	OUTPUTDIR <- file.path(work.dir, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
 	  dir.create(OUTPUTDIR)
 	}
@@ -712,14 +697,14 @@ prepare_data_BS <- function(
 	    logger.start(fname=log.file)
 	  }
 	}
-	if(is.character(RNB_SET)){
-		rnb.set<-load.rnb.set(RNB_SET)
-	}else if(inherits(RNB_SET,"RnBSet")){
-		rnb.set<-RNB_SET
+	if(is.character(rnb.set)){
+		rnb.set<-load.rnb.set(rnb.set)
+	}else if(inherits(rnb.set,"RnBSet")){
+		rnb.set<-rnb.set
 	}	
-	if(!is.na(SAMPLE_SELECTION_COL)){
+	if(!is.na(sample.selection.col)){
 		
-		SAMP_SUBS<-grep(SAMPLE_SELECTION_GREP, pheno(rnb.set)[[SAMPLE_SELECTION_COL]])
+		SAMP_SUBS<-grep(sample.selection.grep, pheno(rnb.set)[[sample.selection.col]])
 		
 		rms<-setdiff(1:length(samples(rnb.set)), SAMP_SUBS)
 		
@@ -728,43 +713,43 @@ prepare_data_BS <- function(
 		
 	meth.rnb <- rnb.set@meth.sites
 	pd<-pheno(rnb.set)
-	if(!is.na(REF_CT_COLUMN)){
-	  subs<-is.na(pd[[REF_CT_COLUMN]])
+	if(!is.na(ref.ct.column)){
+	  subs<-is.na(pd[[ref.ct.column]])
 	}else{
 	  subs<-1:nrow(pd)
 	}
-	if(!is.na(PHENO_COLUMNS)){
-		pheno.data<-pd[,PHENO_COLUMNS,drop=FALSE]
+	if(!is.na(pheno.columns)){
+		pheno.data<-pd[,pheno.columns,drop=FALSE]
 		save(pheno.data, file=sprintf("%s/pheno.RData", OUTPUTDIR))
 	}
 	
-	if(!is.null(ID_COLUMN)){
-		sample_ids<-pd[,ID_COLUMN]
+	if(!is.null(id.column)){
+		sample_ids<-pd[,id.column]
 		saveRDS(sample_ids, file=sprintf("%s/sample_ids.RDS", OUTPUTDIR))	
 	}
-	if(PREPARE_TRUE_PROPORTIONS){
-	  if(!is.na(TRUE_A_TOKEN)){
+	if(prepare.true.proportions){
+	  if(!is.na(true.A.token)){
 	    
-	    trueA<-t(na.omit(pd[subs,grep(TRUE_A_TOKEN, colnames(pd))]))
+	    trueA<-t(na.omit(pd[subs,grep(true.A.token, colnames(pd))]))
 	    trueA <- apply(trueA,c(1,2),as.numeric)
-	    rownames(trueA)<-gsub(TRUE_A_TOKEN, "", colnames(pd)[grep(TRUE_A_TOKEN, colnames(pd))])
+	    rownames(trueA)<-gsub(true.A.token, "", colnames(pd)[grep(true.A.token, colnames(pd))])
 	    
 	    save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 	    
 	  }
 	  
-	  if(!is.na(HOUSEMAN_A_TOKEN)){
+	  if(!is.na(houseman.A.token)){
 	    
-	    trueA<-t(na.omit(pd[,grep(HOUSEMAN_A_TOKEN, colnames(pd))]))
+	    trueA<-t(na.omit(pd[,grep(houseman.A.token, colnames(pd))]))
 	    trueA <- apply(trueA,c(1,2),as.numeric)
-	    rownames(trueA)<-gsub(HOUSEMAN_A_TOKEN, "", colnames(pd)[grep(HOUSEMAN_A_TOKEN, colnames(pd))])
+	    rownames(trueA)<-gsub(houseman.A.token, "", colnames(pd)[grep(houseman.A.token, colnames(pd))])
 	    
 	    save(trueA, file=sprintf("%s/trueA.RData", OUTPUTDIR))
 	    
 	  }
 	}
-	if(!is.na(REF_CT_COLUMN)){
-	  ct<-pd[[REF_CT_COLUMN]]
+	if(!is.na(ref.ct.column)){
+	  ct<-pd[[ref.ct.column]]
 	  nnas<-!is.na(ct)
 	  ct<-ct[nnas]
 	  
@@ -774,29 +759,29 @@ prepare_data_BS <- function(
 	  
 	  save(trueT, file=sprintf("%s/trueT.RData", OUTPUTDIR))
 	}
-	if(!is.na(REF_CT_COLUMN)){
+	if(!is.na(ref.ct.column)){
 	  meth.data<-meth.rnb[,subs]
 	}else{
 	  meth.data<-meth.rnb
 	}
 	colnames(meth.data) <- NULL	
 	save(meth.data, file=sprintf("%s/data.set.RData", OUTPUTDIR))
-	if(FILTER_COVERAGE){
-		qual.filter <- filter.quality.covg(rnb.set, min.covg = MIN_COVERAGE,  
-		                            min.covg.quant = MIN_COVG_QUANT, max.covg.quant=MAX_COVG_QUANT)		
+	if(filter.coverage){
+		qual.filter <- filter.quality.covg(rnb.set, min.covg = min.coverage,  
+		                            min.covg.quant = min.covg.quant, max.covg.quant=max.covg.quant)		
 		save(qual.filter, file=sprintf("%s/quality.filter.RData", OUTPUTDIR))		
 	}else{
 		qual.filter<-1:nrow(rnb.set@meth.sites)
 	}
-	if(FILTER_NA){
+	if(filter.na){
 	  qual.filter <- filter.nas.biseq(rnb.set,subs=1:length(samples(rnb.set)),qual.filter)
 	}
-	FILTER_ANNOTATION <- FILTER_SNP || FILTER_SOMATIC
+	FILTER_ANNOTATION <- filter.snp || filter.somatic
 	
 	if(FILTER_ANNOTATION){
 		
-		annot.filter <- filter.annotation.biseq(rnb.set, snp = FILTER_SNP, snp.list = snp.list,
-		                                somatic = FILTER_SOMATIC, qual.filter = qual.filter)
+		annot.filter <- filter.annotation.biseq(rnb.set, snp = filter.snp, snp.list = snp.list,
+		                                somatic = filter.somatic, qual.filter = qual.filter)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
