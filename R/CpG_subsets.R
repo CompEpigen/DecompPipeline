@@ -2,6 +2,8 @@
 #' 
 #' This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
 #' 
+#' @name prepare_CG_subsets
+#' 
 #' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
 #'                   through \code{rnb.set}
 #' @param rnb.set An object of type \code{\link{RnBSet-class}} containing methylation, sample and optional coverage information.
@@ -10,11 +12,13 @@
 #'                                  \item{"\code{pheno}"} Selected are the top \code{n.markers} site that differ between the phenotypic
 #'                                         groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
 #'                                         selected by employing limma on the methylation matrix.
-#'                                  \item{"\code{houseman2012}"} The 50k sites reported as cell-type specific in the Houseman's reference-
-#'                                         based deconvolution. See Houseman et.al. 2012.
+#'                                  \item{"\code{houseman2012}"} 50k sites determined to be cell-type specific for blood cell types using the Houseman's reference-
+#'                                         based deconvolution and the Reinius et al. reference data set. See Houseman et.al. 2012 and Reinis et.al. 2012.
+#'                                         NOTE: This option should only be used for whole blood data generated using the 450k array.
 #'                                  \item{"\code{houseman2014}"} Selects the sites said to be linked to cell type composition by \code{RefFreeEWAS},
 #'                                         which is similar to surrogate variable analysis. See Houseman et.al. 2014.
-#'                                  \item{"\code{jaffe2014}"} The sites stated as related to cell-type composition Jaffe et.al. 2014.
+#'                                  \item{"\code{jaffe2014}"} The 600 sites stated as related to cell-type composition Jaffe et.al. 2014.
+#'                                         NOTE: This option should only be used for whole blood data generated using the 450k array.
 #'                                  \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
 #'                                         types with F-statistics. If this option is selected, \code{ref.data.set} and \code{ref.pheno.column}
 #'                                         need to be specified.
@@ -60,10 +64,14 @@
 #' @references \itemize{
 #'             \item{1.} Houseman, E. A., Accomando, W. P., Koestler, D. C., Christensen, B. C., Marsit, C. J., Nelson, H. H., ..., Kelsey, K.
 #'                 T. (2012). DNA methylation arrays as surrogate measures of cell mixture distribution. BMC Bioinformatics, 13. 
-#'             \item{2.} Houseman, E. A., Molitor, J., & Marsit, C. J. (2014). Reference-free cell mixture adjustments in analysis of 
+#'             \item{2.} Reinius, L. E., Acevedo, N., Joerink, M., Pershagen, G., Dahlen, S. E., Greco, D., ..., A., & Kere, J.
+#'                    (2012). Differential DNA methylation in purified human blood cells: Implications for cell lineage and studies on disease susceptibility.
+#'                    PLoS ONE, 7(7). https://doi.org/10.1371/journal.pone.0041361
+#'             \item{3.} Houseman, E. A., Molitor, J., & Marsit, C. J. (2014). Reference-free cell mixture adjustments in analysis of 
 #'                 DNA methylation data. Bioinformatics, 30(10), 1431-1439. https://doi.org/10.1093/bioinformatics/btu029
-#'             \item{3.} Jaffe, A. E., & Irizarry, R. A. (2014). Accounting for cellular heterogeneity is critical in epigenome-wide 
+#'             \item{4.} Jaffe, A. E., & Irizarry, R. A. (2014). Accounting for cellular heterogeneity is critical in epigenome-wide 
 #'                 association studies. Genome Biology, 15(2), R31. https://doi.org/10.1186/gb-2014-15-2-r31
+#'                  
 #' }
 #' @export
 #' @author Michael Scherer, Pavlo Lutsik
@@ -207,7 +215,8 @@ prepare.CG.subsets<-function(
 			ind<-ind[order(maxRank)[1:min(n.markers, length(ind))]]
 		}
 		
-		if(marker.selection[group]=="houseman2012" ){
+		if(MARKER_SELECTION[group]=="houseman2012" ){
+		  logger.warning("The houseman 2012 method should only be used for blood data sets generated on the 450k array.")
 		  loc <- system.file(file.path("extdata","houseman.50k.markers.RDS"),package="DecompPipeline")
 		  if(file.exists(loc)){
 			  houseman.50k.markers<-readRDS(loc)
@@ -287,7 +296,8 @@ prepare.CG.subsets<-function(
 			}
 		}
 		
-		if(marker.selection[group]=="jaffe2014"){
+		if(MARKER_SELECTION[group]=="jaffe2014"){
+		  logger.warning("The jaffe 2014 method should only be used for blood data sets generated on the 450k array.")
 			jaffe.markers <- readRDS(system.file(file.path("extdata","jaffe.irrizzary.markers.600.RDS"),package="DecompPipeline"))
 			ind<-intersect(ind, jaffe.markers)
 		}

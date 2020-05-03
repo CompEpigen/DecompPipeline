@@ -150,52 +150,56 @@ start.refreeewas.analysis <- function(meth.data=NULL,
                                       Ks,
                                       work.dir=getwd(),
                                       factorviz.outputs=FALSE){
-  if(is.null(meth.data) && is.null(rnb.set)){
-    logger.error("No input methylation data provided")
-  }
-  if(is.null(meth.data)){
-    if(inherits(rnb.set,"RnBSet")){
-      meth.data <- meth(rnb.set)
-    }else{
-      logger.error("Invalid value for rnb.set")
+  if(!requireNamespace("RefFreeEWAS")){
+    stop("Please install ReFreeEWAS")
+  }else{
+    if(is.null(meth.data) && is.null(rnb.set)){
+      logger.error("No input methylation data provided")
     }
-  }
-  res.all <- list()
-  devis.all <- list()
-  for(i.group in 1:length(cg.groups)){
-    logger.start(paste("Processing group:",i.group))
-    group <- cg.groups[[i.group]]
-    meth.sset <- meth.data[group,]
-    res.sset <- RefFreeCellMixArray(meth.sset,Klist=Ks)
-    devis <- tryCatch(RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
-    if(inherits(devis,"error")){
-      devis <- rep(NA,length(Ks))
-    }else{
-      devis <- colMeans(devis)
+    if(is.null(meth.data)){
+      if(inherits(rnb.set,"RnBSet")){
+        meth.data <- meth(rnb.set)
+      }else{
+        logger.error("Invalid value for rnb.set")
+      }
     }
-    devis.all[[i.group]] <- devis
-    res.all[[i.group]] <- res.sset
-    logger.completed()
-  }
-  result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg.groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
-  result@parameters$GROUP_LISTS <- cg.groups
-  if(factorviz.outputs){
-    store.path <- file.path(work.dir,"FactorViz_outputs")
-    if(!file.exists(store.path)){
-      dir.create(store.path)
+    res.all <- list()
+    devis.all <- list()
+    for(i.group in 1:length(cg.groups)){
+      logger.start(paste("Processing group:",i.group))
+      group <- cg_groups[[i.group]]
+      meth.sset <- meth.data[group,]
+      res.sset <- RefFreeEWAS::RefFreeCellMixArray(meth.sset,Klist=Ks)
+      devis <- tryCatch(RefFreeEWAS::RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
+      if(inherits(devis,"error")){
+        devis <- rep(NA,length(Ks))
+      }else{
+        devis <- colMeans(devis)
+      }
+      devis.all[[i.group]] <- devis
+      res.all[[i.group]] <- res.sset
+      logger.completed()
     }
-    if(!is.null(rnb.set)){
-      result@parameters$ASSEMBLY <- assembly(rnb.set)
-      ann.C <- annotation(rnb.set)
-      ann.S <- pheno(rnb.set)
-      save(ann.C,file=file.path(store.path,"ann_C.RData"))
-      save(ann.S,file=file.path(store.path,"ann_S.RData"))
+    result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
+    result@parameters$GROUP_LISTS <- cg_groups
+    if(factorviz.outputs){
+      store.path <- file.path(work.dir,"FactorViz_outputs")
+      if(!file.exists(store.path)){
+        dir.create(store.path)
+      }
+      if(!is.null(rnb.set)){
+        result@parameters$ASSEMBLY <- assembly(rnb.set)
+        ann.C <- annotation(rnb.set)
+        ann.S <- pheno(rnb.set)
+        save(ann.C,file=file.path(store.path,"ann_C.RData"))
+        save(ann.S,file=file.path(store.path,"ann_S.RData"))
+      }
+      medecom.set <- result
+      save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
+      save(meth.data,file=file.path(store.path,"meth_data.RData"))
     }
-    medecom.set <- result
-    save(medecom.set,file=file.path(store.path,"medecom_set.RData"))
-    save(meth.data,file=file.path(store.path,"meth_data.RData"))
-  }
-  return(result)
+    return(result)
+  }  
 }
 
 #' start.medecom.analysis

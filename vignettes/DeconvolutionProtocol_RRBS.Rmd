@@ -1,0 +1,100 @@
+---
+title: "DNA Methylation Deconvolution Protocol - Ewing RRBS cohort"
+author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
+  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
+date: "March 12, 2020"
+output:
+  html_document: default
+  pdf_document: default
+bibliography: bibliography.bib
+---
+
+# Installation and Data Retrieval
+The data were generated in a [recent study](https://www.nature.com/articles/nm.4273) which are also available from GEO, accession number [GSE88826](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE88826).
+
+# Data Import
+
+[*RnBeads*](https://rnbeads.org) also support bisulfite sequencing data, provided that the data has been processed to generate single-CpG methylation calls in BED or similar format. However, since *RnBeads* creates a large internal data structure, more leightweight package can also be used. The input to the remaining steps should be a DNA methylation data matrix.
+
+```{r import, eval=FALSE}
+suppressPackageStartupMessages(library(RnBeads))
+rnb.options(
+  assembly="hg38",
+  identifiers.column="sample_id",
+  import=T,
+  import.default.data.type="bed.dir",
+  import.bed.style="EPP",
+  import.table.separator=",",
+  import.sex.prediction=T,
+  qc=T,
+  preprocessing=F,
+  exploratory=F,
+  inference=F,
+  differential=F,
+  export.to.bed=F,
+  export.to.trackhub=NULL,
+  export.to.csv=F
+)
+sample.anno <- "annotation/sample_annotation.csv"
+bed.folder <- "bed/"
+
+dir.report <- paste0("report",Sys.Date(),"/")
+temp.dir <- "/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/"
+options(fftempdir=temp.dir)
+data.source <- c(bed.folder,sample.anno,"filename")
+rnb.set <- rnb.run.analysis(dir.reports = dir.report, data.source=data.source)
+# only use Ewing tissue samples
+rem.samples <- !grepl("EwS_T",samples(rnb.set))
+# remove FFPE samples from the analysis
+rem.samples <- rem.samples | samples(rnb.set) %in% c("EwS_T122","EwS_T123","EwS_T124",
+"EwS_T125","EwS_T126","EwS_T127","EwS_T129","EwS_T130","EwS_T131","EwS_T132","EwS_T133")
+rnb.set <- remove.samples(rnb.set,rem.samples)
+```
+
+# Preprocessing and Filtering
+[*DecompPipeline*](https://github.com/CompEpigen/DecompPipeline) also support preprocessing of bisulfite sequencing data. Here, we remove all sites that have a read coverage lower than 5 in any of the samples. Additionally, we remove high and low coverage outliers, sites with missing values, annotated SNPs, and sites on the sex chromosomes.
+
+```{r preprocessing, eval=FALSE}
+suppressPackageStartupMessages(library(DecompPipeline))
+data.prep <- prepare_data_BS(RNB_SET = rnb.set,
+                          analysis.name = "Ewing_pipeline",
+                          FILTER_COVERAGE = T,
+                          MIN_COVERAGE = 5,
+                          MIN_COVG_QUANT = 0.001,
+                          MAX_COVG_QUANT = 0.999,
+                          FILTER_NA = T,
+                          FILTER_SNP = T,
+                          FILTER_SOMATIC = T,
+                          execute.lump=T)
+```
+
+# Feature Selection
+We select the 5,000 most variably methylated CpGs across the samples for downstream analysis.
+
+```{r feature_selection, eval=FALSE}
+cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
+                                MARKER_SELECTION = "var",
+                                N_MARKERS = 5000)
+```
+
+# Deconvolution
+Deconvolution is applied analogously to the [general protocol](protocol.html). [*RefFreeCellMix*](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) and [*EDec*](https://github.com/BRL-BCM/EDec) can be used as alternative deconvolution methods.
+
+```{r deconvolution, eval=FALSE}
+md.res <- start_medecom_analysis(
+  rnb.set=data.prep$rnb.set.filtered,
+  cg_groups = cg_subset,
+  Ks=2:15,
+  LAMBDA_GRID = c(0,10^-(2:5)),
+  factorviz.outputs = T,
+  analysis.name = "Ewing_pipeline",
+  cores = 15
+)
+```
+
+# Interpretation
+The returned *MeDeComSet* and associated deconvolution results can directly be imported into [*FactorViz*](https://github.com/CompEpigen/FactorViz) for visualization.
+```{r visualization, eval=FALSE}
+suppressPackageStartupMessages(library(FactorViz))
+startFactorViz(file.path(getwd(),"TCGA_Ewing_pipeline","FactorViz_outputs"))
+```

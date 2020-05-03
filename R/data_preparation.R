@@ -141,10 +141,10 @@ prepare.data<-function(
 			rnb.set<-rnb.execute.normalization(rnb.set, method="wm.dasen", bgcorr.method="none")
 		}else if(normalization=="noob"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="methylumi.noob")
-		}else if(normalization=="bmiq"){
-			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="bmiq")
+		}else if(NORMALIZATION=="bmiq"){
+			rnb.set<-rnb.execute.normalization(rnb.set, method="bmiq", bgcorr.method="none")
 		}else{
-			logger.warning("Invalid normalization method specified, normalization skipped. It should be one of 'illumina', 'dasen', 'noob', or 'bmiq'")
+			logger.warning("No valid normalization method specified (illumina, dasen, noob, bmiq allowed), skipping normalization")	
 		}
 	}
 	############################### PREPARATION OF THE REFERENCE DATA
