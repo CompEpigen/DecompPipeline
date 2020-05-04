@@ -365,7 +365,7 @@ start.medecom.analysis<-function(
 			lambdas=lambda.grid,
 			opt.method=opt.method,
 			cg_subsets=cg.groups,
-			sample.subset=sample.subset,
+			sample_subset=sample.subset,
 			startT=startT,
 			startA=startA,
 			trueT=trueT,
@@ -471,7 +471,7 @@ start.medecom.analysis<-function(
 #' @param ica.setting Optional argument setting up ICA.
 #' @param filter.snp Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. 
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}.
-#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
+#' @param filter.sex.chromosomes Flag indicating if only somatic probes are to be kept.
 #' CPG FILTERING (BS)
 #' @param filter.coverage Flag indicating, if site-filtering based on coverage is to be conducted (BS only).
 #' @param min.coverage Minimum number of reads required in each sample for the site to be considered for adding to MeDeCom (BS only).
@@ -568,7 +568,7 @@ start.decomp.pipeline <- function(rnb.set,
                                   conf.fact.ICA=FALSE,
                                   ica.setting=NULL,
                                   filter.snp=TRUE,
-                                  filter.somatic=TRUE,
+                                  filter.sex.chromosomes=TRUE,
                                   snp.list=NULL,
                                   filter.coverage = hasCovg(rnb.set),
                                   min.coverage=5,
@@ -605,7 +605,7 @@ start.decomp.pipeline <- function(rnb.set,
                               work.dir=work.dir,
                               analysis.name=analysis.name,
                               sample.selection.col=sample.selection.col,
-                              sample.selection.col=sample.selection.grep,
+                              sample.selection.grep=sample.selection.grep,
                               pheno.columns=pheno.cols,
                               id.column=id.column,
                               normalization=normalization,
@@ -626,7 +626,7 @@ start.decomp.pipeline <- function(rnb.set,
                               filter.cross.reactive=filter.cross.reactive,
                               execute.lump=execute.lump,
                               filter.snp=filter.snp,
-                              filter.somatic=filter.somatic,
+                              filter.sex.chromosomes=filter.sex.chromosomes,
                               snp.list=snp.list,
                               remove.ICA=remove.ICA,
                               conf.fact.ICA=conf.fact.ICA,
@@ -637,7 +637,7 @@ start.decomp.pipeline <- function(rnb.set,
                                 work.dir = work.dir,
                                 analysis.name = analysis.name,
                                 sample.selection.col = sample.selection.col,
-                                sample.selection.col = sample.selection.grep,
+                                sample.selection.grep = sample.selection.grep,
                                 ref.ct.column=ref.ct.column,
                                 pheno.columns=pheno.cols,
                                 prepare.true.proportions=prepare.true.proportions,
@@ -651,7 +651,7 @@ start.decomp.pipeline <- function(rnb.set,
                                 filter.na=filter.na,
                                 filter.snp=filter.snp,
                                 snp.list=snp.list,
-                                filter.somatic=filter.somatic,
+                                filter.sex.chromosomes=filter.sex.chromosomes,
                                 execute.lump=execute.lump
       
     )

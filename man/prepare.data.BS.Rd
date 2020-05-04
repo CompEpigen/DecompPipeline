@@ -23,7 +23,7 @@ prepare.data.BS(
   filter.na = TRUE,
   filter.snp = TRUE,
   snp.list = NULL,
-  filter.somatic = TRUE,
+  filter.sex.chromosomes = TRUE,
   execute.lump = FALSE
 )
 }
@@ -72,7 +72,7 @@ by Houseman's method.}
 provided in the same genome assembly as rnb.set. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
 the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome}
 
-\item{filter.somatic}{Flag indicating if only somatic probes are to be kept.}
+\item{filter.sex.chromosomes}{Flag indicating if only somatic probes are to be kept.}
 
 \item{execute.lump}{Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.}
 }

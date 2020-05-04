@@ -29,7 +29,7 @@ prepare.data(
   filter.na = TRUE,
   filter.context = TRUE,
   filter.snp = TRUE,
-  filter.somatic = TRUE,
+  filter.sex.chromosomes = TRUE,
   filter.cross.reactive = T,
   remove.ICA = F,
   conf.fact.ICA = NULL,
@@ -96,7 +96,7 @@ the provided quantile range in either of the channels and in any of the samples.
 \item{filter.snp}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list. Or as the sites
 specified in \code{snp.list}.}
 
-\item{filter.somatic}{Flag indicating if only somatic probes are to be kept.}
+\item{filter.sex.chromosomes}{Flag indicating if only somatic probes are to be kept.}
 
 \item{filter.cross.reactive}{Flag indicating if sites showing cross reactivity on the array are to be removed.}
 

@@ -1,8 +1,8 @@
 ---
 title: "DNA Methylation Deconvolution Protocol - RefFreeEWAS"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
-  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "March 12, 2020"
+  Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
+date: "May 03, 2020"
 output:
   html_document: default
   pdf_document: default
@@ -46,23 +46,39 @@ The preprocessing and filtering is also performed in line with the general [prot
 
 ```{r processing, eval=FALSE}
 suppressPackageStartupMessages(library(DecompPipeline))
-data.prep <- prepare_data(RNB_SET = rnb.set,
-                          analysis.name = "TCGA_RefFree",
-                          NORMALIZATION = "bmiq",
-                          FILTER_BEADS = T,
-                          MIN_N_BEADS = 3,
-                          FILTER_INTENSITY = T,
-                          MIN_INT_QUANT = 0.001,
-                          MAX_INT_QUANT = 0.999,
-                          FILTER_NA = T,
-                          FILTER_CONTEXT = T,
-                          FILTER_SNP = T,
-                          FILTER_SOMATIC = T,
-                          FILTER_CROSS_REACTIVE = T,
-                          execute.lump=T,
+data.prep <- prepare.data(RNB_SET = rnb.set,
+                          analysis.name = "TCGA_RefFree_new",
+                          normalization = "bmiq",
+                          filter.beads = T,
+                          min.n.beads = 3,
+                          filter.intensity = T,
+                          min.int.quant = 0.001,
+                          max.int.quant = 0.999,
+                          filter.na = T,
+                          filter.context = T,
+                          filter.snp = T,
+                          filter.sex.chromosomes = T,
+                          filter.cross.reactive = T,
+                          execute.lump=T)
+```
+
+# Confounding factor adjustment
+We use Independent Component Analysis (ICA) to adjust for the potential confounding factors age, race, gender, and ethnicity.
+
+```{r confounders, eval=FALSE}
+data.prep <- prepare.data(rnb.set=data.prep$rnb.set.filtered,
+			  analysis.name="TCGA_RefFree_new",
+			  normalization="none",
+		  	  filter.beads=F,
+			  filter.intensity=F,
+                          filter.na = F,
+                          filter.context = F,
+                          filter.snp = F,
+                          filter.sex.chromosomes = F,
+                          filter.cross.reactive = F,
                           remove.ICA=T,
                           conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
-                          ica.setting=c("alpha.fact"=1e-5))
+                          ica.setting=c("alpha.fact"=1e-5,"save.report"=TRUE,"ntry"=10,"nmin"=20,"nmax"=50,"ncores"=10))
 ```
 
 # Feature selection
@@ -70,8 +86,8 @@ We select the 5,000 most variable CpGs across the samples for downstream analysi
 
 ```{r feature_selection, eval=FALSE}
 cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = "var",
-                                N_MARKERS = 5000)
+                                marker.selection = "var",
+                                n.markers = 5000)
 ```
 
 # Deconvolution using RefFreeCellMix

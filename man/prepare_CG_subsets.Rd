@@ -13,8 +13,8 @@ prepare.CG.subsets(
   remove.correlated = FALSE,
   cor.threshold = "quantile",
   write.files = FALSE,
-  out.dir = NA,
-  ref.data.set = NULL,
+  work.dir = NA,
+  ref.rnb.set = NULL,
   ref.pheno.column = NULL,
   n.prin.comp = 10,
   range.diff = 0.05,
@@ -43,7 +43,7 @@ through \code{rnb.set}}
          \item{"\code{jaffe2014}"} The 600 sites stated as related to cell-type composition Jaffe et.al. 2014.
                 NOTE: This option should only be used for whole blood data generated using the 450k array.
          \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
-                types with F-statistics. If this option is selected, \code{ref.data.set} and \code{ref.pheno.column}
+                types with F-statistics. If this option is selected, \code{ref.rnb.set} and \code{ref.pheno.column}
                 need to be specified.
          \item{"\code{random}"} Sites are randomly selected.
          \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
@@ -57,7 +57,7 @@ through \code{rnb.set}}
               Achard for providing the idea and parts of the codes.
          \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
               EDec's example reference data is provided. If a specific data set is to be provided, it needs
-              to be done through \code{ref.data.set}.
+              to be done through \code{ref.rnb.set}.
          \item{"\code{custom}"} Specifying a custom file with indices.
 }}
 
@@ -70,12 +70,10 @@ If \code{"quantile"}, sites correlated higher than the 95th quantile are removed
 
 \item{write.files}{Flag indicating if the selected sites are to be stored on disk.}
 
-\item{out.dir}{Path to the working directory used for analyis, or data preparation.}
-
-\item{ref.data.set}{An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
+\item{ref.rnb.set}{An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
 if \code{rowFstat} is selected.}
 
-\item{ref.pheno.column}{Optional argument stating the column name of the phenotypic table of \code{ref.data.set} with
+\item{ref.pheno.column}{Optional argument stating the column name of the phenotypic table of \code{ref.rnb.set} with
 the reference cell type.}
 
 \item{n.prin.comp}{Optional argument deteriming the number of prinicipal components used for selecting the most important sites.}
@@ -92,6 +90,8 @@ The files are then stored in the 'heatmaps' folder in out.dir.}
 \item{heatmap.sample.col}{Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.}
 
 \item{K.prior}{K determined from visual inspection. Only has an influence, if \code{marker.selection="pcadapt"}.}
+
+\item{out.dir}{Path to the working directory used for analyis, or data preparation.}
 }
 \value{
 List of indices, one entry for each marker selection method specified by \code{marker.selection}. The indices correspond

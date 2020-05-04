@@ -1,8 +1,8 @@
 ---
 title: "DNA Methylation Deconvolution Protocol"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
-  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "March 12, 2020"
+  Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
+date: "May 03, 2020"
 output:
   html_document: default
   pdf_document: default
@@ -207,19 +207,19 @@ http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 
 ```{r data_preparation, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
-data.prep <- prepare_data(RNB_SET = rnb.set,
+data.prep <- prepare.data(rnb.set = rnb.set,
                           analysis.name = "TCGA_LUAD",
-                          NORMALIZATION = "bmiq",
-                          FILTER_BEADS = T,
-                          MIN_N_BEADS = 3,
-                          FILTER_INTENSITY = T,
-                          MIN_INT_QUANT = 0.001,
-                          MAX_INT_QUANT = 0.999,
-                          FILTER_NA = T,
-                          FILTER_CONTEXT = T,
-                          FILTER_SNP = T,
-                          FILTER_SOMATIC = T,
-                          FILTER_CROSS_REACTIVE = T,
+                          normalization = "bmiq",
+                          filter.beads = T,
+                          min.n.beads = 3,
+                          filter.intensity = T,
+                          min.int.quant = 0.001,
+                          max.int.quant = 0.999,
+                          filter.na = T,
+                          filter.context = T,
+                          filter.snp = T,
+                          filter.sex.chromosomes = T,
+                          filter.cross.reactive = T,
                           execute.lump=T)
 ```
 
@@ -243,29 +243,28 @@ that are due to sex, age, race, and ethnicity. Confounding factor adjustment alt
 
 ```{r ica_adjustment, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
-data.prep <- prepare_data(RNB_SET = data.prep$rnb.set.filtered,
-                          analysis.name = "TCGA_LUAD",
-                          NORMALIZATION = "none",
-                          FILTER_BEADS = F,
-                          FILTER_INTENSITY = F,
-                          FILTER_NA = F,
-                          FILTER_CONTEXT = F,
-                          FILTER_SNP = F,
-                          FILTER_SOMATIC = F,
-                          FILTER_CROSS_REACTIVE = F,
-                          execute.lump=F,
+data.prep <- prepare.data(rnb.set=data.prep$rnb.set.filtered,
+			  normalization = "none",
+                          analysis.name = "TCGA_May",
+		  	  filter.beads=F,
+			  filter.intensity=F,
                           remove.ICA=T,
+                          filter.na = F,
+                          filter.context = F,
+                          filter.snp = F,
+                          filter.sex.chromosomes = F,
+                          filter.cross.reactive = F,
                           conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
-                          ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"nmin"=30,"nmax"=50,"ncores"=10))
+			ica.setting=c("alpha.fact"=1e-5,"save.report"=TRUE,"ntry"=10,"nmin"=20,"nmax"=50,"ncores"=10))
 ```
 ### Selection of CpG subsets (1 min)
 
 11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
 ```{r subset_selection, eval=F}
-cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = "var",
-                                N_MARKERS = 5000)
+cg_subset <- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
+                                marker.selection = "var",
+                                n.markers = 5000)
 names(cg_subset)
 ```
 
@@ -280,9 +279,9 @@ md.res <- start_medecom_analysis(
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
   Ks=2:15,
-  LAMBDA_GRID = c(0,10^-(2:5)),
+  lambda.grid = c(0,10^-(2:5)),
   factorviz.outputs = T,
-  analysis.name = "TCGA_LUAD",
+  analysis.name = "TCGA_May",
   cores = 15
 )
 ```

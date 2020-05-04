@@ -36,7 +36,7 @@ start.decomp.pipeline(
   conf.fact.ICA = FALSE,
   ica.setting = NULL,
   filter.snp = TRUE,
-  filter.somatic = TRUE,
+  filter.sex.chromosomes = TRUE,
   snp.list = NULL,
   filter.coverage = hasCovg(rnb.set),
   min.coverage = 5,
@@ -141,7 +141,7 @@ If \code{TRUE},conf.fact.ICA needs to be specified.}
 
 \item{filter.snp}{Flag indicating if annotated SNPs are to be removed from the list of sites according to RnBeads' SNP list.}
 
-\item{filter.somatic}{Flag indicating if only somatic probes are to be kept.
+\item{filter.sex.chromosomes}{Flag indicating if only somatic probes are to be kept.
 CPG FILTERING (BS)}
 
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}.}

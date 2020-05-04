@@ -20,7 +20,7 @@
 #'                                  \item{"\code{jaffe2014}"} The 600 sites stated as related to cell-type composition Jaffe et.al. 2014.
 #'                                         NOTE: This option should only be used for whole blood data generated using the 450k array.
 #'                                  \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
-#'                                         types with F-statistics. If this option is selected, \code{ref.data.set} and \code{ref.pheno.column}
+#'                                         types with F-statistics. If this option is selected, \code{ref.rnb.set} and \code{ref.pheno.column}
 #'                                         need to be specified.
 #'                                  \item{"\code{random}"} Sites are randomly selected.
 #'                                  \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
@@ -34,7 +34,7 @@
 #'                                       Achard for providing the idea and parts of the codes.
 #'                                  \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
 #'                                       EDec's example reference data is provided. If a specific data set is to be provided, it needs
-#'                                       to be done through \code{ref.data.set}.
+#'                                       to be done through \code{ref.rnb.set}.
 #'                                  \item{"\code{custom}"} Specifying a custom file with indices.
 #'                         }
 #' @param n.markers The number of sites to be selected. Defaults to 5000.
@@ -43,9 +43,9 @@
 #'          If \code{"quantile"}, sites correlated higher than the 95th quantile are removed.
 #' @param write.files Flag indicating if the selected sites are to be stored on disk.
 #' @param out.dir Path to the working directory used for analyis, or data preparation.
-#' @param ref.data.set An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
+#' @param ref.rnb.set An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
 #'                      if \code{rowFstat} is selected.
-#' @param ref.pheno.column Optional argument stating the column name of the phenotypic table of \code{ref.data.set} with
+#' @param ref.pheno.column Optional argument stating the column name of the phenotypic table of \code{ref.rnb.set} with
 #'                      the reference cell type.
 #' @param n.prin.comp Optional argument deteriming the number of prinicipal components used for selecting the most important sites.
 #' @param range.diff Optional argument specifying the difference between maximum and minimum required.
@@ -83,8 +83,8 @@ prepare.CG.subsets<-function(
 		remove.correlated=FALSE,
 		cor.threshold="quantile",
 		write.files=FALSE,
-		out.dir=NA,
-		ref.data.set=NULL,
+		work.dir=NA,
+		ref.rnb.set=NULL,
 		ref.pheno.column=NULL,
 		n.prin.comp=10,
 		range.diff=0.05,
@@ -304,16 +304,16 @@ prepare.CG.subsets<-function(
 		
 		if(marker.selection[group]==("rowFstat")){
 		  ####### This needs to be checked: it doesn't seem to do what it should
-  		if(!(is.null(ref.data.set) || is.null(ref.pheno.column))){
+  		if(!(is.null(ref.rnb.set) || is.null(ref.pheno.column))){
   			
   			require(genefilter)
   			
   			load.env<-new.env(parent=emptyenv())
   			
-  			if(inherits(ref.data.set,"RnBSet")){
-  			  rnb.ref.set <- ref.data.set
+  			if(inherits(ref.rnb.set,"RnBSet")){
+  			  rnb.ref.set <- ref.rnb.set
   			}else{
-  			  rnb.ref.set <- load.rnb.set(ref.data.set)
+  			  rnb.ref.set <- load.rnb.set(ref.rnb.set)
   			}
   			meth.data.ref <- meth(rnb.ref.set)
   			pheno.data.ref <- pheno(rnb.ref.set)
@@ -323,7 +323,7 @@ prepare.CG.subsets<-function(
   			subset<-which(rank(-marker.fstat$statistic)<=n.markers)
   			ind<-ind[subset]
   		}else{
-  		  logger.error("ref.data.set and ref.pheno.column need to be specified, if rowFstat is selected.")
+  		  logger.error("ref.rnb.set and ref.pheno.column need to be specified, if rowFstat is selected.")
   		}
 		}
 		
@@ -392,16 +392,16 @@ prepare.CG.subsets<-function(
 		if(marker.selection[group]=="edec_stage0"){
 		  require("EDec")
 		  require("EDecExampleData")
-		  if(is.null(ref.data.set)){
+		  if(is.null(ref.rnb.set)){
 		    markers <- run_edec_stage_0(reference_meth = EDecExampleData::reference_meth,
 		                                reference_classes = EDecExampleData::reference_meth_class,
 		                                max_p_value = 1e-5,
 		                                num_markers = n.markers)
 		  }else{
-		    if(inherits(ref.data.set,"RnBSet")){
-		      rnb.ref.set <- ref.data.set
+		    if(inherits(ref.rnb.set,"RnBSet")){
+		      rnb.ref.set <- ref.rnb.set
 		    }else{
-		      rnb.ref.set <- load.rnb.set(ref.data.set)
+		      rnb.ref.set <- load.rnb.set(ref.rnb.set)
 		    }
 		    if(!ref.pheno.column %in% colnames(pheno(rnb.ref.set))){
 		      stop("Supplied ref.pheno.column not in phenotypic information")

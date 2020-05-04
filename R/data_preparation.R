@@ -47,7 +47,7 @@
 #' @param dist.snps Flag indicating if SNPs are to removed by determining if the pairwise differences between the CpGs in the samples are trimodally
 #'                  distributed as it is frequently found around SNPs.                  
 #' @param snp.list Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}.
-#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
+#' @param filter.sex.chromosomes Flag indicating if only somatic probes are to be kept.
 #' @param filter.cross.reactive Flag indicating if sites showing cross reactivity on the array are to be removed.
 #' @param remove.ICA Flag indicating if independent component analysis is to be executed to remove potential confounding factor.
 #'             If \code{TRUE},conf.fact.ICA needs to be specified.
@@ -84,7 +84,7 @@ prepare.data<-function(
 		filter.na=TRUE,
 		filter.context=TRUE,
 		filter.snp=TRUE,
-		filter.somatic=TRUE,
+		filter.sex.chromosomes=TRUE,
 		filter.cross.reactive=T,
 		remove.ICA=F,
 		conf.fact.ICA=NULL,
@@ -284,12 +284,12 @@ prepare.data<-function(
 	  qual.filter <- filter.nas(rnb.set,subs=subs,qual.filter)
 	}
 	########################################## ANNOTATION FILTERING ###################################################
-	FILTER_ANNOTATION<-filter.context || filter.snp || filter.somatic
+	FILTER_ANNOTATION<-filter.context || filter.snp || filter.sex.chromosomes
 	
 	if(FILTER_ANNOTATION){
 		
 		annot.filter<-filter.annotation(rnb.set, context = filter.context, snp = filter.snp, snp.list = snp.list,
-		                                somatic = filter.somatic, qual.filter = qual.filter, dist.snps = dist.snps)
+		                                somatic = filter.sex.chromosomes, qual.filter = qual.filter, dist.snps = dist.snps)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
@@ -324,7 +324,7 @@ prepare.data<-function(
 	                                           ifelse(filter.na, "Missing", ""),
 	                                           ifelse(filter.context, "Context", ""),
 	                                           ifelse(filter.snp, "SNP", ""),
-	                                           ifelse(filter.somatic, "Somatic", "")
+	                                           ifelse(filter.sex.chromosomes, "Somatic", "")
 	)
 	
 	analysis_info$NORMALIZATION <- normalization
@@ -653,7 +653,7 @@ filter.annotation.biseq<-function(
 #' @param snp.list Path to a file containing positions of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}. The coordinates must be the 
 #'             provided in the same genome assembly as rnb.set. The file must be a tab-separated value (tsv) file with only one header line an the following meaning of 
 #'             the rows: 1st row: chromosome, 2nd row: position of the SNP on the chromosome
-#' @param filter.somatic Flag indicating if only somatic probes are to be kept.
+#' @param filter.sex.chromosomes Flag indicating if only somatic probes are to be kept.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
@@ -679,7 +679,7 @@ prepare.data.BS <- function(
 		filter.na=TRUE,
 		filter.snp=TRUE,
 		snp.list=NULL,
-		filter.somatic=TRUE,
+		filter.sex.chromosomes=TRUE,
 		execute.lump=FALSE
 ){
 	suppressPackageStartupMessages(require(RnBeads))
@@ -776,12 +776,12 @@ prepare.data.BS <- function(
 	if(filter.na){
 	  qual.filter <- filter.nas.biseq(rnb.set,subs=1:length(samples(rnb.set)),qual.filter)
 	}
-	FILTER_ANNOTATION <- filter.snp || filter.somatic
+	FILTER_ANNOTATION <- filter.snp || filter.sex.chromosomes
 	
 	if(FILTER_ANNOTATION){
 		
 		annot.filter <- filter.annotation.biseq(rnb.set, snp = filter.snp, snp.list = snp.list,
-		                                somatic = filter.somatic, qual.filter = qual.filter)
+		                                somatic = filter.sex.chromosomes, qual.filter = qual.filter)
 	
 		save(annot.filter, file=sprintf("%s/annotation.filter.RData", OUTPUTDIR))
 	
