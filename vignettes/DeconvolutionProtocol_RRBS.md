@@ -16,7 +16,8 @@ The data were generated in a [recent study](https://www.nature.com/articles/nm.4
 
 [*RnBeads*](https://rnbeads.org) also support bisulfite sequencing data, provided that the data has been processed to generate single-CpG methylation calls in BED or similar format. However, since *RnBeads* creates a large internal data structure, more leightweight package can also be used. The input to the remaining steps should be a DNA methylation data matrix.
 
-```{r import, eval=FALSE}
+
+```r
 suppressPackageStartupMessages(library(RnBeads))
 rnb.options(
   assembly = "hg38",
@@ -54,7 +55,8 @@ rnb.set <- remove.samples(rnb.set,rem.samples)
 # Preprocessing and Filtering
 [*DecompPipeline*](https://github.com/CompEpigen/DecompPipeline) also support preprocessing of bisulfite sequencing data. Here, we remove all sites that have a read coverage lower than 5 in any of the samples. Additionally, we remove high and low coverage outliers, sites with missing values, annotated SNPs, and sites on the sex chromosomes.
 
-```{r preprocessing, eval=FALSE}
+
+```r
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare.data.BS(rnb.set = rnb.set,
                           analysis.name = "Ewing_pipeline",
@@ -71,7 +73,8 @@ data.prep <- prepare.data.BS(rnb.set = rnb.set,
 # Feature Selection
 We select the 5,000 most variably methylated CpGs across the samples for downstream analysis.
 
-```{r feature_selection, eval=FALSE}
+
+```r
 cg_subset <- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
                                 marker.selection = "var",
                                 n.markers = 5000)
@@ -80,7 +83,8 @@ cg_subset <- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
 # Deconvolution
 Deconvolution is applied analogously to the [general protocol](protocol.html). [*RefFreeCellMix*](https://cran.r-project.org/web/packages/RefFreeEWAS/index.html) and [*EDec*](https://github.com/BRL-BCM/EDec) can be used as alternative deconvolution methods.
 
-```{r deconvolution, eval=FALSE}
+
+```r
 md.res <- start.medecom.analysis(
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
@@ -94,7 +98,8 @@ md.res <- start.medecom.analysis(
 
 # Interpretation
 The returned *MeDeComSet* and associated deconvolution results can directly be imported into [*FactorViz*](https://github.com/CompEpigen/FactorViz) for visualization.
-```{r visualization, eval=FALSE}
+
+```r
 suppressPackageStartupMessages(library(FactorViz))
 startFactorViz(file.path(getwd(),"TCGA_Ewing_pipeline","FactorViz_outputs"))
 ```

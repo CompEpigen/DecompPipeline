@@ -7,9 +7,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE">
 
 
-<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
+<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
 
-<meta name="date" content="2020-03-12">
+<meta name="date" content="2020-05-03">
 
 <title>DNA Methylation Deconvolution Protocol - RefFreeEWAS</title>
 
@@ -458,20 +458,20 @@ summary {
 
 <h1 class="title toc-ignore">DNA Methylation Deconvolution Protocol - RefFreeEWAS</h1>
 <h4 class="author">Michael Scherer, Petr Nazarov, Reka Toth, Shashwat 
-Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, 
-Joern Walter, and Pavlo Lutsik</h4>
-<h4 class="date">March 12, 2020</h4>
+Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, 
+Thomas Lengauer, Joern Walter, and Pavlo Lutsik</h4>
+<h4 class="date">May 03, 2020</h4>
 
 </div>
 
 
 <div id="installation-and-data-retrieval" class="section level1">
 <h1>Installation and Data Retrieval</h1>
-<p>Pleas follow the instructions provided in the <a href="file:///tmp/RtmptcG7Px/preview-36873318d6a3.dir/protocol.html">protocol</a> using MeDeCom.</p>
+<p>Pleas follow the instructions provided in the <a href="protocol.html">protocol</a> using MeDeCom.</p>
 </div>
 <div id="data-import" class="section level1">
 <h1>Data import</h1>
-<p>Analogously to the general protocol, we use <a href="https://rnbeads.org/">RnBeads</a> for data import.</p>
+<p>Analogously to the general protocol, we use <a href="https://rnbeads.org">RnBeads</a> for data import.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(RnBeads))
 rnb.options(
   assembly=<span class="hljs-string">"hg19"</span>,
@@ -492,38 +492,55 @@ rnb.options(
 sample.anno &lt;- <span class="hljs-string">"annotation/sample_annotation.tsv"</span>
 idat.folder &lt;- <span class="hljs-string">"idat/"</span>
 dir.report &lt;- paste0(<span class="hljs-string">"report"</span>,Sys.Date(),<span class="hljs-string">"/"</span>)
-temp.dir &lt;- <span class="hljs-string">"/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/"</span>
+temp.dir &lt;- tempdir()
 options(fftempdir=temp.dir)
-rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)</code></pre>
+rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report,
+                            sample.sheet = sample.anno,
+                            data.dir = idat.folder)</code></pre>
 </div>
 <div id="preprocessing-and-filtering" class="section level1">
 <h1>Preprocessing and Filtering</h1>
-<p>The preprocessing and filtering is also performed in line with the general <a href="file:///tmp/RtmptcG7Px/preview-36873318d6a3.dir/protocol.html">protocol</a> using <a href="https://github.com/CompEpigen/DecompPipeline"><em>DecompPipeline</em></a>.</p>
+<p>The preprocessing and filtering is also performed in line with the general <a href="protocol.html">protocol</a> using <a href="https://github.com/CompEpigen/DecompPipeline"><em>DecompPipeline</em></a>.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(DecompPipeline))
-data.prep &lt;- prepare_data(RNB_SET = rnb.set,
+data.prep &lt;- prepare.data(rnb.set = rnb.set,
                           analysis.name = <span class="hljs-string">"TCGA_RefFree"</span>,
-                          NORMALIZATION = <span class="hljs-string">"bmiq"</span>,
-                          FILTER_BEADS = <span class="hljs-literal">T</span>,
-                          MIN_N_BEADS = <span class="hljs-number">3</span>,
-                          FILTER_INTENSITY = <span class="hljs-literal">T</span>,
-                          MIN_INT_QUANT = <span class="hljs-number">0.001</span>,
-                          MAX_INT_QUANT = <span class="hljs-number">0.999</span>,
-                          FILTER_NA = <span class="hljs-literal">T</span>,
-                          FILTER_CONTEXT = <span class="hljs-literal">T</span>,
-                          FILTER_SNP = <span class="hljs-literal">T</span>,
-                          FILTER_SOMATIC = <span class="hljs-literal">T</span>,
-                          FILTER_CROSS_REACTIVE = <span class="hljs-literal">T</span>,
-                          execute.lump=<span class="hljs-literal">T</span>,
-                          remove.ICA=<span class="hljs-literal">T</span>,
-                          conf.fact.ICA=c(<span class="hljs-string">"age_at_diagnosis"</span>,<span class="hljs-string">"race"</span>,<span class="hljs-string">"gender"</span>,<span class="hljs-string">"ethnicity"</span>),
-                          ica.setting=c(<span class="hljs-string">"alpha.fact"</span>=<span class="hljs-number">1e-5</span>))</code></pre>
+                          normalization = <span class="hljs-string">"bmiq"</span>,
+                          filter.beads = <span class="hljs-literal">TRUE</span>,
+                          min.n.beads = <span class="hljs-number">3</span>,
+                          filter.intensity = <span class="hljs-literal">TRUE</span>,
+                          min.int.quant = <span class="hljs-number">0.001</span>,
+                          max.int.quant = <span class="hljs-number">0.999</span>,
+                          filter.na = <span class="hljs-literal">TRUE</span>,
+                          filter.context = <span class="hljs-literal">TRUE</span>,
+                          filter.snp = <span class="hljs-literal">TRUE</span>,
+                          filter.sex.chromosomes = <span class="hljs-literal">TRUE</span>,
+                          filter.cross.reactive = <span class="hljs-literal">TRUE</span>,
+                          execute.lump = <span class="hljs-literal">TRUE</span>)</code></pre>
+</div>
+<div id="confounding-factor-adjustment" class="section level1">
+<h1>Confounding factor adjustment</h1>
+<p>We use Independent Component Analysis (ICA) to adjust for the potential confounding factors age, race, gender, and ethnicity.</p>
+<pre class="r"><code class="hljs">data.prep &lt;- prepare.data(rnb.set = data.prep$rnb.set.filtered,
+              analysis.name = <span class="hljs-string">"TCGA_RefFree"</span>,
+              normalization = <span class="hljs-string">"none"</span>,
+            filter.beads = <span class="hljs-literal">FALSE</span>,
+              filter.intensity = <span class="hljs-literal">F</span>,
+        filter.na = <span class="hljs-literal">FALSE</span>,
+        filter.context = <span class="hljs-literal">FALSE</span>,
+        filter.snp = <span class="hljs-literal">FALSE</span>,
+        filter.sex.chromosomes = <span class="hljs-literal">FALSE</span>,
+        filter.cross.reactive = <span class="hljs-literal">FALSE</span>,
+        remove.ICA = <span class="hljs-literal">TRUE</span>,
+        conf.fact.ICA = c(<span class="hljs-string">"age_at_diagnosis"</span>,<span class="hljs-string">"race"</span>,<span class="hljs-string">"gender"</span>,<span class="hljs-string">"ethnicity"</span>),
+        ica.setting = c(<span class="hljs-string">"alpha.fact"</span>=<span class="hljs-number">1e-5</span>,<span class="hljs-string">"save.report"</span>=<span class="hljs-literal">TRUE</span>,
+                        <span class="hljs-string">"ntry"</span>=<span class="hljs-number">10</span>,<span class="hljs-string">"nmin"</span>=<span class="hljs-number">20</span>,<span class="hljs-string">"nmax"</span>=<span class="hljs-number">50</span>,<span class="hljs-string">"ncores"</span>=<span class="hljs-number">10</span>))</code></pre>
 </div>
 <div id="feature-selection" class="section level1">
 <h1>Feature selection</h1>
 <p>We select the 5,000 most variable CpGs across the samples for downstream analysis.</p>
-<pre class="r"><code class="hljs">cg_subset &lt;- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = <span class="hljs-string">"var"</span>,
-                                N_MARKERS = <span class="hljs-number">5000</span>)</code></pre>
+<pre class="r"><code class="hljs">cg_subset &lt;- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
+                                marker.selection = <span class="hljs-string">"var"</span>,
+                                n.markers = <span class="hljs-number">5000</span>)</code></pre>
 </div>
 <div id="deconvolution-using-reffreecellmix" class="section level1">
 <h1>Deconvolution using RefFreeCellMix</h1>

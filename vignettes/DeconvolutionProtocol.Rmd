@@ -36,7 +36,7 @@ library(DecompPipeline)
 
 ```{r install_mac, eval=F}
 install.packages(c("devtools","BiocManager"))
-BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
+BiocManager::install(c("RnBeads","RnBeads.hg19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
 install.packages("https://github.com/lutsik/MeDeCom/releases/download/v1.0.0/MeDeCom_1.0.0.tgz",repos=NULL,type="binary")
 devtools::install_github(c("CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
@@ -88,55 +88,38 @@ Store the resulting files in a new directory *idat*.
 4. Retrieve the clinical metadata from https://portal.gdc.cancer.gov/projects/TCGA-LUAD by clicking on the “Clinical” button and unpacking the downloaded *.tar.gz* file into a new subdirectory annotation within your working directory. The remaining parsing is performed through an R session initiated in the same directory:
 
 ```{r map_ids, eval=F}
+library(tidyverse)
 clinical.data <- read.table(
 	"annotation/clinical.tsv",
-	sep = "\t",
-	header = TRUE
-)
-
-idat.files <- list.files("idat/",full.names = TRUE)
+	sep="\t", header = TRUE)
+idat.files <- list.files("idat",full.names = TRUE)
 meta.files <- list.files(idat.files[1],full.names = TRUE)
 untar(meta.files[grepl(".tar.gz",meta.files)],exdir = idat.files[1])
-meta.files <- untar(meta.files[grepl(".tar.gz",meta.files)],list = TRUE)
+meta.files <- untar(meta.files[grepl(".tar.gz",meta.files)], list = TRUE)
 
 meta.info <- read.table(
 	file.path(idat.files[1],meta.files[grepl(".sdrf.txt",meta.files)]),
-   	sep = "\t",
-     	header = TRUE
-)
+	sep="\t",header=TRUE)
 
 meta.info <- meta.info[
 	match(unique(meta.info$Comment..TCGA.Barcode.),
 	        meta.info$Comment..TCGA.Barcode.
 		),
 ]
-match.meta.clin <- match(
-	clinical.data$submitter_id,
-		substr(meta.info$Comment..TCGA.Barcode.,1,12)
-)
-anno.frame <- na.omit(
-	data.frame(
-		clinical.data,
-        	meta.info[match.meta.clin,]
-	)
-)
-anno.frame$barcode <- unlist(
-	lapply(
-		lapply(
-			as.character(anno.frame$Array.Data.File),
-	            	function(x)strsplit(x,"_") 
-		),
-        	function(x) paste(x[[1]][1],x[[1]][2],sep = "_")
-	)
-)
+anno.frame <- meta.info %>% 
+	mutate("submitter_id"=substr(Comment..TCGA.Barcode., 1, 12)) %>%
+	inner_join(x=clinical.data, by=c("submitter_id"="submitter_id")) %>%
+	distinct(submitter_id, submitter_id.4, .keep_all = TRUE) %>%
+	mutate(barcode=gsub("_Grn.idat|_Red.idat", "", Array.Data.File),
+		Sentrix_ID=sub("_.*$","", barcode),
+		Sentrix_Position=sub("^[^_]+_","",barcode),
+		healthy_cancer=ifelse(grepl("11A",Comment..TCGA.Barcode.),
+			"healthy","cancer"))
 
-anno.frame$Sentrix_ID <- sub("_.*$","",anno.frame$barcode)
-anno.frame$Sentrix_Position <- sub("^[^_]+_","",anno.frame$barcode) 
+write.table(anno.frame,
+	"annotation/sample_annotation.tsv",
+	quote = FALSE, row.names = FALSE, sep= "\t")
 
-write.table(
-anno.frame,"annotation/sample_annotation.tsv",
-      quote = FALSE, row.names = FALSE, sep = "\t"
-)
 ```
 
 5. Copy the IDAT files into a single directory idat for downstream analysis.
@@ -144,9 +127,9 @@ anno.frame,"annotation/sample_annotation.tsv",
 ```{r copy, eval=FALSE}
 #' write idat files to parent directory
 lapply(idat.files,function(x){
-  is.idat <- list.files(x,pattern = ".idat",full.names = T)
+  is.idat <- list.files(x,pattern = ".idat", full.names = TRUE)
   file.copy(is.idat,"idat/")
-  unlink(x,recursive = T)
+  unlink(x,recursive = TRUE)
 })
 ```
 
@@ -159,20 +142,20 @@ lapply(idat.files,function(x){
 ```{r RnBeads, eval=F}
 suppressPackageStartupMessages(library(RnBeads))
 rnb.options(
-  assembly="hg19",
-  identifiers.column="submitter_id",
-  import=T,
-  import.default.data.type="idat.dir",
-  import.table.separator="\t",
-  import.sex.prediction=T,
-  qc=T,
-  preprocessing=F,
-  exploratory=F,
-  inference=F,
-  differential=F,
-  export.to.bed=F,
-  export.to.trackhub=NULL,
-  export.to.csv=F
+  assembly = "hg19",
+  identifiers.column = "submitter_id",
+  import = TRUE,
+  import.default.data.type = "idat.dir",
+  import.table.separator = "\t",
+  import.sex.prediction = TRUE,
+  qc = TRUE,
+  preprocessing = FALSE,
+  exploratory = FALSE,
+  inference = FALSE,
+  differential = FALSE,
+  export.to.bed = FALSE,
+  export.to.trackhub = NULL,
+  export.to.csv = FALSE
 )
 ```
 
@@ -186,7 +169,9 @@ idat.folder <- "idat/"
 dir.report <- paste0("report",Sys.Date(),"/")
 temp.dir <- "/tmp"
 options(fftempdir=temp.dir)
-rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
+rnb.set <- rnb.run.analysis(dir.reports = dir.report, 
+	sample.sheet = sample.anno,
+	data.dir = idat.folder)
 ```
 
 **PAUSE POINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
@@ -208,19 +193,19 @@ http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 ```{r data_preparation, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare.data(rnb.set = rnb.set,
-                          analysis.name = "TCGA_LUAD",
-                          normalization = "bmiq",
-                          filter.beads = T,
-                          min.n.beads = 3,
-                          filter.intensity = T,
-                          min.int.quant = 0.001,
-                          max.int.quant = 0.999,
-                          filter.na = T,
-                          filter.context = T,
-                          filter.snp = T,
-                          filter.sex.chromosomes = T,
-                          filter.cross.reactive = T,
-                          execute.lump=T)
+	analysis.name = "TCGA_LUAD",
+	normalization = "bmiq",
+	filter.beads = TRUE,
+	min.n.beads = 3,
+	filter.intensity = TRUE,
+	min.int.quant = 0.001,
+	max.int.quant = 0.999,
+	filter.na = TRUE,
+	filter.context = TRUE,
+	filter.snp = TRUE,
+	filter.sex.chromosomes = TRUE,
+	filter.cross.reactive = TRUE,
+	execute.lump=TRUE)
 ```
 
 **PAUSE POINT** We provide a list of CpGs that are selected for the downstream analysis at http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv. You can directly select those sites from you RnBSet object.
@@ -243,26 +228,27 @@ that are due to sex, age, race, and ethnicity. Confounding factor adjustment alt
 
 ```{r ica_adjustment, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
-data.prep <- prepare.data(rnb.set=data.prep$rnb.set.filtered,
-			  normalization = "none",
-                          analysis.name = "TCGA_May",
-		  	  filter.beads=F,
-			  filter.intensity=F,
-                          remove.ICA=T,
-                          filter.na = F,
-                          filter.context = F,
-                          filter.snp = F,
-                          filter.sex.chromosomes = F,
-                          filter.cross.reactive = F,
-                          conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
-			ica.setting=c("alpha.fact"=1e-5,"save.report"=TRUE,"ntry"=10,"nmin"=20,"nmax"=50,"ncores"=10))
+data.prep <- prepare.data(rnb.set = data.prep$rnb.set.filtered,
+	normalization = "none",
+	analysis.name = "TCGA_LUAD",
+	filter.beads=FALSE,
+	filter.intensity=FALSE,
+	remove.ICA=TRUE,
+	filter.na = FALSE,
+	filter.context = FALSE,
+	filter.snp = FALSE,
+	filter.sex.chromosomes = FALSE,
+	filter.cross.reactive = FALSE,
+	conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
+	ica.setting=c("alpha.fact"=1e-5,"save.report"=TRUE,
+		"ntry"=10,"nmin"=20,"nmax"=50,"ncores"=10))
 ```
 ### Selection of CpG subsets (1 min)
 
 11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
 ```{r subset_selection, eval=F}
-cg_subset <- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
+cg_subset <- prepare.CG.subsets(rnb.set = data.prep$rnb.set.filtered,
                                 marker.selection = "var",
                                 n.markers = 5000)
 names(cg_subset)

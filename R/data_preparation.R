@@ -141,7 +141,7 @@ prepare.data<-function(
 			rnb.set<-rnb.execute.normalization(rnb.set, method="wm.dasen", bgcorr.method="none")
 		}else if(normalization=="noob"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="none", bgcorr.method="methylumi.noob")
-		}else if(NORMALIZATION=="bmiq"){
+		}else if(normalization=="bmiq"){
 			rnb.set<-rnb.execute.normalization(rnb.set, method="bmiq", bgcorr.method="none")
 		}else{
 			logger.warning("No valid normalization method specified (illumina, dasen, noob, bmiq allowed), skipping normalization")	

@@ -215,7 +215,7 @@ prepare.CG.subsets<-function(
 			ind<-ind[order(maxRank)[1:min(n.markers, length(ind))]]
 		}
 		
-		if(MARKER_SELECTION[group]=="houseman2012" ){
+		if(marker.selection[group]=="houseman2012" ){
 		  logger.warning("The houseman 2012 method should only be used for blood data sets generated on the 450k array.")
 		  loc <- system.file(file.path("extdata","houseman.50k.markers.RDS"),package="DecompPipeline")
 		  if(file.exists(loc)){
@@ -296,7 +296,7 @@ prepare.CG.subsets<-function(
 			}
 		}
 		
-		if(MARKER_SELECTION[group]=="jaffe2014"){
+		if(marker.selection[group]=="jaffe2014"){
 		  logger.warning("The jaffe 2014 method should only be used for blood data sets generated on the 450k array.")
 			jaffe.markers <- readRDS(system.file(file.path("extdata","jaffe.irrizzary.markers.600.RDS"),package="DecompPipeline"))
 			ind<-intersect(ind, jaffe.markers)

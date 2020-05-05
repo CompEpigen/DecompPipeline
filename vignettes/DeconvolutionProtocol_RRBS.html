@@ -7,9 +7,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE">
 
 
-<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
+<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
 
-<meta name="date" content="2020-03-12">
+<meta name="date" content="2020-05-03">
 
 <title>DNA Methylation Deconvolution Protocol - Ewing RRBS cohort</title>
 
@@ -458,9 +458,9 @@ summary {
 
 <h1 class="title toc-ignore">DNA Methylation Deconvolution Protocol - Ewing RRBS cohort</h1>
 <h4 class="author">Michael Scherer, Petr Nazarov, Reka Toth, Shashwat 
-Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, 
-Joern Walter, and Pavlo Lutsik</h4>
-<h4 class="date">March 12, 2020</h4>
+Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, 
+Thomas Lengauer, Joern Walter, and Pavlo Lutsik</h4>
+<h4 class="date">May 03, 2020</h4>
 
 </div>
 
@@ -471,7 +471,7 @@ Joern Walter, and Pavlo Lutsik</h4>
 </div>
 <div id="data-import" class="section level1">
 <h1>Data Import</h1>
-<p><a href="https://rnbeads.org/"><em>RnBeads</em></a> also support 
+<p><a href="https://rnbeads.org"><em>RnBeads</em></a> also support 
 bisulfite sequencing data, provided that the data has been processed to 
 generate single-CpG methylation calls in BED or similar format. However,
  since <em>RnBeads</em> creates a large internal data structure, more 
@@ -479,27 +479,27 @@ leightweight package can also be used. The input to the remaining steps
 should be a DNA methylation data matrix.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(RnBeads))
 rnb.options(
-  assembly=<span class="hljs-string">"hg38"</span>,
-  identifiers.column=<span class="hljs-string">"sample_id"</span>,
-  import=<span class="hljs-literal">T</span>,
-  import.default.data.type=<span class="hljs-string">"bed.dir"</span>,
-  import.bed.style=<span class="hljs-string">"EPP"</span>,
-  import.table.separator=<span class="hljs-string">","</span>,
-  import.sex.prediction=<span class="hljs-literal">T</span>,
-  qc=<span class="hljs-literal">T</span>,
-  preprocessing=<span class="hljs-literal">F</span>,
-  exploratory=<span class="hljs-literal">F</span>,
-  inference=<span class="hljs-literal">F</span>,
-  differential=<span class="hljs-literal">F</span>,
-  export.to.bed=<span class="hljs-literal">F</span>,
-  export.to.trackhub=<span class="hljs-literal">NULL</span>,
-  export.to.csv=<span class="hljs-literal">F</span>
+  assembly = <span class="hljs-string">"hg38"</span>,
+  identifiers.column = <span class="hljs-string">"sample_id"</span>,
+  import = <span class="hljs-literal">TRUE</span>,
+  import.default.data.type = <span class="hljs-string">"bed.dir"</span>,
+  import.bed.style = <span class="hljs-string">"EPP"</span>,
+  import.table.separator = <span class="hljs-string">","</span>,
+  import.sex.prediction = <span class="hljs-literal">TRUE</span>,
+  qc = <span class="hljs-literal">TRUE</span>,
+  preprocessing = <span class="hljs-literal">FALSE</span>,
+  exploratory = <span class="hljs-literal">FALSE</span>,
+  inference = <span class="hljs-literal">FALSE</span>,
+  differential = <span class="hljs-literal">FALSE</span>,
+  export.to.bed = <span class="hljs-literal">FALSE</span>,
+  export.to.trackhub = <span class="hljs-literal">NULL</span>,
+  export.to.csv = <span class="hljs-literal">FALSE</span>
 )
 sample.anno &lt;- <span class="hljs-string">"annotation/sample_annotation.csv"</span>
 bed.folder &lt;- <span class="hljs-string">"bed/"</span>
 
 dir.report &lt;- paste0(<span class="hljs-string">"report"</span>,Sys.Date(),<span class="hljs-string">"/"</span>)
-temp.dir &lt;- <span class="hljs-string">"/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD/tmp/"</span>
+temp.dir &lt;- tempdir()
 options(fftempdir=temp.dir)
 data.source &lt;- c(bed.folder,sample.anno,<span class="hljs-string">"filename"</span>)
 rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report, data.source=data.source)
@@ -518,33 +518,33 @@ remove all sites that have a read coverage lower than 5 in any of the
 samples. Additionally, we remove high and low coverage outliers, sites 
 with missing values, annotated SNPs, and sites on the sex chromosomes.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(DecompPipeline))
-data.prep &lt;- prepare_data_BS(RNB_SET = rnb.set,
+data.prep &lt;- prepare.data.BS(rnb.set = rnb.set,
                           analysis.name = <span class="hljs-string">"Ewing_pipeline"</span>,
-                          FILTER_COVERAGE = <span class="hljs-literal">T</span>,
-                          MIN_COVERAGE = <span class="hljs-number">5</span>,
-                          MIN_COVG_QUANT = <span class="hljs-number">0.001</span>,
-                          MAX_COVG_QUANT = <span class="hljs-number">0.999</span>,
-                          FILTER_NA = <span class="hljs-literal">T</span>,
-                          FILTER_SNP = <span class="hljs-literal">T</span>,
-                          FILTER_SOMATIC = <span class="hljs-literal">T</span>,
-                          execute.lump=<span class="hljs-literal">T</span>)</code></pre>
+                          filter.coverage = <span class="hljs-literal">TRUE</span>,
+                          min.coverage = <span class="hljs-number">5</span>,
+                          min.covg.quant = <span class="hljs-number">0.001</span>,
+                          max.covg.quant = <span class="hljs-number">0.999</span>,
+                          filter.na = <span class="hljs-literal">TRUE</span>,
+                          filter.snp = <span class="hljs-literal">TRUE</span>,
+                          filter.sex.chromosomes = <span class="hljs-literal">TRUE</span>,
+                          execute.lump = <span class="hljs-literal">TRUE</span>)</code></pre>
 </div>
 <div id="feature-selection" class="section level1">
 <h1>Feature Selection</h1>
 <p>We select the 5,000 most variably methylated CpGs across the samples for downstream analysis.</p>
-<pre class="r"><code class="hljs">cg_subset &lt;- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = <span class="hljs-string">"var"</span>,
-                                N_MARKERS = <span class="hljs-number">5000</span>)</code></pre>
+<pre class="r"><code class="hljs">cg_subset &lt;- prepare.CG.subsets(rnb.set=data.prep$rnb.set.filtered,
+                                marker.selection = <span class="hljs-string">"var"</span>,
+                                n.markers = <span class="hljs-number">5000</span>)</code></pre>
 </div>
 <div id="deconvolution" class="section level1">
 <h1>Deconvolution</h1>
-<p>Deconvolution is applied analogously to the <a href="file:///tmp/RtmptcG7Px/preview-36877db39f3c.dir/protocol.html">general protocol</a>. <a href="https://cran.r-project.org/web/packages/RefFreeEWAS/index.html"><em>RefFreeCellMix</em></a> and <a href="https://github.com/BRL-BCM/EDec"><em>EDec</em></a> can be used as alternative deconvolution methods.</p>
-<pre class="r"><code class="hljs">md.res &lt;- start_medecom_analysis(
+<p>Deconvolution is applied analogously to the <a href="protocol.html">general protocol</a>. <a href="https://cran.r-project.org/web/packages/RefFreeEWAS/index.html"><em>RefFreeCellMix</em></a> and <a href="https://github.com/BRL-BCM/EDec"><em>EDec</em></a> can be used as alternative deconvolution methods.</p>
+<pre class="r"><code class="hljs">md.res &lt;- start.medecom.analysis(
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
   Ks=<span class="hljs-number">2</span>:<span class="hljs-number">15</span>,
-  LAMBDA_GRID = c(<span class="hljs-number">0</span>,<span class="hljs-number">10</span>^-(<span class="hljs-number">2</span>:<span class="hljs-number">5</span>)),
-  factorviz.outputs = <span class="hljs-literal">T</span>,
+  lambda.grid = c(<span class="hljs-number">0</span>,<span class="hljs-number">10</span>^-(<span class="hljs-number">2</span>:<span class="hljs-number">5</span>)),
+  factorviz.outputs = <span class="hljs-literal">TRUE</span>,
   analysis.name = <span class="hljs-string">"Ewing_pipeline"</span>,
   cores = <span class="hljs-number">15</span>
 )</code></pre>

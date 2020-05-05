@@ -7,9 +7,9 @@
 <meta http-equiv="X-UA-Compatible" content="IE=EDGE">
 
 
-<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
+<meta name="author" content="Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik">
 
-<meta name="date" content="2020-03-12">
+<meta name="date" content="2020-05-03">
 
 <title>DNA Methylation Deconvolution Protocol</title>
 
@@ -458,9 +458,9 @@ summary {
 
 <h1 class="title toc-ignore">DNA Methylation Deconvolution Protocol</h1>
 <h4 class="author">Michael Scherer, Petr Nazarov, Reka Toth, Shashwat 
-Sahay, Tony Kamoa, Valentin Maurer, Christoph Plass, Thomas Lengauer, 
-Joern Walter, and Pavlo Lutsik</h4>
-<h4 class="date">March 12, 2020</h4>
+Sahay, Tony Kamoa, Valentin Maurer, Nikita Vedenev, Christoph Plass, 
+Thomas Lengauer, Joern Walter, and Pavlo Lutsik</h4>
+<h4 class="date">May 03, 2020</h4>
 
 </div>
 
@@ -496,12 +496,12 @@ all your packages updated. The installation of the software is appliable
 the remainder of this protocol, we assume a common Linux distribution as
  the operating system.</p>
 <pre class="r"><code class="hljs">install.packages(c(<span class="hljs-string">"devtools"</span>,<span class="hljs-string">"BiocManager"</span>))
-BiocManager::install(c(<span class="hljs-string">"RnBeads"</span>,<span class="hljs-string">"RnBeads.gh19"</span>,<span class="hljs-string">"RnBeads.mm10"</span>,<span class="hljs-string">"RnBeads.hg38"</span>),dependencies=<span class="hljs-literal">TRUE</span>)
+BiocManager::install(c(<span class="hljs-string">"RnBeads"</span>,<span class="hljs-string">"RnBeads.hg19"</span>,<span class="hljs-string">"RnBeads.mm10"</span>,<span class="hljs-string">"RnBeads.hg38"</span>),dependencies=<span class="hljs-literal">TRUE</span>)
 devtools::install_github(c(<span class="hljs-string">"lutsik/MeDeCom"</span>,<span class="hljs-string">"CompEpigen/DecompPipeline"</span>,<span class="hljs-string">"CompEpigen/FactorViz"</span>))
 <span class="hljs-keyword">library</span>(DecompPipeline)</code></pre>
 <p>2b. <strong>macOS</strong> In a first step, you will have to retrieve the binary version of <em>MeDeCom</em> from GitHub. Afterwards, you can install the remaining packages similar to the <em>Linux</em> case.</p>
 <pre class="r"><code class="hljs">install.packages(c(<span class="hljs-string">"devtools"</span>,<span class="hljs-string">"BiocManager"</span>))
-BiocManager::install(c(<span class="hljs-string">"RnBeads"</span>,<span class="hljs-string">"RnBeads.gh19"</span>,<span class="hljs-string">"RnBeads.mm10"</span>,<span class="hljs-string">"RnBeads.hg38"</span>),dependencies=<span class="hljs-literal">TRUE</span>)
+BiocManager::install(c(<span class="hljs-string">"RnBeads"</span>,<span class="hljs-string">"RnBeads.hg19"</span>,<span class="hljs-string">"RnBeads.mm10"</span>,<span class="hljs-string">"RnBeads.hg38"</span>),dependencies=<span class="hljs-literal">TRUE</span>)
 install.packages(<span class="hljs-string">"https://github.com/lutsik/MeDeCom/releases/download/v1.0.0/MeDeCom_1.0.0.tgz"</span>,repos=<span class="hljs-literal">NULL</span>,type=<span class="hljs-string">"binary"</span>)
 devtools::install_github(c(<span class="hljs-string">"CompEpigen/DecompPipeline"</span>,<span class="hljs-string">"CompEpigen/FactorViz"</span>))
 <span class="hljs-keyword">library</span>(DecompPipeline)</code></pre>
@@ -519,7 +519,7 @@ devtools::install_github(
     c(<span class="hljs-string">"CompEpigen/DecompPipeline"</span>,<span class="hljs-string">"CompEpigen/FactorViz"</span>)
 )
 <span class="hljs-keyword">library</span>(DecompPipeline)</code></pre>
-<p>2 d. <strong>Cross-platform using Docker</strong> If not yet available, install Docker on your machine. The <a href="https://docs.docker.com/">Docker website</a>
+<p>2 d. <strong>Cross-platform using Docker</strong> If not yet available, install Docker on your machine. The <a href="https://docs.docker.com">Docker website</a>
  provides detailed installation instructions for all major operating 
 systems and computational environments, including Linux, Windows and 
 MacOS. Specifically, on Windows follow <a href="https://docs.docker.com/docker-for-windows/install/">these</a>
@@ -550,29 +550,45 @@ docker run --env DISPLAY=<span class="hljs-variable">$DISPLAY</span> --privilege
 The remaining parsing is performed through an R session initiated in the
  same directory:</li>
 </ol>
-<pre class="r"><code class="hljs">clinical.data &lt;- read.table(<span class="hljs-string">"annotation/clinical.tsv"</span>,sep=<span class="hljs-string">"\t"</span>,header=<span class="hljs-literal">T</span>)
-idat.files &lt;- list.files(<span class="hljs-string">"idat"</span>,full.names = <span class="hljs-literal">T</span>)
-meta.files &lt;- list.files(idat.files[<span class="hljs-number">1</span>],full.names = <span class="hljs-literal">T</span>)
-untar(meta.files[<span class="hljs-number">3</span>],exdir = idat.files[<span class="hljs-number">1</span>])
-meta.files &lt;- untar(meta.files[<span class="hljs-number">3</span>],list=<span class="hljs-literal">T</span>)
-meta.info &lt;- read.table(file.path(idat.files[<span class="hljs-number">1</span>],meta.files[<span class="hljs-number">5</span>]),sep=<span class="hljs-string">"\t"</span>,header=<span class="hljs-literal">T</span>)
-meta.info &lt;- meta.info[match(unique(meta.info$Comment..TCGA.Barcode.),meta.info$Comment..TCGA.Barcode.),]
-match.meta.clin &lt;- match(clinical.data$submitter_id,substr(meta.info$Comment..TCGA.Barcode.,<span class="hljs-number">1</span>,<span class="hljs-number">12</span>))
-anno.frame &lt;- na.omit(data.frame(clinical.data,meta.info[match.meta.clin,]))
-anno.frame$barcode &lt;- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),<span class="hljs-keyword">function</span>(x)strsplit(x,<span class="hljs-string">"_"</span>)),<span class="hljs-keyword">function</span>(x)paste(x[[<span class="hljs-number">1</span>]][<span class="hljs-number">1</span>],x[[<span class="hljs-number">1</span>]][<span class="hljs-number">2</span>],sep=<span class="hljs-string">"_"</span>)))
-anno.frame$Sentrix_ID &lt;- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),<span class="hljs-keyword">function</span>(x)strsplit(x,<span class="hljs-string">"_"</span>)),<span class="hljs-keyword">function</span>(x)paste(x[[<span class="hljs-number">1</span>]][<span class="hljs-number">1</span>])))
-anno.frame$Sentrix_Position &lt;- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),<span class="hljs-keyword">function</span>(x)strsplit(x,<span class="hljs-string">"_"</span>)),<span class="hljs-keyword">function</span>(x)paste(x[[<span class="hljs-number">1</span>]][<span class="hljs-number">2</span>])))
-anno.frame$healthy_cancer &lt;- ifelse(grepl(<span class="hljs-string">"11A"</span>,anno.frame$Comment..TCGA.Barcode.),<span class="hljs-string">"healthy"</span>,<span class="hljs-string">"cancer"</span>)
-write.table(anno.frame,<span class="hljs-string">"annotation/sample_annotation.tsv"</span>,quote=<span class="hljs-literal">F</span>,row.names = <span class="hljs-literal">F</span>,sep=<span class="hljs-string">"\t"</span>)
-anno.frame &lt;- read.table(<span class="hljs-string">"annotation/sample_annotation.tsv"</span>,quote=<span class="hljs-literal">F</span>,row.names = <span class="hljs-literal">F</span>,sep=<span class="hljs-string">"\t"</span>)</code></pre>
+<pre class="r"><code class="hljs"><span class="hljs-keyword">library</span>(tidyverse)
+clinical.data &lt;- read.table(
+    <span class="hljs-string">"annotation/clinical.tsv"</span>,
+    sep=<span class="hljs-string">"\t"</span>, header = <span class="hljs-literal">TRUE</span>)
+idat.files &lt;- list.files(<span class="hljs-string">"idat"</span>,full.names = <span class="hljs-literal">TRUE</span>)
+meta.files &lt;- list.files(idat.files[<span class="hljs-number">1</span>],full.names = <span class="hljs-literal">TRUE</span>)
+untar(meta.files[grepl(<span class="hljs-string">".tar.gz"</span>,meta.files)],exdir = idat.files[<span class="hljs-number">1</span>])
+meta.files &lt;- untar(meta.files[grepl(<span class="hljs-string">".tar.gz"</span>,meta.files)], list = <span class="hljs-literal">TRUE</span>)
+
+meta.info &lt;- read.table(
+    file.path(idat.files[<span class="hljs-number">1</span>],meta.files[grepl(<span class="hljs-string">".sdrf.txt"</span>,meta.files)]),
+    sep=<span class="hljs-string">"\t"</span>,header=<span class="hljs-literal">TRUE</span>)
+
+meta.info &lt;- meta.info[
+    match(unique(meta.info$Comment..TCGA.Barcode.),
+            meta.info$Comment..TCGA.Barcode.
+        ),
+]
+anno.frame &lt;- meta.info %&gt;% 
+    mutate(<span class="hljs-string">"submitter_id"</span>=substr(Comment..TCGA.Barcode., <span class="hljs-number">1</span>, <span class="hljs-number">12</span>)) %&gt;%
+    inner_join(x=clinical.data, by=c(<span class="hljs-string">"submitter_id"</span>=<span class="hljs-string">"submitter_id"</span>)) %&gt;%
+    distinct(submitter_id, submitter_id.4, .keep_all = <span class="hljs-literal">TRUE</span>) %&gt;%
+    mutate(barcode=gsub(<span class="hljs-string">"_Grn.idat|_Red.idat"</span>, <span class="hljs-string">""</span>, Array.Data.File),
+        Sentrix_ID=sub(<span class="hljs-string">"_.*$"</span>,<span class="hljs-string">""</span>, barcode),
+        Sentrix_Position=sub(<span class="hljs-string">"^[^_]+_"</span>,<span class="hljs-string">""</span>,barcode),
+        healthy_cancer=ifelse(grepl(<span class="hljs-string">"11A"</span>,Comment..TCGA.Barcode.),
+            <span class="hljs-string">"healthy"</span>,<span class="hljs-string">"cancer"</span>))
+
+write.table(anno.frame,
+    <span class="hljs-string">"annotation/sample_annotation.tsv"</span>,
+    quote = <span class="hljs-literal">FALSE</span>, row.names = <span class="hljs-literal">FALSE</span>, sep= <span class="hljs-string">"\t"</span>)</code></pre>
 <ol style="list-style-type: decimal" start="5">
 <li>Copy the IDAT files into a single directory idat for downstream analysis.</li>
 </ol>
 <pre class="r"><code class="hljs"><span class="hljs-comment">#' write idat files to parent directory</span>
 lapply(idat.files,<span class="hljs-keyword">function</span>(x){
-  is.idat &lt;- list.files(x,pattern = <span class="hljs-string">".idat"</span>,full.names = <span class="hljs-literal">T</span>)
+  is.idat &lt;- list.files(x,pattern = <span class="hljs-string">".idat"</span>, full.names = <span class="hljs-literal">TRUE</span>)
   file.copy(is.idat,<span class="hljs-string">"idat/"</span>)
-  unlink(x,recursive = <span class="hljs-literal">T</span>)
+  unlink(x,recursive = <span class="hljs-literal">TRUE</span>)
 })</code></pre>
 </div>
 </div>
@@ -588,20 +604,20 @@ differential methylation modules, such that <em>RnBeads</em> only performs data 
 </ol>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(RnBeads))
 rnb.options(
-  assembly=<span class="hljs-string">"hg19"</span>,
-  identifiers.column=<span class="hljs-string">"submitter_id"</span>,
-  import=<span class="hljs-literal">T</span>,
-  import.default.data.type=<span class="hljs-string">"idat.dir"</span>,
-  import.table.separator=<span class="hljs-string">"\t"</span>,
-  import.sex.prediction=<span class="hljs-literal">T</span>,
-  qc=<span class="hljs-literal">T</span>,
-  preprocessing=<span class="hljs-literal">F</span>,
-  exploratory=<span class="hljs-literal">F</span>,
-  inference=<span class="hljs-literal">F</span>,
-  differential=<span class="hljs-literal">F</span>,
-  export.to.bed=<span class="hljs-literal">F</span>,
-  export.to.trackhub=<span class="hljs-literal">NULL</span>,
-  export.to.csv=<span class="hljs-literal">F</span>
+  assembly = <span class="hljs-string">"hg19"</span>,
+  identifiers.column = <span class="hljs-string">"submitter_id"</span>,
+  import = <span class="hljs-literal">TRUE</span>,
+  import.default.data.type = <span class="hljs-string">"idat.dir"</span>,
+  import.table.separator = <span class="hljs-string">"\t"</span>,
+  import.sex.prediction = <span class="hljs-literal">TRUE</span>,
+  qc = <span class="hljs-literal">TRUE</span>,
+  preprocessing = <span class="hljs-literal">FALSE</span>,
+  exploratory = <span class="hljs-literal">FALSE</span>,
+  inference = <span class="hljs-literal">FALSE</span>,
+  differential = <span class="hljs-literal">FALSE</span>,
+  export.to.bed = <span class="hljs-literal">FALSE</span>,
+  export.to.trackhub = <span class="hljs-literal">NULL</span>,
+  export.to.csv = <span class="hljs-literal">FALSE</span>
 )</code></pre>
 <ol style="list-style-type: decimal" start="7">
 <li>Specify the input to <em>RnBeads</em>: the sample annotation sheet 
@@ -615,7 +631,9 @@ idat.folder &lt;- <span class="hljs-string">"idat/"</span>
 dir.report &lt;- paste0(<span class="hljs-string">"report"</span>,Sys.Date(),<span class="hljs-string">"/"</span>)
 temp.dir &lt;- <span class="hljs-string">"/tmp"</span>
 options(fftempdir=temp.dir)
-rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)</code></pre>
+rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report, 
+    sample.sheet = sample.anno,
+    data.dir = idat.folder)</code></pre>
 <p><strong>PAUSE POINT</strong> We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html">http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html</a> or directly loaded via:</p>
 <pre class="r"><code class="hljs">download.file(<span class="hljs-string">"http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip"</span>, destfile=paste0(tempdir(),<span class="hljs-string">"/RnBSet"</span>))
 rnb.set &lt;- load.rnb.set(paste0(tempdir(),<span class="hljs-string">"/RnBSet"</span>))</code></pre>
@@ -640,7 +658,22 @@ located on the sex chromosomes and potentially cross-reactive probes.
 Finally, apply BMIQ normalization to account for the bias introduced by 
 the two Infinium probe designs.</li>
 </ol>
-<p><strong>PAUSE POINT</strong> We provide a list of selected CpGs as an intermediate result <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv</a>.</p>
+<pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(DecompPipeline))
+data.prep &lt;- prepare.data(rnb.set = rnb.set,
+    analysis.name = <span class="hljs-string">"TCGA_LUAD"</span>,
+    normalization = <span class="hljs-string">"bmiq"</span>,
+    filter.beads = <span class="hljs-literal">TRUE</span>,
+    min.n.beads = <span class="hljs-number">3</span>,
+    filter.intensity = <span class="hljs-literal">TRUE</span>,
+    min.int.quant = <span class="hljs-number">0.001</span>,
+    max.int.quant = <span class="hljs-number">0.999</span>,
+    filter.na = <span class="hljs-literal">TRUE</span>,
+    filter.context = <span class="hljs-literal">TRUE</span>,
+    filter.snp = <span class="hljs-literal">TRUE</span>,
+    filter.sex.chromosomes = <span class="hljs-literal">TRUE</span>,
+    filter.cross.reactive = <span class="hljs-literal">TRUE</span>,
+    execute.lump=<span class="hljs-literal">TRUE</span>)</code></pre>
+<p><strong>PAUSE POINT</strong> We provide a list of CpGs that are selected for the downstream analysis at <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv</a>. You can directly select those sites from you RnBSet object.</p>
 <pre class="r"><code class="hljs">rem.sites &lt;- rep(<span class="hljs-literal">TRUE</span>,nrow(meth(rnb.set)))
 sel.sites &lt;-
 read.csv(<span class="hljs-string">"http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_co
@@ -654,41 +687,41 @@ data.prep &lt;- list(rnb.set.filtered=rnb.set)</code></pre>
 epigenomic studies and the influences of, for instance, donor sex, age, 
 and genotype on the DNA methylation pattern are well-studied 28,29 . Use
  Independent Component Analysis (ICA, see Materials) to account for DNA 
-methylation differences that are due to sex, age, race, and ethnicity.</li>
+methylation differences that are due to sex, age, race, and ethnicity. 
+Confounding factor adjustment alters the overall data distribution. Go 
+to the analysis directory generated by DecompPipeline (<em>TCGA_LUAD</em>)
+ and investigate the associations between Independent Components and the
+ specified confounding factors. In case the reported p-value is lower 
+than the parameter alpha.fact , ICA will automatically adjust for the 
+corresponding confounding factor. Furthermore, inspect if the 
+distribution of DNA methylation is preserved. Confounding factor 
+adjustment is currently only supported for Illumina BeadArray datasets 
+and has not yet been extended to bisulfite sequencing data.</li>
 </ol>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(DecompPipeline))
-data.prep &lt;- prepare_data(RNB_SET = rnb.set,
-                          analysis.name = <span class="hljs-string">"TCGA_LUAD"</span>,
-                          NORMALIZATION = <span class="hljs-string">"bmiq"</span>,
-                          FILTER_BEADS = <span class="hljs-literal">T</span>,
-                          MIN_N_BEADS = <span class="hljs-number">3</span>,
-                          FILTER_INTENSITY = <span class="hljs-literal">T</span>,
-                          MIN_INT_QUANT = <span class="hljs-number">0.001</span>,
-                          MAX_INT_QUANT = <span class="hljs-number">0.999</span>,
-                          FILTER_NA = <span class="hljs-literal">T</span>,
-                          FILTER_CONTEXT = <span class="hljs-literal">T</span>,
-                          FILTER_SNP = <span class="hljs-literal">T</span>,
-                          FILTER_SOMATIC = <span class="hljs-literal">T</span>,
-                          FILTER_CROSS_REACTIVE = <span class="hljs-literal">T</span>,
-                          execute.lump=<span class="hljs-literal">T</span>,
-                          remove.ICA=<span class="hljs-literal">T</span>,
-                          conf.fact.ICA=c(<span class="hljs-string">"age_at_diagnosis"</span>,<span class="hljs-string">"race"</span>,<span class="hljs-string">"gender"</span>,<span class="hljs-string">"ethnicity"</span>),
-                          ica.setting=c(<span class="hljs-string">"alpha.fact"</span>=<span class="hljs-number">1e-5</span>,<span class="hljs-string">"save.report"</span>=<span class="hljs-literal">T</span>,<span class="hljs-string">"nmin"</span>=<span class="hljs-number">30</span>,<span class="hljs-string">"nmax"</span>=<span class="hljs-number">50</span>,<span class="hljs-string">"ncores"</span>=<span class="hljs-number">10</span>))</code></pre>
-<p><strong>PAUSE POINT</strong> We provide a list of CpGs that are selected for the downstream analysis at <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv</a>. You can directly select those sites from you RnBSet object.</p>
-<pre class="r"><code class="hljs">rem.sites &lt;- rep(<span class="hljs-literal">TRUE</span>,nrow(meth(rnb.set)))
-sel.sites &lt;- read.csv(<span class="hljs-string">"http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv"</span>)
-rem.sites[row.names(annotation(rnb.set))%<span class="hljs-keyword">in</span>%as.character(sel.sites[,<span class="hljs-number">1</span>])] &lt;- <span class="hljs-literal">FALSE</span>
-rnb.set &lt;- remove.sites(rnb.set,rem.sites)
-data.prep &lt;- list(rnb.set.filtered=rnb.set)</code></pre>
+data.prep &lt;- prepare.data(rnb.set = data.prep$rnb.set.filtered,
+    normalization = <span class="hljs-string">"none"</span>,
+    analysis.name = <span class="hljs-string">"TCGA_LUAD"</span>,
+    filter.beads=<span class="hljs-literal">FALSE</span>,
+    filter.intensity=<span class="hljs-literal">FALSE</span>,
+    remove.ICA=<span class="hljs-literal">TRUE</span>,
+    filter.na = <span class="hljs-literal">FALSE</span>,
+    filter.context = <span class="hljs-literal">FALSE</span>,
+    filter.snp = <span class="hljs-literal">FALSE</span>,
+    filter.sex.chromosomes = <span class="hljs-literal">FALSE</span>,
+    filter.cross.reactive = <span class="hljs-literal">FALSE</span>,
+    conf.fact.ICA=c(<span class="hljs-string">"age_at_diagnosis"</span>,<span class="hljs-string">"race"</span>,<span class="hljs-string">"gender"</span>,<span class="hljs-string">"ethnicity"</span>),
+    ica.setting=c(<span class="hljs-string">"alpha.fact"</span>=<span class="hljs-number">1e-5</span>,<span class="hljs-string">"save.report"</span>=<span class="hljs-literal">TRUE</span>,
+        <span class="hljs-string">"ntry"</span>=<span class="hljs-number">10</span>,<span class="hljs-string">"nmin"</span>=<span class="hljs-number">20</span>,<span class="hljs-string">"nmax"</span>=<span class="hljs-number">50</span>,<span class="hljs-string">"ncores"</span>=<span class="hljs-number">10</span>))</code></pre>
 </div>
 <div id="selection-of-cpg-subsets-1-min" class="section level3">
 <h3>Selection of CpG subsets (1 min)</h3>
 <ol style="list-style-type: decimal" start="11">
 <li>Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of <em>prepare_CG_subsets</em>) through the <em>prepare_CG_subsets</em> function. Select the 5,000 most highly variable CpGs across the samples.</li>
 </ol>
-<pre class="r"><code class="hljs">cg_subset &lt;- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = <span class="hljs-string">"var"</span>,
-                                N_MARKERS = <span class="hljs-number">5000</span>)
+<pre class="r"><code class="hljs">cg_subset &lt;- prepare.CG.subsets(rnb.set = data.prep$rnb.set.filtered,
+                                marker.selection = <span class="hljs-string">"var"</span>,
+                                n.markers = <span class="hljs-number">5000</span>)
 names(cg_subset)</code></pre>
 </div>
 </div>
@@ -707,11 +740,17 @@ the regularization parameter (λ) from strong (0.01) to no regularization
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
   Ks=<span class="hljs-number">2</span>:<span class="hljs-number">15</span>,
-  LAMBDA_GRID = c(<span class="hljs-number">0</span>,<span class="hljs-number">10</span>^-(<span class="hljs-number">2</span>:<span class="hljs-number">5</span>)),
+  lambda.grid = c(<span class="hljs-number">0</span>,<span class="hljs-number">10</span>^-(<span class="hljs-number">2</span>:<span class="hljs-number">5</span>)),
   factorviz.outputs = <span class="hljs-literal">T</span>,
-  analysis.name = <span class="hljs-string">"TCGA_LUAD"</span>,
+  analysis.name = <span class="hljs-string">"TCGA_May"</span>,
   cores = <span class="hljs-number">15</span>
 )</code></pre>
+<ol style="list-style-type: decimal" start="13">
+<li>(Optional) Decide on the Ddeconvolution tool to be used of the DNA 
+methylation data matrix is at the core of this protocol, and different 
+methods have been proposed. In addition to our own method MeDeCom, this 
+protocol supports <em>RefFreeCellMix</em> and <em>EDec</em>.</li>
+</ol>
 <p><strong>PAUSE POINT</strong> The final MeDeCom result is stored in a 
 format that can be directly imported with FactorViz. We provide the 
 final result for exploration at <a href="http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz" class="uri">http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz</a>.</p>
@@ -721,12 +760,16 @@ untar(paste0(tempdir(),<span class="hljs-string">"/FactorViz_outputs.tar.gz"</sp
 </div>
 <div id="downstream-analysis-3-h" class="section level2">
 <h2>Downstream analysis (3 h)</h2>
-<ol style="list-style-type: decimal" start="13">
+<ol style="list-style-type: decimal" start="14">
 <li>Start the <em>FactorViz</em> application to visualize and interactively explore the deconvolution results.</li>
 </ol>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(FactorViz))
 startFactorViz(file.path(getwd(),<span class="hljs-string">"TCGA_LUAD"</span>,<span class="hljs-string">"FactorViz_outputs"</span>))</code></pre>
-<ol style="list-style-type: decimal" start="14">
+<ol style="list-style-type: decimal" start="15">
+<li><p>(Optional). Load the MeDeComSet object in an additional R session
+ started in the working directory, where deconvolution has been 
+performed. The object is stored in the FactorViz_outputs directory, and 
+can be used for additional analysis.</p></li>
 <li><p>Determine the number of LMCs (K) and the regularization parameter
  (λ) based on the cross-validation error. First, go to panel “K 
 selection” to plot cross-validation error for the range of Ks specified 

@@ -1,8 +1,8 @@
 ---
 title: "DNA Methylation Deconvolution Protocol"
 author: Michael Scherer, Petr Nazarov, Reka Toth, Shashwat Sahay, Tony Kamoa, Valentin
-  Maurer, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
-date: "March 12, 2020"
+  Maurer, Nikita Vedenev, Christoph Plass, Thomas Lengauer, Joern Walter, and Pavlo Lutsik
+date: "May 03, 2020"
 output:
   html_document: default
   pdf_document: default
@@ -25,7 +25,7 @@ Deconvolution here refers to creating two matrices (proportion matrix A and meth
 
 ```r
 install.packages(c("devtools","BiocManager"))
-BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
+BiocManager::install(c("RnBeads","RnBeads.hg19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
 devtools::install_github(c("lutsik/MeDeCom","CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
 ```
@@ -35,7 +35,7 @@ library(DecompPipeline)
 
 ```r
 install.packages(c("devtools","BiocManager"))
-BiocManager::install(c("RnBeads","RnBeads.gh19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
+BiocManager::install(c("RnBeads","RnBeads.hg19","RnBeads.mm10","RnBeads.hg38"),dependencies=TRUE)
 install.packages("https://github.com/lutsik/MeDeCom/releases/download/v1.0.0/MeDeCom_1.0.0.tgz",repos=NULL,type="binary")
 devtools::install_github(c("CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
@@ -91,21 +91,37 @@ Store the resulting files in a new directory *idat*.
 
 
 ```r
-clinical.data <- read.table("annotation/clinical.tsv",sep="\t",header=T)
-idat.files <- list.files("idat",full.names = T)
-meta.files <- list.files(idat.files[1],full.names = T)
-untar(meta.files[3],exdir = idat.files[1])
-meta.files <- untar(meta.files[3],list=T)
-meta.info <- read.table(file.path(idat.files[1],meta.files[5]),sep="\t",header=T)
-meta.info <- meta.info[match(unique(meta.info$Comment..TCGA.Barcode.),meta.info$Comment..TCGA.Barcode.),]
-match.meta.clin <- match(clinical.data$submitter_id,substr(meta.info$Comment..TCGA.Barcode.,1,12))
-anno.frame <- na.omit(data.frame(clinical.data,meta.info[match.meta.clin,]))
-anno.frame$barcode <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][1],x[[1]][2],sep="_")))
-anno.frame$Sentrix_ID <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][1])))
-anno.frame$Sentrix_Position <- unlist(lapply(lapply(as.character(anno.frame$Array.Data.File),function(x)strsplit(x,"_")),function(x)paste(x[[1]][2])))
-anno.frame$healthy_cancer <- ifelse(grepl("11A",anno.frame$Comment..TCGA.Barcode.),"healthy","cancer")
-write.table(anno.frame,"annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
-anno.frame <- read.table("annotation/sample_annotation.tsv",quote=F,row.names = F,sep="\t")
+library(tidyverse)
+clinical.data <- read.table(
+	"annotation/clinical.tsv",
+	sep="\t", header = TRUE)
+idat.files <- list.files("idat",full.names = TRUE)
+meta.files <- list.files(idat.files[1],full.names = TRUE)
+untar(meta.files[grepl(".tar.gz",meta.files)],exdir = idat.files[1])
+meta.files <- untar(meta.files[grepl(".tar.gz",meta.files)], list = TRUE)
+
+meta.info <- read.table(
+	file.path(idat.files[1],meta.files[grepl(".sdrf.txt",meta.files)]),
+	sep="\t",header=TRUE)
+
+meta.info <- meta.info[
+	match(unique(meta.info$Comment..TCGA.Barcode.),
+	        meta.info$Comment..TCGA.Barcode.
+		),
+]
+anno.frame <- meta.info %>% 
+	mutate("submitter_id"=substr(Comment..TCGA.Barcode., 1, 12)) %>%
+	inner_join(x=clinical.data, by=c("submitter_id"="submitter_id")) %>%
+	distinct(submitter_id, submitter_id.4, .keep_all = TRUE) %>%
+	mutate(barcode=gsub("_Grn.idat|_Red.idat", "", Array.Data.File),
+		Sentrix_ID=sub("_.*$","", barcode),
+		Sentrix_Position=sub("^[^_]+_","",barcode),
+		healthy_cancer=ifelse(grepl("11A",Comment..TCGA.Barcode.),
+			"healthy","cancer"))
+
+write.table(anno.frame,
+	"annotation/sample_annotation.tsv",
+	quote = FALSE, row.names = FALSE, sep= "\t")
 ```
 
 5. Copy the IDAT files into a single directory idat for downstream analysis.
@@ -114,9 +130,9 @@ anno.frame <- read.table("annotation/sample_annotation.tsv",quote=F,row.names = 
 ```r
 #' write idat files to parent directory
 lapply(idat.files,function(x){
-  is.idat <- list.files(x,pattern = ".idat",full.names = T)
+  is.idat <- list.files(x,pattern = ".idat", full.names = TRUE)
   file.copy(is.idat,"idat/")
-  unlink(x,recursive = T)
+  unlink(x,recursive = TRUE)
 })
 ```
 
@@ -130,20 +146,20 @@ lapply(idat.files,function(x){
 ```r
 suppressPackageStartupMessages(library(RnBeads))
 rnb.options(
-  assembly="hg19",
-  identifiers.column="submitter_id",
-  import=T,
-  import.default.data.type="idat.dir",
-  import.table.separator="\t",
-  import.sex.prediction=T,
-  qc=T,
-  preprocessing=F,
-  exploratory=F,
-  inference=F,
-  differential=F,
-  export.to.bed=F,
-  export.to.trackhub=NULL,
-  export.to.csv=F
+  assembly = "hg19",
+  identifiers.column = "submitter_id",
+  import = TRUE,
+  import.default.data.type = "idat.dir",
+  import.table.separator = "\t",
+  import.sex.prediction = TRUE,
+  qc = TRUE,
+  preprocessing = FALSE,
+  exploratory = FALSE,
+  inference = FALSE,
+  differential = FALSE,
+  export.to.bed = FALSE,
+  export.to.trackhub = NULL,
+  export.to.csv = FALSE
 )
 ```
 
@@ -158,7 +174,9 @@ idat.folder <- "idat/"
 dir.report <- paste0("report",Sys.Date(),"/")
 temp.dir <- "/tmp"
 options(fftempdir=temp.dir)
-rnb.set <- rnb.run.analysis(dir.reports = dir.report, sample.sheet = sample.anno, data.dir = idat.folder)
+rnb.set <- rnb.run.analysis(dir.reports = dir.report, 
+	sample.sheet = sample.anno,
+	data.dir = idat.folder)
 ```
 
 **PAUSE POINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
@@ -178,8 +196,26 @@ http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 
 9. For further data preparation and analysis steps use the *DecompPipeline* package. Processing options are provided through individual function parameters. Follow a stringent filtering strategy: (i) Filter CpGs covered by less than 3 beads, and probes that are in the 0.001 and 0.999 overall intensity quantiles (low and high intensity outliers). (ii) Remove all probes containing missing values in any of the samples. (iii) Discard sites outside of CpG context, overlapping annotated SNPs, located on the sex chromosomes and potentially cross-reactive probes. Finally, apply BMIQ normalization to account for the bias introduced by the two Infinium probe designs.
 
-**PAUSE POINT** We provide a list of selected CpGs as an intermediate result
-http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv.
+
+```r
+suppressPackageStartupMessages(library(DecompPipeline))
+data.prep <- prepare.data(rnb.set = rnb.set,
+	analysis.name = "TCGA_LUAD",
+	normalization = "bmiq",
+	filter.beads = TRUE,
+	min.n.beads = 3,
+	filter.intensity = TRUE,
+	min.int.quant = 0.001,
+	max.int.quant = 0.999,
+	filter.na = TRUE,
+	filter.context = TRUE,
+	filter.snp = TRUE,
+	filter.sex.chromosomes = TRUE,
+	filter.cross.reactive = TRUE,
+	execute.lump=TRUE)
+```
+
+**PAUSE POINT** We provide a list of CpGs that are selected for the downstream analysis at http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv. You can directly select those sites from you RnBSet object.
 
 
 ```r
@@ -196,50 +232,35 @@ data.prep <- list(rnb.set.filtered=rnb.set)
 10. Adjustment for potential confounding factors is crucial in epigenomic studies and the influences
 of, for instance, donor sex, age, and genotype on the DNA methylation pattern are well-studied 28,29 .
 Use Independent Component Analysis (ICA, see Materials) to account for DNA methylation differences
-that are due to sex, age, race, and ethnicity.
+that are due to sex, age, race, and ethnicity. Confounding factor adjustment alters the overall data distribution. Go to the analysis directory generated by DecompPipeline (*TCGA_LUAD*) and investigate the associations between Independent Components and the specified confounding factors. In case the reported p-value is lower than the parameter alpha.fact , ICA will automatically adjust for the corresponding confounding factor. Furthermore, inspect if the distribution of DNA methylation is preserved. Confounding factor adjustment is currently only supported for Illumina BeadArray datasets and has not yet been extended to bisulfite sequencing data.
 
 
 ```r
 suppressPackageStartupMessages(library(DecompPipeline))
-data.prep <- prepare_data(RNB_SET = rnb.set,
-                          analysis.name = "TCGA_LUAD",
-                          NORMALIZATION = "bmiq",
-                          FILTER_BEADS = T,
-                          MIN_N_BEADS = 3,
-                          FILTER_INTENSITY = T,
-                          MIN_INT_QUANT = 0.001,
-                          MAX_INT_QUANT = 0.999,
-                          FILTER_NA = T,
-                          FILTER_CONTEXT = T,
-                          FILTER_SNP = T,
-                          FILTER_SOMATIC = T,
-                          FILTER_CROSS_REACTIVE = T,
-                          execute.lump=T,
-                          remove.ICA=T,
-                          conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
-                          ica.setting=c("alpha.fact"=1e-5,"save.report"=T,"nmin"=30,"nmax"=50,"ncores"=10))
+data.prep <- prepare.data(rnb.set = data.prep$rnb.set.filtered,
+	normalization = "none",
+	analysis.name = "TCGA_LUAD",
+	filter.beads=FALSE,
+	filter.intensity=FALSE,
+	remove.ICA=TRUE,
+	filter.na = FALSE,
+	filter.context = FALSE,
+	filter.snp = FALSE,
+	filter.sex.chromosomes = FALSE,
+	filter.cross.reactive = FALSE,
+	conf.fact.ICA=c("age_at_diagnosis","race","gender","ethnicity"),
+	ica.setting=c("alpha.fact"=1e-5,"save.report"=TRUE,
+		"ntry"=10,"nmin"=20,"nmax"=50,"ncores"=10))
 ```
-
-**PAUSE POINT** We provide a list of CpGs that are selected for the downstream analysis at http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv. You can directly select those sites from you RnBSet object.
-
-
-```r
-rem.sites <- rep(TRUE,nrow(meth(rnb.set)))
-sel.sites <- read.csv("http://epigenomics.dkfz.de/downloads/DecompProtocol/sites_passing_complete_filtering.csv")
-rem.sites[row.names(annotation(rnb.set))%in%as.character(sel.sites[,1])] <- FALSE
-rnb.set <- remove.sites(rnb.set,rem.sites)
-data.prep <- list(rnb.set.filtered=rnb.set)
-```
-
 ### Selection of CpG subsets (1 min)
 
 11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
 
 ```r
-cg_subset <- prepare_CG_subsets(rnb.set=data.prep$rnb.set.filtered,
-                                MARKER_SELECTION = "var",
-                                N_MARKERS = 5000)
+cg_subset <- prepare.CG.subsets(rnb.set = data.prep$rnb.set.filtered,
+                                marker.selection = "var",
+                                n.markers = 5000)
 names(cg_subset)
 ```
 
@@ -255,12 +276,15 @@ md.res <- start_medecom_analysis(
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
   Ks=2:15,
-  LAMBDA_GRID = c(0,10^-(2:5)),
+  lambda.grid = c(0,10^-(2:5)),
   factorviz.outputs = T,
-  analysis.name = "TCGA_LUAD",
+  analysis.name = "TCGA_May",
   cores = 15
 )
 ```
+13. (Optional) Decide on the Ddeconvolution tool to be used of the DNA methylation data matrix is at
+the core of this protocol, and different methods have been proposed. In addition to our own
+method MeDeCom, this protocol supports *RefFreeCellMix* and *EDec*.
 
 **PAUSE POINT** The final MeDeCom result is stored in a format that can be directly imported with FactorViz. We provide the final result for exploration at http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz.
 
@@ -272,25 +296,27 @@ untar(paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
 
 ## Downstream analysis (3 h)
 
-13. Start the *FactorViz* application to visualize and interactively explore the deconvolution results.
+14. Start the *FactorViz* application to visualize and interactively explore the deconvolution results.
 
 
 ```r
 suppressPackageStartupMessages(library(FactorViz))
 startFactorViz(file.path(getwd(),"TCGA_LUAD","FactorViz_outputs"))
 ```
+15. (Optional). Load the MeDeComSet object in an additional R session started in the working
+directory, where deconvolution has been performed. The object is stored in the FactorViz_outputs directory, and can be used for additional analysis.
 
-14. Determine the number of LMCs (K) and the regularization parameter (λ) based on the cross-validation error. First, go to panel “K selection” to plot cross-validation error for the range of Ks specified earlier. We recommend selecting K values as a trade-off between too high complexity, i.e. fitting the noise in the data (higher K values) and insufficient degrees of freedom (lower K values). This typically corresponds to the saddle point where cross-validation error starts to level out.
+16. Determine the number of LMCs (K) and the regularization parameter (λ) based on the cross-validation error. First, go to panel “K selection” to plot cross-validation error for the range of Ks specified earlier. We recommend selecting K values as a trade-off between too high complexity, i.e. fitting the noise in the data (higher K values) and insufficient degrees of freedom (lower K values). This typically corresponds to the saddle point where cross-validation error starts to level out.
 
-15. For a fixed K, select a value for the regularization parameter (λ) by proceeding to panel “Lambda selection”. An optimal value for λ will often correspond to a local minimum of the cross-validation error. On the other hand, noticeable changes in other statistics, such as objective value or root mean squared error (RMSE), can point at a different λ value.
+17. For a fixed K, select a value for the regularization parameter (λ) by proceeding to panel “Lambda selection”. An optimal value for λ will often correspond to a local minimum of the cross-validation error. On the other hand, noticeable changes in other statistics, such as objective value or root mean squared error (RMSE), can point at a different λ value.
 
-16. In the “Proportions” panel of FactorViz, visualize LMC proportions using heatmaps. Proportion heatmaps can be visually annotated with available qualitative and quantitative traits (see dropdown “Color samples by”). Further visualization options include stacked barplot and lineplots.
+18. In the “Proportions” panel of FactorViz, visualize LMC proportions using heatmaps. Proportion heatmaps can be visually annotated with available qualitative and quantitative traits (see dropdown “Color samples by”). Further visualization options include stacked barplot and lineplots.
 
-17. In the “Meta-analysis” panel, associate LMC proportions with quantitative and qualitative traits using correlation- and t-tests. Further sample annotations, such as mutational load (https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018) and tumor purity scores can be obtained from public repositories and related publications (https://static-content.springer.com/esm/art%3A10.1038%2Fncomms3612/MediaObjects/41467_2013_BFncomms3612_MOESM489_ESM.xlsx). In addition, scripts to conduct such analysis are available on the Supplementary Website (http://epigenomics.dkfz.de/DecompProtocol/).
+19. In the “Meta-analysis” panel, associate LMC proportions with quantitative and qualitative traits using correlation- and t-tests. Further sample annotations, such as mutational load (https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018) and tumor purity scores can be obtained from public repositories and related publications (https://static-content.springer.com/esm/art%3A10.1038%2Fncomms3612/MediaObjects/41467_2013_BFncomms3612_MOESM489_ESM.xlsx). In addition, scripts to conduct such analysis are available on the Supplementary Website (http://epigenomics.dkfz.de/DecompProtocol/).
 
-18. Explore the LMCs in the panel “LMCs”. Several visualization options are available such as Multidimensional Scaling and histograms. Reference profiles can be used for joint visualization in case those are available.
+20. Explore the LMCs in the panel “LMCs”. Several visualization options are available such as Multidimensional Scaling and histograms. Reference profiles can be used for joint visualization in case those are available.
 
-19. Determine DNA methylation sites that are specifically hypo- and hypermethylated in an LMC by comparing the methylation values in the LMC matrix for each LMC to the median of the remaining LMCs in the “Meta-analysis” panel. LMC-specific sites can be used for either a gene-centric Gene Ontology analysis (select ”Enrichments” and “GO Enrichments” in dropdown ”Analysis” and “Output type”) or for region-based enrichment analysis with the LOLA package (select “LOLA Enrichments” in dropdown ”Output type”). The differential sites can be exported for further analysis, and the resulting plots can be stored by clicking on the “PDF” button.
+21. Determine DNA methylation sites that are specifically hypo- and hypermethylated in an LMC by comparing the methylation values in the LMC matrix for each LMC to the median of the remaining LMCs in the “Meta-analysis” panel. LMC-specific sites can be used for either a gene-centric Gene Ontology analysis (select ”Enrichments” and “GO Enrichments” in dropdown ”Analysis” and “Output type”) or for region-based enrichment analysis with the LOLA package (select “LOLA Enrichments” in dropdown ”Output type”). The differential sites can be exported for further analysis, and the resulting plots can be stored by clicking on the “PDF” button.
 
 **PAUSE POINT** Additional built-in options for visualization of LMCs and proportions are available via the *MeDeCom* functions ```plotLMCs``` and ```plotProportions``` in R. Finally, the LMC and proportions matrix can be extracted from the MeDeComSet object, and the genomic annotation of CpGs (```ann.C```) can be obtained from the *FactorViz* output for a custom downstream analysis:
 
