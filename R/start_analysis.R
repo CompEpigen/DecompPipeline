@@ -25,7 +25,7 @@ start.analysis <- function(meth.data=NULL,
     stop(paste0("Invalid value for method. Needs to be one of ",all.methods))
   }
   if(method == "MeDeCom"){
-    md.res <- start_medecom_analysis(meth.data = meth.data,
+    md.res <- start.medecom.analysis(meth.data = meth.data,
                                      rnb.set = rnb.set,
                                      cg.groups = cg.groups,
                                      Ks = Ks,
@@ -167,7 +167,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
     devis.all <- list()
     for(i.group in 1:length(cg.groups)){
       logger.start(paste("Processing group:",i.group))
-      group <- cg_groups[[i.group]]
+      group <- cg.groups[[i.group]]
       meth.sset <- meth.data[group,]
       res.sset <- RefFreeEWAS::RefFreeCellMixArray(meth.sset,Klist=Ks)
       devis <- tryCatch(RefFreeEWAS::RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
@@ -180,8 +180,8 @@ start.refreeewas.analysis <- function(meth.data=NULL,
       res.all[[i.group]] <- res.sset
       logger.completed()
     }
-    result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg_groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
-    result@parameters$GROUP_LISTS <- cg_groups
+    result <- as.MeDeComSet(res.all,cg_subsets=1:length(cg.groups),Ks=Ks,deviances=devis.all,m.orig=nrow(meth.data),n.orig=ncol(meth.data))
+    result@parameters$GROUP_LISTS <- cg.groups
     if(factorviz.outputs){
       store.path <- file.path(work.dir,"FactorViz_outputs")
       if(!file.exists(store.path)){
