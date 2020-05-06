@@ -1,3 +1,9 @@
+DecompPipeline 1.0.2
+=============
+
+ * Changed parameter names to all lowercase
+ * Updated vignettes according to the new parameter names
+
 DecompPipeline 1.0.0
 =============
 

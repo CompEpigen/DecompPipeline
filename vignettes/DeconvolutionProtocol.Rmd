@@ -174,7 +174,7 @@ rnb.set <- rnb.run.analysis(dir.reports = dir.report,
 	data.dir = idat.folder)
 ```
 
-**PAUSE POINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html](http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/index.html) or directly loaded via:
+**PAUSE POINT** We provide an example report containing the processed RnBSet object for further analysis. It can be obtained from [http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip](http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip) or directly loaded via:
 
 ```{r breakoint_1, eval=F}
 download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/rnbSet_unnormalized.zip", destfile=paste0(tempdir(),"/RnBSet"))

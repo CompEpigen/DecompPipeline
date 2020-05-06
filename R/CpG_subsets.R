@@ -83,7 +83,7 @@ prepare.CG.subsets<-function(
 		remove.correlated=FALSE,
 		cor.threshold="quantile",
 		write.files=FALSE,
-		work.dir=NA,
+		out.dir=NA,
 		ref.rnb.set=NULL,
 		ref.pheno.column=NULL,
 		n.prin.comp=10,

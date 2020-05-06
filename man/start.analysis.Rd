@@ -30,6 +30,8 @@ through \code{rnb.set}}
 \item{factorviz.outputs}{Flag indicating, if outputs should be stored to be compatible with FactorViz for data exploration}
 
 \item{method}{The method to be used for deconvolution. Can be one of \code{MeDeCom}, \code{RefFreeCellMix} or \code{EDec}.}
+
+\item{...}{Further parameters passed to \code{\link{start.medecom.analysis}}}
 }
 \description{
 Wrapper function to start one of the deconvolution algorithms \code{MeDeCom}, \code{RefFreeEWAS} or \code{EDec}

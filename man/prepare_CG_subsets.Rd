@@ -13,7 +13,7 @@ prepare.CG.subsets(
   remove.correlated = FALSE,
   cor.threshold = "quantile",
   write.files = FALSE,
-  work.dir = NA,
+  out.dir = NA,
   ref.rnb.set = NULL,
   ref.pheno.column = NULL,
   n.prin.comp = 10,
@@ -70,6 +70,8 @@ If \code{"quantile"}, sites correlated higher than the 95th quantile are removed
 
 \item{write.files}{Flag indicating if the selected sites are to be stored on disk.}
 
+\item{out.dir}{Path to the working directory used for analyis, or data preparation.}
+
 \item{ref.rnb.set}{An object of type \code{\link{RnBSet-class}} or a path to such an object stored on disk, 
 if \code{rowFstat} is selected.}
 
@@ -90,8 +92,6 @@ The files are then stored in the 'heatmaps' folder in out.dir.}
 \item{heatmap.sample.col}{Column name in the phenotypic table of \code{rnb.set}, used for creating a color scheme in the heatmap.}
 
 \item{K.prior}{K determined from visual inspection. Only has an influence, if \code{marker.selection="pcadapt"}.}
-
-\item{out.dir}{Path to the working directory used for analyis, or data preparation.}
 }
 \value{
 List of indices, one entry for each marker selection method specified by \code{marker.selection}. The indices correspond
