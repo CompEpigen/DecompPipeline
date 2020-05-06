@@ -157,7 +157,7 @@ CG_SUBSET SELECTION}
 
 \item{marker.selection}{A vector of strings representing marker selection methods. Available method are \itemize{
          \item{"\code{all}"} Using all sites available in the input.
-         \item{"\code{pheno}"} Selected are the top \code{N_MARKERS} site that differ between the phenotypic
+         \item{"\code{pheno}"} Selected are the top \code{n.markers} site that differ between the phenotypic
                 groups defined in data preparation or by \code{\link{rnb.sample.groups}}. Those are
                 selected by employing limma on the methylation matrix.
          \item{"\code{houseman2012}"} The 50k sites reported as cell-type specific in the Houseman's reference-
@@ -166,12 +166,12 @@ CG_SUBSET SELECTION}
                 which is similar to surrogate variable analysis. See Houseman et.al. 2014.
          \item{"\code{jaffe2014}"} The sites stated as related to cell-type composition Jaffe et.al. 2014.
          \item{"\code{rowFstat}"} Markers are selected as those found to be associated to the reference cell
-                types with F-statistics. If this option is selected, \code{REF_DATA_SET} and \code{REF_PHENO_COLUMN}
+                types with F-statistics. If this option is selected, \code{ref.rnb.set} and \code{ref.pheno.column}
                 need to be specified.
          \item{"\code{random}"} Sites are randomly selected.
          \item{"\code{pca}"} Sites are selected as those with most influence on the principal components.
          \item{"\code{var}"} Selects the most variable sites.
-         \item{"\code{hybrid}"} Selects (N_MARKERS/2) most variable and (N_MARKERS/2) random sites.
+         \item{"\code{hybrid}"} Selects (n.markers/2) most variable and (n.markers/2) random sites.
          \item{"\code{range}"} Selects the sites with the largest difference between minimum and maximum
               across samples.
          \item{"\code{pcadapt}"} Uses principal component analysis as implemented in the \code{"bigstats"}
@@ -180,7 +180,7 @@ CG_SUBSET SELECTION}
               Achard for providing the idea and parts of the codes.
          \item{"\code{edec_stage0}} Employs EDec's stage 0 to infer cell-type specific markers. By default
               EDec's example reference data is provided. If a specific data set is to be provided, it needs
-              to be done through \code{REF_DATA_SET}.
+              to be done through \code{ref.rnb.set}.
          \item{"\code{custom}"} Specifying a custom file with indices.
 }}
 

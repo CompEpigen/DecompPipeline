@@ -31,7 +31,7 @@ start.medecom.analysis(
   cluster.memlimit = "5G",
   cleanup = FALSE,
   analysis.info = NULL,
-  lambda.grid_TYPE = "standard",
+  lambda.grid.type = "standard",
   analysis.token = "customAnalysis"
 )
 }
@@ -89,7 +89,7 @@ through \code{rnb.set}}
 
 \item{analysis.info}{Information to be saved about the analysis. Just stored as info.}
 
-\item{lambda.grid_TYPE}{String represent the lambda grid that was chosen. Just stored as info.}
+\item{lambda.grid.type}{String represent the lambda grid that was chosen. Just stored as info.}
 
 \item{analysis.token}{String specifying the type of analysis that was conducted. Just stored as info.}
 }

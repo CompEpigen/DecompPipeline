@@ -2,7 +2,7 @@
 #' 
 #' This routine selects a subset of CpGs sites used for MeDeCom analysis. Different selection methods are supported.
 #' 
-#' @name prepare_CG_subsets
+#' @name prepare.CG.subsets
 #' 
 #' @param meth.data A \code{matrix} or \code{data.frame} containing methylation information. If NULL, methylation information needs to be provided
 #'                   through \code{rnb.set}
