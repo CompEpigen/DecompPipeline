@@ -117,6 +117,14 @@ prepare.data<-function(
 		rnb.set<-rnb.set
 	}
 	
+	if(!is.null(conf.fact.ICA)){
+		if(!all(conf.fact.ICA%in%colnames(pheno(rnb.set)))){
+			missing.names <- conf.fact.ICA[!conf.fact.ICA%in%colnames(pheno(rnb.set))]
+			conf.fact.ICA <- conf.fact.ICA[conf.fact.ICA%in%colnames(pheno(rnb.set))]
+			logger.warning(paste("Missing confounding factor names",missing.names,", only using",conf.fact.ICA))
+		}
+	}
+
 	############################### SELECTION OF SAMPLES
 	
 	#meth.ref<-meth(rnb.set.comb, row.names=TRUE)[,is.na(rnb.set.comb@pheno$diseaseState)]

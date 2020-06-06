@@ -58,7 +58,7 @@ getComponentNumber = function(rnb.set, fact, nmin=3, nmax=20, ntry=1, ncores = 1
   
   Var = df2factor(pheno.data,maxlev=20)
   if(sum(fact %in% names(Var))!= length(fact)) {
-    logger.error(paste("Error in getComponentNumber: poor factor or wrong factor name `",fact[! fact %in% names(Var)]))
+    logger.warning(paste("Error in getComponentNumber: poor factor or wrong factor name `",fact[! fact %in% names(Var)],"factor might have more than 20 levels, but cannot be treated as numeric."))
     return(NA)
   }
   
