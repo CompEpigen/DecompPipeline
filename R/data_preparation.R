@@ -53,13 +53,15 @@
 #'             If \code{TRUE},conf.fact.ICA needs to be specified.
 #' @param conf.fact.ICA A vector of column names in the sample annotation sheet representing potential confounding factors.
 #' @param ica.setting Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact, save.report, alpha.feat, type, ncores}. See 
-#'             \code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.
+#'             \code{\link{run.rnb.ICA}} for further details. NULL indicates the default setting.
 #' @param execute.lump Flag indicating if the LUMP algorithm is to be used for estimating the amount of immune cells in a particular sample.
 #' @return A list with four elements: \itemize{
 #'           \item quality.filter The indices of the sites that survived quality filtering
 #' }
 #' @export
 #' @author Michael Scherer, Pavlo Lutsik
+#' @import RnBeads
+#' @import R.utils
 prepare.data<-function(
 		rnb.set, 
 		work.dir=getwd(),
@@ -93,7 +95,6 @@ prepare.data<-function(
 		execute.lump=FALSE,
 		dist.snps=FALSE
 ){
-	suppressPackageStartupMessages(require(RnBeads))
 
 	OUTPUTDIR <- file.path(work.dir, analysis.name)
 	if(!file.exists(OUTPUTDIR)){
@@ -264,9 +265,9 @@ prepare.data<-function(
 	FILTER_QUALITY<- filter.beads || filter.intensity
 	
 	if(FILTER_QUALITY){
-		M.raw<-RnBeads:::M(rnb.set, row.names=TRUE)
-		U.raw<-RnBeads:::U(rnb.set, row.names=TRUE)
-		b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
+		M.raw<-RnBeads::M(rnb.set, row.names=TRUE)
+		U.raw<-RnBeads::U(rnb.set, row.names=TRUE)
+		b.raw<-RnBeads::covg(rnb.set, row.names=TRUE)
 		
 		if(!is.na(ref.ct.column)){
 			
@@ -389,7 +390,7 @@ filter.quality<-function(
   }
   
   if(beads){
-    b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
+    b.raw<-RnBeads::covg(rnb.set, row.names=TRUE)
     qf.b<-which(rowSums(b.raw>=min.beads)==ncol(b.raw))
     logger.info(paste(length(setdiff(qf,qf.b)),"sites removed in bead count filtering."))
     qf<-intersect(qf, qf.b)
@@ -522,6 +523,7 @@ filter.nas.biseq <- function(rnb.set,
 #' @return A vector of indices of sites surviving the annotation filter criteria.
 #' @noRd
 #' @author Michael Scherer, Pavlo Lutsik
+#' @import LaplacesDemon
 filter.annotation<-function(
   rnb.set,
   snp=TRUE,
@@ -548,7 +550,9 @@ filter.annotation<-function(
       snp.filter <- which(!(row.names(annot) %in% snps))
     }
     if(dist.snps){
-      require("LaplacesDemon")
+      if(!requireNamespace('LaplacesDemon')){
+        stop("Missing required package 'LaplacesDemon'. Please install it.")
+      }
       meth.data <- meth(rnb.set)
       logger.start("SNP computation")
       pair.dist <- apply(meth.data,1,function(snp){
@@ -668,6 +672,8 @@ filter.annotation.biseq<-function(
 #' }
 #' @export
 #' @author Michael Scherer, Pavlo Lutsik
+#' @import RnBeads
+#' @import R.utils
 prepare.data.BS <- function(
 		rnb.set, 
 		work.dir=getwd(),
@@ -690,7 +696,6 @@ prepare.data.BS <- function(
 		filter.sex.chromosomes=TRUE,
 		execute.lump=FALSE
 ){
-	suppressPackageStartupMessages(require(RnBeads))
 
 	OUTPUTDIR <- file.path(work.dir, analysis.name)
 	if(!file.exists(OUTPUTDIR)){

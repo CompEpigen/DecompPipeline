@@ -8,18 +8,27 @@ Authors@R: c(
    person ( "Tony", "Kamoa", email="Tony.Kaoma@lih.lu", role = c("aut")),
    person ( "Petr", "Nazarov", email="Petr.Nazarov@lih.lu", role = c("aut"))
  )
-Date: 2020-05-06
-Version: 1.0.2
+Date: 2020-07-27
+Version: 1.0.3
 Depends:
     R (>= 3.2.0),
     RnBeads,
-    knitr,
 	R.utils,
 	MeDeCom
-Suggests:
+Imports:
     bigstatsr,
     RefFreeEWAS,
-    EDec
+    robust,
+    pheatmap,
+    sm,
+    vioplot,
+    LaplacesDemon,
+    genefilter,
+    limma,
+    knitr
+Suggests:
+    EDec,
+    EDecExampleData
 VignetteBuilder: knitr    
 License: GPL-3
 RoxygenNote: 7.1.0

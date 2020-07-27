@@ -467,27 +467,27 @@ Thomas Lengauer, Joern Walter, and Pavlo Lutsik</h4>
 
 <div id="installation-and-data-retrieval" class="section level1">
 <h1>Installation and Data Retrieval</h1>
-<p>Pleas follow the instructions provided in the <a href="protocol.html">protocol</a> using MeDeCom.</p>
+<p>Pleas follow the instructions provided in the <a href="file:///tmp/RtmpDhjVb8/preview-6d03044e0a5.dir/protocol.html">protocol</a> using MeDeCom.</p>
 </div>
 <div id="data-import" class="section level1">
 <h1>Data import</h1>
-<p>Analogously to the general protocol, we use <a href="https://rnbeads.org">RnBeads</a> for data import.</p>
+<p>Analogously to the general protocol, we use <a href="https://rnbeads.org/">RnBeads</a> for data import.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(RnBeads))
 rnb.options(
-  assembly=<span class="hljs-string">"hg19"</span>,
-  identifiers.column=<span class="hljs-string">"submitter_id"</span>,
-  import=<span class="hljs-literal">T</span>,
-  import.default.data.type=<span class="hljs-string">"idat.dir"</span>,
-  import.table.separator=<span class="hljs-string">"\t"</span>,
-  import.sex.prediction=<span class="hljs-literal">T</span>,
-  qc=<span class="hljs-literal">T</span>,
-  preprocessing=<span class="hljs-literal">F</span>,
-  exploratory=<span class="hljs-literal">F</span>,
-  inference=<span class="hljs-literal">F</span>,
-  differential=<span class="hljs-literal">F</span>,
-  export.to.bed=<span class="hljs-literal">F</span>,
-  export.to.trackhub=<span class="hljs-literal">NULL</span>,
-  export.to.csv=<span class="hljs-literal">F</span>
+  assembly = <span class="hljs-string">"hg19"</span>,
+  identifiers.column = <span class="hljs-string">"submitter_id"</span>,
+  import = <span class="hljs-literal">TRUE</span>,
+  import.default.data.type = <span class="hljs-string">"idat.dir"</span>,
+  import.table.separator = <span class="hljs-string">"\t"</span>,
+  import.sex.prediction = <span class="hljs-literal">TRUE</span>,
+  qc = <span class="hljs-literal">TRUE</span>,
+  preprocessing = <span class="hljs-literal">FALSE</span>,
+  exploratory = <span class="hljs-literal">FALSE</span>,
+  inference = <span class="hljs-literal">FALSE</span>,
+  differential = <span class="hljs-literal">FALSE</span>,
+  export.to.bed = <span class="hljs-literal">FALSE</span>,
+  export.to.trackhub = <span class="hljs-literal">NULL</span>,
+  export.to.csv = <span class="hljs-literal">FALSE</span>
 )
 sample.anno &lt;- <span class="hljs-string">"annotation/sample_annotation.tsv"</span>
 idat.folder &lt;- <span class="hljs-string">"idat/"</span>
@@ -500,11 +500,11 @@ rnb.set &lt;- rnb.run.analysis(dir.reports = dir.report,
 </div>
 <div id="preprocessing-and-filtering" class="section level1">
 <h1>Preprocessing and Filtering</h1>
-<p>The preprocessing and filtering is also performed in line with the general <a href="protocol.html">protocol</a> using <a href="https://github.com/CompEpigen/DecompPipeline"><em>DecompPipeline</em></a>.</p>
+<p>The preprocessing and filtering is also performed in line with the general <a href="file:///tmp/RtmpDhjVb8/preview-6d03044e0a5.dir/protocol.html">protocol</a> using <a href="https://github.com/CompEpigen/DecompPipeline"><em>DecompPipeline</em></a>.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(DecompPipeline))
 data.prep &lt;- prepare.data(rnb.set = rnb.set,
                           analysis.name = <span class="hljs-string">"TCGA_RefFree"</span>,
-                          normalization = <span class="hljs-string">"bmiq"</span>,
+                          normalization = <span class="hljs-string">"none"</span>,
                           filter.beads = <span class="hljs-literal">TRUE</span>,
                           min.n.beads = <span class="hljs-number">3</span>,
                           filter.intensity = <span class="hljs-literal">TRUE</span>,
@@ -559,7 +559,7 @@ selected features.</p>
 </div>
 <div id="downstream-analysis" class="section level1">
 <h1>Downstream analysis</h1>
-<p>The resulting object is an object of type <em>MeDeComSet</em>, since the output from <em>RefFreeCellMix</em> has internally been transformed to the <em>MeDeCom</em> infrastructure. This enables loading the data set directly into the visualization tool <a href="https://github.com/CompEpigen/FactorViz"><em>FactorViz</em></a></p>
+<p>The resulting object is an object of type <em>MeDeComSet</em>, since the output from <em>RefFreeCellMix</em> has internally been transformed to the <em>MeDeCom</em> infrastructure. This enables loading the data set directly into the visualization tool <a href="https://github.com/CompEpigen/FactorViz"><em>FactorViz</em></a> and further interpretation analogously to the <a href="file:///tmp/RtmpDhjVb8/preview-6d03044e0a5.dir/protocol.html">general protocol</a></p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(FactorViz))
 startFactorViz(file.path(getwd(),<span class="hljs-string">"TCGA_RefFree"</span>,<span class="hljs-string">"FactorViz_outputs"</span>))</code></pre>
 </div>

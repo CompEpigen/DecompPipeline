@@ -276,8 +276,8 @@ prepare_data<-function(
   FILTER_QUALITY<- FILTER_BEADS && FILTER_INTENSITY && FILTER_NA
   
   if(FILTER_QUALITY){
-    M.raw<-RnBeads:::M(rnb.set, row.names=TRUE)
-    U.raw<-RnBeads:::U(rnb.set, row.names=TRUE)
+    M.raw<-RnBeads::M(rnb.set, row.names=TRUE)
+    U.raw<-RnBeads::U(rnb.set, row.names=TRUE)
     
     if("REF_CT_COLUMN" %in% ls()){
       
@@ -289,7 +289,7 @@ prepare_data<-function(
     saveRDS(M.raw, file.path(OUTPUTDIR, "Mint.RDS"))
     saveRDS(U.raw, file.path(OUTPUTDIR, "Uint.RDS"))
     
-    b.raw<-RnBeads:::covg(rnb.set, row.names=TRUE)
+    b.raw<-RnBeads::covg(rnb.set, row.names=TRUE)
     
     if("REF_CT_COLUMN" %in% ls()){
       b.raw<-b.raw[,subs, drop=FALSE]

@@ -43,7 +43,13 @@ threshold are kept. 0 deactivates filtering.}
 factor or \code{"keep"} to export the sites that are linked to the confounding factor. Note that for
 \code{"keep"}, the factor effect is not removed, but only reported.}
 
+\item{ncores}{The number of cores used}
+
 \item{out.folder}{Folder to store ICA's output and diagnostic plots}
+
+\item{save.report}{Flag indicating if a report is to be created and stored for ICA}
+
+\item{alpha.feat}{Significance level detecting features contributing to components}
 }
 \value{
 The modified \code{rnb.set} object with updated methylation values. The effect of the confouding factor is removed

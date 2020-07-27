@@ -16,14 +16,14 @@ knitr::opts_knit$set(root.dir="/DEEP_fhgfs/projects/mscherer/data/450K/TCGA/LUAD
 
 # Introduction
 
-This protocol aims at guiding reasearcher how to employ deconvolution of methylomes obtained from complex tissues. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing, or any technology yielding single base pair resolution.
+This protocol aims at guiding reasearcher how to employ deconvolution of methylomes obtained from complex tissues. It will start with data retrieval from a public resource, but is equally applicable to in-house generated data. We will furthermore focus on the Illumina BeadChip series as a data source, although the protocol is also compatible with bisulfite sequencing (for more details see [here](protocol_RRBS.html)), or any technology yielding single base pair resolution.
 Deconvolution here refers to creating two matrices (proportion matrix A and methylation pattern matrix T) from a single matrix of input DNA methylation data (dimension CpGs x samples). Non-negative matrix factorization is employed for this task, and we will discuss some of the advantages and caveats of the methods.
 
 # Installation (duration up to 2 h)
 
 1. If R is not yet installed, follow the instructions at https://cran.r-project.org/. Create a working directory on a filesystem partition with sufficient storage capacity. Throughout the analysis, ~20-30 Gb of free storage will be required. Be sure that all the files are downloaded into this working directory and that the code is executed within the directory.
 
-2a. **Linux** To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R, while for *MacOS* the binary release of *MeDeCom* https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz should be used. The protocol is also available as a Docker container https://hub.docker.com/r/mscherer/medecom, which is currently the only option for Windows operating systems. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
+2a. **Linux:** To execute the protocol described here, several R-packages (*RnBeads*, *DecompPipeline*, *MeDeCom*, and *FactorViz*) are required. First, you should have a recent R version installed and all your packages updated. The installation of the software is appliable for most *Linux distributions* directly through R. For the remainder of this protocol, we assume a common Linux distribution as the operating system.
 
 ```{r install, eval=F}
 install.packages(c("devtools","BiocManager"))
@@ -32,7 +32,7 @@ devtools::install_github(c("lutsik/MeDeCom","CompEpigen/DecompPipeline","CompEpi
 library(DecompPipeline)
 ```
 
-2b. **macOS** In a first step, you will have to retrieve the binary version of *MeDeCom* from GitHub. Afterwards, you can install the remaining packages similar to the *Linux* case.
+2b. **macOS:** In a first step, you will have to retrieve the binary version of *MeDeCom* (https://github.com/lutsik/MeDeCom/releases/download/v0.3.0/MeDeCom_0.3.0.tgz) from GitHub. Afterwards, you can install the remaining packages similar to the *Linux* case.
 
 ```{r install_mac, eval=F}
 install.packages(c("devtools","BiocManager"))
@@ -42,7 +42,7 @@ devtools::install_github(c("CompEpigen/DecompPipeline","CompEpigen/FactorViz"))
 library(DecompPipeline)
 ```
 
-2c. **Windows** A dedicated branch in the GitHub repository handling installation on Windows machines is available and can be installed similar to the *Linux* case. 
+2c. **Windows:** A dedicated branch in the GitHub repository handling installation on Windows machines is available and can be installed similar to the *Linux* case. 
 
 ```{r install_windows, eval=F}
 BiocManager::install(c("RnBeads",
@@ -58,7 +58,7 @@ devtools::install_github(
 library(DecompPipeline)
 ```
 
-2 d. **Cross-platform using Docker** If not yet available, install Docker on your machine. The [Docker website](https://docs.docker.com) provides detailed installation instructions for all major operating systems and computational environments, including Linux, Windows and MacOS. Specifically, on Windows follow [these](https://docs.docker.com/docker-for-windows/install/) instructions. After successful installation, start Docker desktop, be sure that a X Server is running, open a new PowerShell window and type:
+2 d. **Cross-platform using Docker:** The protocol is also available as a Docker container https://hub.docker.com/r/mscherer/medecom. If not yet available, install Docker on your machine. The [Docker website](https://docs.docker.com) provides detailed installation instructions for all major operating systems and computational environments, including Linux, Windows and MacOS. Specifically, on Windows follow [these](https://docs.docker.com/docker-for-windows/install/) instructions. After successful installation, start Docker desktop, be sure that a X Server is running, open a new PowerShell window and type:
 
 ```{bash install_docker, eval=F}
 # Windows
@@ -83,9 +83,7 @@ An interactive R-session will start which can be used to run this protocol.
 gdc-client download –m gdc_manifest.2019-01-23.txt
 ```
 
-Store the resulting files in a new directory *idat*.
-
-4. Retrieve the clinical metadata from https://portal.gdc.cancer.gov/projects/TCGA-LUAD by clicking on the “Clinical” button and unpacking the downloaded *.tar.gz* file into a new subdirectory annotation within your working directory. The remaining parsing is performed through an R session initiated in the same directory:
+4. Retrieve the clinical metadata from https://portal.gdc.cancer.gov/projects/TCGA-LUAD by clicking on the “Clinical” button and unpacking the downloaded *.tar.gz* file into a new subdirectory *annotation* within your working directory. The remaining parsing is performed through an R session initiated in the same directory:
 
 ```{r map_ids, eval=F}
 library(tidyverse)
@@ -122,7 +120,7 @@ write.table(anno.frame,
 
 ```
 
-5. Copy the IDAT files into a single directory idat for downstream analysis.
+5. Copy the IDAT files into a single directory *idat* for downstream analysis.
 
 ```{r copy, eval=FALSE}
 #' write idat files to parent directory
@@ -137,7 +135,7 @@ lapply(idat.files,function(x){
 
 ### Data import (~2 h)
 
-6. *RnBeads* converts the files into a data object and performs basic quality control. Analysis options have to be specified for *RnBeads*, either through an XML file, or through the command line. Deactivate the preprocessing, exploratory, covariate inference, export and differential methylation modules, such that *RnBeads* only performs data import and quality control.
+6. *RnBeads* converts the files into a data object and performs basic quality control. Analysis options have to be specified for *RnBeads*, either through an XML file, or through the R command line interface. Deactivate the preprocessing, exploratory, covariate inference, export and differential methylation modules, such that *RnBeads* only performs data import and quality control.
 
 ```{r RnBeads, eval=F}
 suppressPackageStartupMessages(library(RnBeads))
@@ -188,13 +186,13 @@ http://epigenomics.dkfz.de/downloads/DecompProtocol/RnBeads_Report_TCGA_LUAD/.
 
 ### Preprocessing and Filtering (22 h)
 
-9. For further data preparation and analysis steps use the *DecompPipeline* package. Processing options are provided through individual function parameters. Follow a stringent filtering strategy: (i) Filter CpGs covered by less than 3 beads, and probes that are in the 0.001 and 0.999 overall intensity quantiles (low and high intensity outliers). (ii) Remove all probes containing missing values in any of the samples. (iii) Discard sites outside of CpG context, overlapping annotated SNPs, located on the sex chromosomes and potentially cross-reactive probes. Finally, apply BMIQ normalization to account for the bias introduced by the two Infinium probe designs.
+9. For further data preparation and analysis steps use the *DecompPipeline* package. Processing options are provided through individual function parameters. Follow a stringent filtering strategy: (i) Filter CpGs covered by less than 3 beads, and probes that are in the 0.001 and 0.999 overall intensity quantiles (low and high intensity outliers). (ii) Remove all probes containing missing values in any of the samples. (iii) Discard sites outside of CpG context, overlapping annotated SNPs, located on the sex chromosomes and potentially cross-reactive probes.
 
 ```{r data_preparation, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare.data(rnb.set = rnb.set,
 	analysis.name = "TCGA_LUAD",
-	normalization = "bmiq",
+	normalization = "none",
 	filter.beads = TRUE,
 	min.n.beads = 3,
 	filter.intensity = TRUE,
@@ -221,10 +219,7 @@ rnb.set <- remove.sites(rnb.set,rem.sites)
 data.prep <- list(rnb.set.filtered=rnb.set)
 ```
 
-10. Adjustment for potential confounding factors is crucial in epigenomic studies and the influences
-of, for instance, donor sex, age, and genotype on the DNA methylation pattern are well-studied 28,29 .
-Use Independent Component Analysis (ICA, see Materials) to account for DNA methylation differences
-that are due to sex, age, race, and ethnicity. Confounding factor adjustment alters the overall data distribution. Go to the analysis directory generated by DecompPipeline (*TCGA_LUAD*) and investigate the associations between Independent Components and the specified confounding factors. In case the reported p-value is lower than the parameter alpha.fact , ICA will automatically adjust for the corresponding confounding factor. Furthermore, inspect if the distribution of DNA methylation is preserved. Confounding factor adjustment is currently only supported for Illumina BeadArray datasets and has not yet been extended to bisulfite sequencing data.
+10. Adjustment for potential confounding factors is crucial in epigenomic studies and the influences of, for instance, donor sex, age, and genotype on the DNA methylation pattern are well-studied. Use Independent Component Analysis (ICA) to account for DNA methylation differences that are due to sex, age, race, and ethnicity. Confounding factor adjustment alters the overall data distribution. Go to the analysis directory generated by DecompPipeline (*TCGA_LUAD*) and investigate the associations between Independent Components and the specified confounding factors. In case the reported p-value is lower than the parameter *alpha.fact*, ICA will automatically adjust for the corresponding confounding factor. Furthermore, inspect if the distribution of DNA methylation is preserved.
 
 ```{r ica_adjustment, eval=F}
 suppressPackageStartupMessages(library(DecompPipeline))
@@ -245,7 +240,7 @@ data.prep <- prepare.data(rnb.set = data.prep$rnb.set.filtered,
 ```
 ### Selection of CpG subsets (1 min)
 
-11. Select a subset of sites to be used for deconvolution. DecompPipeline provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
+11. Select a subset of sites to be used for deconvolution. *DecompPipeline* provides different options (see documentation of *prepare_CG_subsets*) through the *prepare_CG_subsets* function. Select the 5,000 most highly variable CpGs across the samples.
 
 ```{r subset_selection, eval=F}
 cg_subset <- prepare.CG.subsets(rnb.set = data.prep$rnb.set.filtered,
@@ -258,7 +253,7 @@ names(cg_subset)
 
 ### Performing Deconvolution (54 h)
 
-12. Perform the deconvolution experiment. Use MeDeCom with a grid of values for the number of components (K) ranging from 2 to 15, which covers homogeneous to heterogeneous samples. Also, specify a grid for the regularization parameter (λ) from strong (0.01) to no regularization (0). We here focus on *MeDeCom* as the Deconvolution tool, although *DecompPipeline* also supports *RefFreeCellMix* and *EDec*.
+12. Perform the deconvolution experiment. Use *MeDeCom* with a grid of values for the number of components (K) ranging from 2 to 15, which covers homogeneous to heterogeneous samples. Also, specify a grid for the regularization parameter (λ) from strong (0.01) to no regularization (0).
 
 ```{r MeDeCom, eval=F}
 md.res <- start_medecom_analysis(
@@ -271,11 +266,11 @@ md.res <- start_medecom_analysis(
   cores = 15
 )
 ```
-13. (Optional) Decide on the Ddeconvolution tool to be used of the DNA methylation data matrix is at
-the core of this protocol, and different methods have been proposed. In addition to our own
-method MeDeCom, this protocol supports *RefFreeCellMix* and *EDec*.
 
-**PAUSE POINT** The final MeDeCom result is stored in a format that can be directly imported with FactorViz. We provide the final result for exploration at http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz.
+13. (Optional) Deconvolution of the DNA methylation data matrix is at the core of this protocol, and different methods have been proposed. In addition to our own
+method *MeDeCom*, this protocol supports [*RefFreeCellMix*](protocol_RefFreeEWAS.html) and *EDec*.
+
+**PAUSE POINT** The final *MeDeCom* result is stored in a format that can be directly imported with FactorViz. We provide the final result for exploration at http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz.
 
 ```{r breakpoint_3, eval=F}
 download.file("http://epigenomics.dkfz.de/downloads/DecompProtocol/FactorViz_outputs.tar.gz",destfile=paste0(tempdir(),"/FactorViz_outputs.tar.gz"))
@@ -299,7 +294,7 @@ directory, where deconvolution has been performed. The object is stored in the F
 
 18. In the “Proportions” panel of FactorViz, visualize LMC proportions using heatmaps. Proportion heatmaps can be visually annotated with available qualitative and quantitative traits (see dropdown “Color samples by”). Further visualization options include stacked barplot and lineplots.
 
-19. In the “Meta-analysis” panel, associate LMC proportions with quantitative and qualitative traits using correlation- and t-tests. Further sample annotations, such as mutational load (https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018) and tumor purity scores can be obtained from public repositories and related publications (https://static-content.springer.com/esm/art%3A10.1038%2Fncomms3612/MediaObjects/41467_2013_BFncomms3612_MOESM489_ESM.xlsx). In addition, scripts to conduct such analysis are available on the Supplementary Website (http://epigenomics.dkfz.de/DecompProtocol/).
+19. In the “Meta-analysis” panel, associate LMC proportions with quantitative and qualitative traits using correlation- and t-tests. Further sample annotations, such as mutational load (https://www.cbioportal.org/study/clinicalData?id=luad_tcga_pan_can_atlas_2018) and tumor purity scores can be obtained from public repositories and related publications (https://static-content.springer.com/esm/art%3A10.1038%2Fncomms3612/MediaObjects/41467_2013_BFncomms3612_MOESM489_ESM.xlsx). In addition, scripts to conduct such analysis are available [here](resources.html).
 
 20. Explore the LMCs in the panel “LMCs”. Several visualization options are available such as Multidimensional Scaling and histograms. Reference profiles can be used for joint visualization in case those are available.
 

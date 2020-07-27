@@ -71,6 +71,9 @@ start.edec.analysis <- function(meth.data=NULL,
                                 Ks,
                                 work.dir=getwd(),
                                 factorviz.outputs=FALSE){
+  if(!requireNamespace('EDec')){
+    stop("Missing required package 'EDec'. Please install it.")
+  }
   if(is.null(meth.data) && is.null(rnb.set)){
     logger.error("No input methylation data provided")
   }
@@ -83,7 +86,6 @@ start.edec.analysis <- function(meth.data=NULL,
   }else if(!(grepl("cg",row.names(meth.data)))){
     stop("Rownames of methylation data need to be provided for EDec")
   }
-  require("EDec")
   T.all <- list()
   A.all <- list()
   rss.all <- list()
@@ -98,7 +100,7 @@ start.edec.analysis <- function(meth.data=NULL,
     for(j.K in 1:length(Ks)){
       K <- Ks[j.K]
       logger.start(paste("Processing K:",K))
-      edec.res <- run_edec_stage_1(meth.data,
+      edec.res <- EDec::run_edec_stage_1(meth.data,
                                    informative_loci = group,
                                    num_cell_types = K)
       rss.vec <- c(rss.vec,edec.res$res.sum.squares)
@@ -145,6 +147,7 @@ start.edec.analysis <- function(meth.data=NULL,
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the RefFreeCellMix experiment.
 #' @author Michael Scherer
 #' @export
+#' @import RefFreeEWAS
 start.refreeewas.analysis <- function(meth.data=NULL,
                                       rnb.set=NULL,
                                       cg.groups,
@@ -239,6 +242,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 #' @export
 #' @author Pavlo Lutsik, Michael Scherer
+#' @import MeDeCom
 start.medecom.analysis<-function(
     meth.data=NULL,
 		rnb.set=NULL,
@@ -269,9 +273,7 @@ start.medecom.analysis<-function(
 		lambda.grid.type="standard",
 		analysis.token="customAnalysis"
 ){
-	require(MeDeCom)
-	library(R.utils)
-	
+
   
   if(!is.null(analysis.info)){
     ANALYSIS_ID<-paste(

@@ -1,4 +1,7 @@
 # DecompPipeline
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![DOI: 10.1093/nar/gkaa120](https://zenodo.org/badge/doi/10.1101/853150.svg)](https://doi.org/10.1101/853150)
+
 *DecompPipeline* provides a comprehensive list of preprocessing functions for performing reference-free deconvolution of complex DNA methylation data. It is an integral part of a recently published protocol [doi:10.1101/853150](https://doi.org/10.1101/853150) for reference-free deconvolution and is independent of the deconvolution tool used. 
 
 ![Overview of the reference-free deconvolution tool](pictures/protocol_overview.png)

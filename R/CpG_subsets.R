@@ -75,6 +75,11 @@
 #' }
 #' @export
 #' @author Michael Scherer, Pavlo Lutsik
+#' @import limma
+#' @import bigstatsr
+#' @import robust
+#' @import genefilter
+#' @import RefFreeEWAS
 prepare.CG.subsets<-function(
     meth.data=NULL,
 		rnb.set=NULL,
@@ -94,7 +99,6 @@ prepare.CG.subsets<-function(
 		K.prior=NULL
 		)
 {
-  require("RnBeads")
 	cg.groups<-list()
 	
 	groups<-1:length(marker.selection)
@@ -183,6 +187,9 @@ prepare.CG.subsets<-function(
 		}
 		
 		if(marker.selection[group]=="pheno"){
+		  if(!requireNamespace('limma')){
+		    stop("Missing required package 'limma' for option 'pheno'. Please install it.")
+		  }
 			
 		  if(file.exists(sprintf("%s/pheno.RData",out.dir))){
 			  load(sprintf("%s/pheno.RData",out.dir))
@@ -205,8 +212,8 @@ prepare.CG.subsets<-function(
 			X <- X[,!rem.samples]
 			formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
 			design <- model.matrix(as.formula(formula.text), data=pheno.data)
-			fit <- limma::lmFit(X,design)
-			fit <- limma::eBayes(fit)
+			fit <- lmFit(X,design)
+			fit <- eBayes(fit)
 			tstatDeltaAll<-abs(fit$t)
 			
 			ranks<-apply(tstatDeltaAll, 2, rank)
@@ -225,8 +232,10 @@ prepare.CG.subsets<-function(
 		}
 		
 		if(marker.selection[group]=="houseman2014"){
-			require(RefFreeEWAS)
-			
+		  if(!requireNamespace('RefFreeEWAS')){
+		    stop("Missing required package 'RefFreeEWAS'. Please install it.")
+		  }
+
 		  if(file.exists(sprintf("%s/pheno.RData",out.dir))){
 		    load(sprintf("%s/pheno.RData",out.dir))
 		    sel.columns <- gsub(" ","_",colnames(pheno.data))
@@ -251,7 +260,11 @@ prepare.CG.subsets<-function(
 			  length(unique(mat[,x])) == length(levels(mat[,x]))
 			},pheno.data))
 			sel.columns <- sel.columns[level.problem]
-			formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
+			if(length(sel.columns)>0){
+				formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
+			}else{
+				stop("Insufficient phenotypic information present")
+			}
 			design <- model.matrix(as.formula(formula.text), data=pheno.data)
 			tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
 				
@@ -304,9 +317,10 @@ prepare.CG.subsets<-function(
 		
 		if(marker.selection[group]==("rowFstat")){
 		  ####### This needs to be checked: it doesn't seem to do what it should
+		  if(!requireNamespace('genefilter')){
+		    stop("Missing required package 'genefilter'. Please install.")
+		  }
   		if(!(is.null(ref.rnb.set) || is.null(ref.pheno.column))){
-  			
-  			require(genefilter)
   			
   			load.env<-new.env(parent=emptyenv())
   			
@@ -372,8 +386,9 @@ prepare.CG.subsets<-function(
 		}
 		
 		if(marker.selection[group] == "pcadapt"){
-		  require("bigstatsr")
-		  require("robust")
+		  if(!requireNamespace('bigstatsr')||!requireNamespace('robust')){
+		    stop("Missing required package 'bigstatsr' or 'robus'. Please install.")
+		  }
 		  if(is.null(K.prior)){
 		    stop("K.prior needs to be specific for pcadapat marker selection method")
 		  }
@@ -390,10 +405,11 @@ prepare.CG.subsets<-function(
 		}
 		
 		if(marker.selection[group]=="edec_stage0"){
-		  require("EDec")
-		  require("EDecExampleData")
+		  if(!requireNamespace("EDecExampleData")||!requireNamespace("EDec")){
+		    stop("Missing required package 'EDec' or 'EDecExampleData'. Please install for using 'edec_stage0'")
+		  }
 		  if(is.null(ref.rnb.set)){
-		    markers <- run_edec_stage_0(reference_meth = EDecExampleData::reference_meth,
+		    markers <- EDec::run_edec_stage_0(reference_meth = EDecExampleData::reference_meth,
 		                                reference_classes = EDecExampleData::reference_meth_class,
 		                                max_p_value = 1e-5,
 		                                num_markers = n.markers)
@@ -406,7 +422,7 @@ prepare.CG.subsets<-function(
 		    if(!ref.pheno.column %in% colnames(pheno(rnb.ref.set))){
 		      stop("Supplied ref.pheno.column not in phenotypic information")
 		    }
-		    markers <- run_edec_stage_0(reference_meth = meth(rnb.ref.set),
+		    markers <- EDec::run_edec_stage_0(reference_meth = meth(rnb.ref.set),
 		                                reference_classes = pheno(rnb.ref.set)[,ref.pheno.column],
 		                                max_p_value = 1e-5,
 		                                num_markers = n.markers)

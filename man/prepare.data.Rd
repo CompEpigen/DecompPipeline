@@ -106,7 +106,7 @@ If \code{TRUE},conf.fact.ICA needs to be specified.}
 \item{conf.fact.ICA}{A vector of column names in the sample annotation sheet representing potential confounding factors.}
 
 \item{ica.setting}{Named vector of settings passed to run.rnb.ica. Options are \code{nmin, nmax, thres.sd, alpha.fact, save.report, alpha.feat, type, ncores}. See 
-\code{\link{run.rnb.ica}} for further details. NULL indicates the default setting.}
+\code{\link{run.rnb.ICA}} for further details. NULL indicates the default setting.}
 
 \item{snp.list}{Path to a file containing CpG IDs of known SNPs to be removed from the analysis, if \code{filter.snp} is \code{TRUE}.}
 

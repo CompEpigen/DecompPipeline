@@ -471,12 +471,12 @@ Thomas Lengauer, Joern Walter, and Pavlo Lutsik</h4>
 </div>
 <div id="data-import" class="section level1">
 <h1>Data Import</h1>
-<p><a href="https://rnbeads.org"><em>RnBeads</em></a> also support 
+<p><a href="https://rnbeads.org/"><em>RnBeads</em></a> also support 
 bisulfite sequencing data, provided that the data has been processed to 
 generate single-CpG methylation calls in BED or similar format. However,
  since <em>RnBeads</em> creates a large internal data structure, more 
-leightweight package can also be used. The input to the remaining steps 
-should be a DNA methylation data matrix.</p>
+leightweight packages can also be used. The input to the remaining steps
+ should be a DNA methylation data matrix.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(RnBeads))
 rnb.options(
   assembly = <span class="hljs-string">"hg38"</span>,
@@ -538,7 +538,7 @@ data.prep &lt;- prepare.data.BS(rnb.set = rnb.set,
 </div>
 <div id="deconvolution" class="section level1">
 <h1>Deconvolution</h1>
-<p>Deconvolution is applied analogously to the <a href="protocol.html">general protocol</a>. <a href="https://cran.r-project.org/web/packages/RefFreeEWAS/index.html"><em>RefFreeCellMix</em></a> and <a href="https://github.com/BRL-BCM/EDec"><em>EDec</em></a> can be used as alternative deconvolution methods.</p>
+<p>Deconvolution is applied analogously to the <a href="file:///tmp/RtmpDhjVb8/preview-6d04d1884c5.dir/protocol.html">general protocol</a>. <a href="https://cran.r-project.org/web/packages/RefFreeEWAS/index.html"><em>RefFreeCellMix</em></a> and <a href="https://github.com/BRL-BCM/EDec"><em>EDec</em></a> can be used as alternative deconvolution methods.</p>
 <pre class="r"><code class="hljs">md.res &lt;- start.medecom.analysis(
   rnb.set=data.prep$rnb.set.filtered,
   cg_groups = cg_subset,
@@ -551,7 +551,7 @@ data.prep &lt;- prepare.data.BS(rnb.set = rnb.set,
 </div>
 <div id="interpretation" class="section level1">
 <h1>Interpretation</h1>
-<p>The returned <em>MeDeComSet</em> and associated deconvolution results can directly be imported into <a href="https://github.com/CompEpigen/FactorViz"><em>FactorViz</em></a> for visualization.</p>
+<p>The returned <em>MeDeComSet</em> and associated deconvolution results can directly be imported into <a href="https://github.com/CompEpigen/FactorViz"><em>FactorViz</em></a> for visualization. Additional interpretation steps can be performed according to the <a href="file:///tmp/RtmpDhjVb8/preview-6d04d1884c5.dir/protocol.html">general protocol</a>.</p>
 <pre class="r"><code class="hljs">suppressPackageStartupMessages(<span class="hljs-keyword">library</span>(FactorViz))
 startFactorViz(file.path(getwd(),<span class="hljs-string">"TCGA_Ewing_pipeline"</span>,<span class="hljs-string">"FactorViz_outputs"</span>))</code></pre>
 </div>

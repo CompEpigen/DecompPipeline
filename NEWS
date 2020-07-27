@@ -1,3 +1,9 @@
+DecompPipeline 1.0.3
+=============
+
+ * Solved some R CMD check warnings
+ * Updated package vignettes, DESCRIPTION and README
+
 DecompPipeline 1.0.2
 =============
 

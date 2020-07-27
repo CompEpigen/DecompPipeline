@@ -14,7 +14,7 @@ The data were generated in a [recent study](https://www.nature.com/articles/nm.4
 
 # Data Import
 
-[*RnBeads*](https://rnbeads.org) also support bisulfite sequencing data, provided that the data has been processed to generate single-CpG methylation calls in BED or similar format. However, since *RnBeads* creates a large internal data structure, more leightweight package can also be used. The input to the remaining steps should be a DNA methylation data matrix.
+[*RnBeads*](https://rnbeads.org) also support bisulfite sequencing data, provided that the data has been processed to generate single-CpG methylation calls in BED or similar format. However, since *RnBeads* creates a large internal data structure, more leightweight packages can also be used. The input to the remaining steps should be a DNA methylation data matrix.
 
 ```{r import, eval=FALSE}
 suppressPackageStartupMessages(library(RnBeads))
@@ -93,7 +93,7 @@ md.res <- start.medecom.analysis(
 ```
 
 # Interpretation
-The returned *MeDeComSet* and associated deconvolution results can directly be imported into [*FactorViz*](https://github.com/CompEpigen/FactorViz) for visualization.
+The returned *MeDeComSet* and associated deconvolution results can directly be imported into [*FactorViz*](https://github.com/CompEpigen/FactorViz) for visualization. Additional interpretation steps can be performed according to the [general protocol](protocol.html).
 ```{r visualization, eval=FALSE}
 suppressPackageStartupMessages(library(FactorViz))
 startFactorViz(file.path(getwd(),"TCGA_Ewing_pipeline","FactorViz_outputs"))

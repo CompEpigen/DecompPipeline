@@ -50,7 +50,7 @@ The preprocessing and filtering is also performed in line with the general [prot
 suppressPackageStartupMessages(library(DecompPipeline))
 data.prep <- prepare.data(rnb.set = rnb.set,
                           analysis.name = "TCGA_RefFree",
-                          normalization = "bmiq",
+                          normalization = "none",
                           filter.beads = TRUE,
                           min.n.beads = 3,
                           filter.intensity = TRUE,
@@ -109,7 +109,7 @@ md.res <- start.refreeewas.analysis(
 
 # Downstream analysis
 
-The resulting object is an object of type *MeDeComSet*, since the output from *RefFreeCellMix* has internally been transformed to the *MeDeCom* infrastructure. This enables loading the data set directly into the visualization tool [*FactorViz*](https://github.com/CompEpigen/FactorViz)
+The resulting object is an object of type *MeDeComSet*, since the output from *RefFreeCellMix* has internally been transformed to the *MeDeCom* infrastructure. This enables loading the data set directly into the visualization tool [*FactorViz*](https://github.com/CompEpigen/FactorViz) and further interpretation analogously to the [general protocol](protocol.html)
 
 ```{r visualization, eval=FALSE}
 suppressPackageStartupMessages(library(FactorViz))
