@@ -1,6 +1,6 @@
 # DecompPipeline
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![DOI: 10.1093/nar/gkaa120](https://zenodo.org/badge/doi/10.1101/853150.svg)](https://doi.org/10.1101/853150)
+[![DOI: 10.1038/s41596-020-0369-6](https://zenodo.org/badge/doi/10.1038/s41596-020-0369-6.svg)](https://doi.org/10.1038/s41596-020-0369-6)
 
 *DecompPipeline* provides a comprehensive list of preprocessing functions for performing reference-free deconvolution of complex DNA methylation data. It is an integral part of a recently published [protocol](https://www.nature.com/articles/s41596-020-0369-6) for reference-free deconvolution and is independent of the deconvolution tool used. 
 
@@ -53,4 +53,5 @@ We also provide a wrapper functions that executes all the above steps in a singl
 
 # Citation
 If you use *DecompPipeline*, please cite:
+
 Scherer, M., Nazarov, P. V., Toth, R., Sahay, S., Kaoma, T., Maurer, V., Vedeneev, N., Plass, C., Lengauer, T., Walter, J., & Lutsik, P. (2020). Reference-free deconvolution, visualization and interpretation of complex DNA methylation data using DecompPipeline, MeDeCom and FactorViz. Nature Protocols, 15(10), 3240–3263. https://doi.org/10.1038/s41596-020-0369-6
