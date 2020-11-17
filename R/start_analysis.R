@@ -236,6 +236,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
 #' @param cluster.R.dir Path to an executable version of R.
 #' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
+#' @param n.cpus Number of CPUs used per node (SLURM only)
 #' @param cleanup Flag indicating if temprary files are to be deleted.
 #' @param analysis.info Information to be saved about the analysis. Just stored as info.
 #' @param lambda.grid.type String represent the lambda grid that was chosen. Just stored as info.
@@ -270,6 +271,7 @@ start.medecom.analysis<-function(
 		cluster.R.dir=NA,
 		cluster.hostlist="*",
 		cluster.memlimit="5G",
+		n.cpus=1,
 		cleanup=FALSE,
 		analysis.info=NULL,
 		lambda.grid.type="standard",
@@ -360,7 +362,7 @@ start.medecom.analysis<-function(
 	  }
 	}
 	if(cluster.submit){
-		cluster.settings=list(R_bin_dir=cluster.R.dir, host_pattern=cluster.hostlist, mem_limit=cluster.memlimit,cluster_architecture=cluster.architecture)
+		cluster.settings=list(R_bin_dir=cluster.R.dir, host_pattern=cluster.hostlist, mem_limit=cluster.memlimit,cluster_architecture=cluster.architecture,n_cpus=n.cpus)
 	}else{
 		cluster.settings=NULL
 	}
@@ -538,6 +540,7 @@ start.medecom.analysis<-function(
 #' @param cluster.Rdir Path to an executable version of R.
 #' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
+#' @param n.cpus Number of CPUs used per node (SLURM only)
 #' @param cleanup Flag indicating if temprary files are to be deleted.
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the MeDeCom experiment.
 #' @export
@@ -605,6 +608,7 @@ start.decomp.pipeline <- function(rnb.set,
                                   cluster.Rdir=NA,
                                   cluster.hostlist="*",
                                   cluster.memlimit="5G",
+			          n.cpus=1,
                                   cleanup=FALSE
                                   ){
   if(inherits(rnb.set,"RnBeadSet")){
@@ -713,6 +717,7 @@ start.decomp.pipeline <- function(rnb.set,
                                              cluster.R.dir=cluster.Rdir,
                                              cluster.hostlist=cluster.hostlist,
                                              cluster.memlimit=cluster.memlimit,
+					     n.cpus=n.cpus,
                                              cleanup=cleanup
   )
   return(medecom.result)
