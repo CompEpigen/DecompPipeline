@@ -26,9 +26,11 @@ start.medecom.analysis(
   itermax = 1000,
   ninit = 100,
   cluster.submit = FALSE,
+  cluster.architecture = "SGE",
   cluster.R.dir = NA,
   cluster.hostlist = "*",
   cluster.memlimit = "5G",
+  n.cpus = 1,
   cleanup = FALSE,
   analysis.info = NULL,
   lambda.grid.type = "standard",
@@ -77,13 +79,17 @@ through \code{rnb.set}}
 
 \item{ninit}{Number if initialtions.}
 
-\item{cluster.submit}{Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE supported).}
+\item{cluster.submit}{Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE and SLURM supported).}
+
+\item{cluster.architecture}{The cluster architecture used. Currently \code{'SGE'} and \code{'SLURM'} supported}
 
 \item{cluster.R.dir}{Path to an executable version of R.}
 
 \item{cluster.hostlist}{Regular expression, on which basis hosts are selected in the cluster environment.}
 
 \item{cluster.memlimit}{the \code{memlimit} resource value of the cluster submission.}
+
+\item{n.cpus}{Number of CPUs used per node (SLURM only)}
 
 \item{cleanup}{Flag indicating if temprary files are to be deleted.}
 
