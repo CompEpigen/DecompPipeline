@@ -231,7 +231,8 @@ start.refreeewas.analysis <- function(meth.data=NULL,
 #' @param cores Integer representing the number of cores to be used in the analysis.
 #' @param itermax Maximum number of iterations
 #' @param ninit Number if initialtions.
-#' @param cluster.submit Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE supported).
+#' @param cluster.submit Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE and SLURM supported).
+#' @param cluster.architecture The cluster architecture used. Currently \code{'SGE'} and \code{'SLURM'} supported
 #' @param cluster.R.dir Path to an executable version of R.
 #' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
@@ -265,6 +266,7 @@ start.medecom.analysis<-function(
 		itermax=1000,
 		ninit=100,
 		cluster.submit=FALSE,
+		cluster.architecture="SGE",
 		cluster.R.dir=NA,
 		cluster.hostlist="*",
 		cluster.memlimit="5G",
@@ -358,7 +360,7 @@ start.medecom.analysis<-function(
 	  }
 	}
 	if(cluster.submit){
-		cluster.settings=list(R_bin_dir=cluster.R.dir, host_pattern=cluster.hostlist, mem_limit=cluster.memlimit)
+		cluster.settings=list(R_bin_dir=cluster.R.dir, host_pattern=cluster.hostlist, mem_limit=cluster.memlimit,cluster_architecture=cluster.architecture)
 	}else{
 		cluster.settings=NULL
 	}
@@ -531,7 +533,8 @@ start.medecom.analysis<-function(
 #' @param cores Integer representing the number of cores to be used in the analysis.
 #' @param itermax Maximum number of iterations
 #' @param ninit Number if initialtions.
-#' @param cluster.submit Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE supported).
+#' @param cluster.submit Flag indicating, if the jobs are to be submitted to a scientific compute cluster (only SGE and SLURM supported).
+#' @param cluster.architecture The cluster architecture used. Currently \code{'SGE'} and \code{'SLURM'} supported
 #' @param cluster.Rdir Path to an executable version of R.
 #' @param cluster.hostlist Regular expression, on which basis hosts are selected in the cluster environment.
 #' @param cluster.memlimit the \code{memlimit} resource value of the cluster submission.
@@ -598,6 +601,7 @@ start.decomp.pipeline <- function(rnb.set,
                                   itermax=1000,
                                   ninit=100,
                                   cluster.submit=FALSE,
+				  cluster.architecture="SGE",
                                   cluster.Rdir=NA,
                                   cluster.hostlist="*",
                                   cluster.memlimit="5G",
@@ -705,6 +709,7 @@ start.decomp.pipeline <- function(rnb.set,
                                              itermax=itermax,
                                              ninit=ninit,
                                              cluster.submit=cluster.submit,
+					     cluster.architecture=cluster.architecture,
                                              cluster.R.dir=cluster.Rdir,
                                              cluster.hostlist=cluster.hostlist,
                                              cluster.memlimit=cluster.memlimit,
