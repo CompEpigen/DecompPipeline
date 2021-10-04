@@ -17,7 +17,6 @@ Depends:
 	MeDeCom
 Imports:
     bigstatsr,
-    RefFreeEWAS,
     robust,
     pheatmap,
     sm,

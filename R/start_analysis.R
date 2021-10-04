@@ -147,7 +147,6 @@ start.edec.analysis <- function(meth.data=NULL,
 #' @return An object of type \code{\link{MeDeComSet}} containing the results of the RefFreeCellMix experiment.
 #' @author Michael Scherer
 #' @export
-#' @import RefFreeEWAS
 start.refreeewas.analysis <- function(meth.data=NULL,
                                       rnb.set=NULL,
                                       cg.groups,
@@ -155,7 +154,7 @@ start.refreeewas.analysis <- function(meth.data=NULL,
                                       work.dir=getwd(),
                                       factorviz.outputs=FALSE){
   if(!requireNamespace("RefFreeEWAS")){
-    stop("Please install ReFreeEWAS")
+    stop("Please install ReFreeEWAS from 'https://cran.r-project.org/web/packages/RefFreeEWAS/index.html'")
   }else{
     if(is.null(meth.data) && is.null(rnb.set)){
       logger.error("No input methylation data provided")
@@ -173,8 +172,8 @@ start.refreeewas.analysis <- function(meth.data=NULL,
       logger.start(paste("Processing group:",i.group))
       group <- cg.groups[[i.group]]
       meth.sset <- meth.data[group,]
-      res.sset <- RefFreeEWAS::RefFreeCellMixArray(meth.sset,Klist=Ks)
-      devis <- tryCatch(RefFreeEWAS::RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
+      res.sset <- RefFreeCellMixArray(meth.sset,Klist=Ks)
+      devis <- tryCatch(RefFreeCellMixArrayDevianceBoots(res.sset,Y=meth.sset),error=function(e)e)
       if(inherits(devis,"error")){
         devis <- rep(NA,length(Ks))
       }else{

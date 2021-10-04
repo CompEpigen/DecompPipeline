@@ -79,7 +79,6 @@
 #' @import bigstatsr
 #' @import robust
 #' @import genefilter
-#' @import RefFreeEWAS
 prepare.CG.subsets<-function(
     meth.data=NULL,
 		rnb.set=NULL,
@@ -233,7 +232,7 @@ prepare.CG.subsets<-function(
 		
 		if(marker.selection[group]=="houseman2014"){
 		  if(!requireNamespace('RefFreeEWAS')){
-		    stop("Missing required package 'RefFreeEWAS'. Please install it.")
+		    stop("Missing required package 'RefFreeEWAS'. Please install it from 'https://cran.r-project.org/web/packages/RefFreeEWAS/index.html'.")
 		  }
 
 		  if(file.exists(sprintf("%s/pheno.RData",out.dir))){
