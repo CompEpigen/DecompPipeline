@@ -231,81 +231,82 @@ prepare.CG.subsets<-function(
 		}
 		
 		if(marker.selection[group]=="houseman2014"){
-		  if(!requireNamespace('RefFreeEWAS')){
-		    stop("Missing required package 'RefFreeEWAS'. Please install it from 'https://cran.r-project.org/web/packages/RefFreeEWAS/index.html'.")
-		  }
+          stop('RefFreeEWAS is currently not available from CRAN!')
+#		  if(!requireNamespace('RefFreeEWAS')){
+#		    stop("Missing required package 'RefFreeEWAS'. Please install it from 'https://cran.r-project.org/web/packages/RefFreeEWAS/index.html'.")
+#		  }
 
-		  if(file.exists(sprintf("%s/pheno.RData",out.dir))){
-		    load(sprintf("%s/pheno.RData",out.dir))
-		    sel.columns <- gsub(" ","_",colnames(pheno.data))
-		  }else{
-		    pheno.data <- pheno(rnb.set)
-		    sel.columns <- gsub(" ","_",names(rnb.sample.groups(rnb.set)))
-		  }
-		  
-			X <- meth.data
-			ncgs<-nrow(X)
-			X <- na.omit(X)
+#		  if(file.exists(sprintf("%s/pheno.RData",out.dir))){
+#		    load(sprintf("%s/pheno.RData",out.dir))
+#		    sel.columns <- gsub(" ","_",colnames(pheno.data))
+#		  }else{
+#		    pheno.data <- pheno(rnb.set)
+#		    sel.columns <- gsub(" ","_",names(rnb.sample.groups(rnb.set)))
+#		  }
+#		  
+#			X <- meth.data
+#			ncgs<-nrow(X)
+#			X <- na.omit(X)
 
-			colnames(pheno.data) <- gsub(" ","_",colnames(pheno.data))
-			na.pheno <- lapply(sel.columns,function(x)is.na(pheno.data[,x]))
-			rem.samples <- rep(FALSE,ncol(X))
-			for(entry in na.pheno){
-			  rem.samples <- rem.samples | entry
-			}
-			X <- X[,!rem.samples]
-			pheno.data <- pheno.data[!rem.samples,]
-			level.problem <- unlist(lapply(sel.columns,function(x,mat){
-			  length(unique(mat[,x])) == length(levels(mat[,x]))
-			},pheno.data))
-			sel.columns <- sel.columns[level.problem]
-			if(length(sel.columns)>0){
-				formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
-			}else{
-				stop("Insufficient phenotypic information present")
-			}
-			design <- model.matrix(as.formula(formula.text), data=pheno.data)
-			tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
-				
-			## rescaling the residuals, and addition by Andres
-			R <- X-tmpBstar %*% t(design)
-			rescale.residual<-TRUE
-			if(rescale.residual){
-				R <- t(scale(t(R)))
-			}
-			d<-EstDimRMT(R)$dim
-				
-			logger.info(c("Estimated number of latent components is", d))
-			rf <- RefFreeEwasModel(X, design, d)
-				
-			logger.status("Fitted the RefFreeEWAS model")
-				
-			Delta <- rf$Bstar-rf$Beta
-				
-			nboot<-100
-			#### compute se delta from a bootstrap
-			rfBoot <- BootRefFreeEwasModel(rf,nboot)
-			logger.status("Pefrormed the bootstrap")
-				
-			seDelta <- apply(rfBoot[,,"B*",]-rfBoot[,,"B",], 1:2, sd)
-			tstatDelta <- -abs(Delta)/seDelta
-			ncgs <- nrow(meth.data)
-			nnas <- apply(is.na(meth.data),1,sum)
-			notna.rows <- which(nnas==0)
-			if(is.null(dim(tstatDelta))){
-					tstatDeltaAll<-rep(NA, ncgs)
-					tstatDeltaAll[notna.rows]<-tstatDelta
-				}else{
-					tstatDeltaAll<-matrix(NA_real_, ncol=ncol(tstatDelta), nrow=ncgs)
-					tstatDeltaAll[notna.rows,]<-tstatDelta
-				}
-			if(is.null(dim(tstatDelta))){
-				ind<-ind[order(-tstatDeltaAll)[1:min(10000, length(ind))]]
-			}else{
-				ranks<-apply(-tstatDeltaAll, 2, rank)
-				maxRank<-apply(ranks, 1, max)
-				ind<-ind[order(maxRank)[1:min(n.markers, length(ind))]]
-			}
+#			colnames(pheno.data) <- gsub(" ","_",colnames(pheno.data))
+#			na.pheno <- lapply(sel.columns,function(x)is.na(pheno.data[,x]))
+#			rem.samples <- rep(FALSE,ncol(X))
+#			for(entry in na.pheno){
+#			  rem.samples <- rem.samples | entry
+#			}
+#			X <- X[,!rem.samples]
+#			pheno.data <- pheno.data[!rem.samples,]
+#			level.problem <- unlist(lapply(sel.columns,function(x,mat){
+#			  length(unique(mat[,x])) == length(levels(mat[,x]))
+#			},pheno.data))
+#			sel.columns <- sel.columns[level.problem]
+#			if(length(sel.columns)>0){
+#				formula.text <- paste0("~0+", paste(sel.columns,collapse="+"))
+#			}else{
+#				stop("Insufficient phenotypic information present")
+#			}
+#			design <- model.matrix(as.formula(formula.text), data=pheno.data)
+#			tmpBstar <- (X %*% design %*% solve(t(design)%*%design))
+#				
+#			## rescaling the residuals, and addition by Andres
+#			R <- X-tmpBstar %*% t(design)
+#			rescale.residual<-TRUE
+#			if(rescale.residual){
+#				R <- t(scale(t(R)))
+#			}
+#			d<-EstDimRMT(R)$dim
+#				
+#			logger.info(c("Estimated number of latent components is", d))
+#			rf <- RefFreeEwasModel(X, design, d)
+#				
+#			logger.status("Fitted the RefFreeEWAS model")
+#				
+#			Delta <- rf$Bstar-rf$Beta
+#				
+#			nboot<-100
+#			#### compute se delta from a bootstrap
+#			rfBoot <- BootRefFreeEwasModel(rf,nboot)
+#			logger.status("Pefrormed the bootstrap")
+#				
+#			seDelta <- apply(rfBoot[,,"B*",]-rfBoot[,,"B",], 1:2, sd)
+#			tstatDelta <- -abs(Delta)/seDelta
+#			ncgs <- nrow(meth.data)
+#			nnas <- apply(is.na(meth.data),1,sum)
+#			notna.rows <- which(nnas==0)
+#			if(is.null(dim(tstatDelta))){
+#					tstatDeltaAll<-rep(NA, ncgs)
+#					tstatDeltaAll[notna.rows]<-tstatDelta
+#				}else{
+#					tstatDeltaAll<-matrix(NA_real_, ncol=ncol(tstatDelta), nrow=ncgs)
+#					tstatDeltaAll[notna.rows,]<-tstatDelta
+#				}
+#			if(is.null(dim(tstatDelta))){
+#				ind<-ind[order(-tstatDeltaAll)[1:min(10000, length(ind))]]
+#			}else{
+#				ranks<-apply(-tstatDeltaAll, 2, rank)
+#				maxRank<-apply(ranks, 1, max)
+#				ind<-ind[order(maxRank)[1:min(n.markers, length(ind))]]
+#			}
 		}
 		
 		if(marker.selection[group]=="jaffe2014"){
