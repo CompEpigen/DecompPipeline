@@ -208,7 +208,7 @@ removeFactor = function(rnb.set, fact, ncomp=3, ntry = 1, alpha.fact =1e-20, qth
   
   ## variables = factors
   Var = df2factor(pheno.data,maxlev=20)
-  if(!fact %in% names(Var)) {
+  if(!all(fact %in% names(Var))) {
     logger.info(paste("Error in getFeatures: poor factor or wrong factor name `",fact))
     return(NA)
   }
